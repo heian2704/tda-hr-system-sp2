@@ -7,6 +7,10 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
+=======
+  const [redirecting, setRedirecting] = useState(false);
+>>>>>>> main
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -17,13 +21,20 @@ const LoginForm = () => {
     { text: 'One special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
     { text: 'One number', met: /\d/.test(password) },
   ];
+<<<<<<< HEAD
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+=======
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+>>>>>>> main
     setLoading(true);
     setError(null);
 
     try {
+<<<<<<< HEAD
  const response = await fetch('https://tda-backend-khaki.vercel.app/api/auth/signIn', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -42,12 +53,66 @@ const LoginForm = () => {
  setError(err.message || 'Something went wrong');
     } finally {
  setLoading(false);
+=======
+      const response = await fetch('https://tda-backend-khaki.vercel.app/api/auth/signIn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      console.log('Login successful:', data);
+      setRedirecting(true); // show success loading popup
+      setTimeout(() => {
+        navigate('./dashboard');
+      }, 10); // slight delay so user sees the popup
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false); // stop button loading state
+>>>>>>> main
     }
   };
   if (loading) {
     return (
  <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 mt-20 text-center">
         <p className="text-gray-700">Logging in...</p>
+      </div>
+    );
+  }
+
+  // ✅ Show this only after successful login
+  if (redirecting) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="bg-white px-8 py-6 rounded-2xl shadow-xl text-center flex flex-col items-center gap-4">
+          <svg
+            className="animate-spin h-6 w-6 text-red-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+          <p className="text-gray-700 text-base font-medium">Logging you in...</p>
+        </div>
       </div>
     );
   }
@@ -129,7 +194,11 @@ const LoginForm = () => {
             loading ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
+<<<<<<< HEAD
           {loading ? 'Logging in...' : 'Log In'}
+=======
+          {loading ? 'Logging in...' : 'Log in'}
+>>>>>>> main
         </button>
       </form>
     </div>
