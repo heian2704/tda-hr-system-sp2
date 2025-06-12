@@ -17,36 +17,36 @@ const LoginForm = () => {
     { text: 'One special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
     { text: 'One number', met: /\d/.test(password) },
   ];
-    const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('https://tda-backend-khaki.vercel.app/api/auth/signIn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+ const response = await fetch('https://tda-backend-khaki.vercel.app/api/auth/signIn', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ email, password }),
+ });
 
-      const data = await response.json();
+ const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+ if (!response.ok) {
+ throw new Error(data.message || 'Login failed');
+ }
 
-      console.log('Login successful:', data);
-      navigate('./dashboard');
+ console.log('Login successful:', data);
+      navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+ setError(err.message || 'Something went wrong');
     } finally {
-      setLoading(false);
+ setLoading(false);
     }
   };
   if (loading) {
     return (
-      <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 mt-20 text-center">
+ <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 mt-20 text-center">
         <p className="text-gray-700">Logging in...</p>
       </div>
     );
@@ -129,7 +129,7 @@ const LoginForm = () => {
             loading ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
-          {loading ? 'Logging in...' : 'Log in'}
+          {loading ? 'Logging in...' : 'Log In'}
         </button>
       </form>
     </div>
