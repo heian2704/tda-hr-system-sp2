@@ -1,8 +1,15 @@
 // src/pages/ExpenseIncome.tsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { DollarSign, BarChart, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
-import { useLanguage } from '../../contexts/LanguageContext'; // Adjust path as necessary
-import { useSearchParams } from 'react-router-dom'; // For global search
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
+
+// Import services and DTOs
+import { incomeService } from '@/services/incomeService';
+import { IncomeDto } from '@/dtos/income/IncomeDto';
+import { IncomeCreateDto } from '@/dtos/income/IncomeCreateDto';
+import { IncomeUpdateDto } from '@/dtos/income/IncomeUpdateDto';
 
 // Import the new specific modals
 import AddEditIncomeModal from '../../components/AddEditIncomeModal';
@@ -54,10 +61,10 @@ const isDateInRange = (dateString: string, startDate: string, endDate: string): 
 // --- Data Interfaces ---
 interface IncomeEntry {
   id: string;
-  name: string; // e.g., "Selling stuff"
+  name: string;
   amount: number;
-  client: string; // specific for income
-  date: string; // INSEE-MM-DD
+  client: string;
+  date: string;
   note: string;
 }
 
@@ -70,19 +77,15 @@ interface ExpenseEntry {
   note: string;
 }
 
-// --- Mock Data ---
-const mockIncomeData: IncomeEntry[] = [
-  { id: 'inc-1', name: 'Selling Plastic Bottles', amount: 1_000_000, client: 'AB Company', date: '2025-06-20', note: 'Large order' },
-  { id: 'inc-2', name: 'Service Fee', amount: 50_000, client: 'XYZ Corp', date: '2025-06-18', note: 'Consultation' },
-  { id: 'inc-3', name: 'Recycling Income', amount: 120_000, client: 'Local Recycling', date: '2025-06-15', note: 'Monthly collection' },
-  { id: 'inc-4', name: 'Product Sale (Small)', amount: 25_000, client: 'Individual', date: '2025-06-22', note: '' },
-  { id: 'inc-5', name: 'Consulting Fee', amount: 75000, client: 'Tech Solutions', date: '2025-06-05', note: 'Project Alpha phase 1' },
-  { id: 'inc-6', name: 'License Renewal', amount: 30000, client: 'Software Co.', date: '2025-05-28', note: 'Annual software license' },
-  { id: 'inc-7', name: 'Training Workshop', amount: 40000, client: 'Edu Corp', date: '2025-06-10', note: 'Advanced training' },
-  { id: 'inc-8', name: 'Service Contract', amount: 25000, client: 'Service Hub', date: '2025-06-01', note: 'Monthly service fee' },
-  { id: 'inc-9', name: 'Equipment Lease', amount: 15000, client: 'Rental Co.', date: '2025-06-03', note: 'Machine lease income' },
-  { id: 'inc-10', name: 'Product Refund', amount: 5000, client: 'Customer A', date: '2025-06-19', note: 'Refund on defect item (negative income)' }, // Example for filtering
-];
+// Convert IncomeDto to IncomeEntry for UI compatibility
+const convertIncomeDto = (dto: IncomeDto): IncomeEntry => ({
+  id: dto._id,
+  name: dto.name,
+  amount: dto.amount,
+  client: dto.client,
+  date: dto.date,
+  note: dto.note
+});
 
 
 const mockExpenseData: ExpenseEntry[] = [
@@ -178,8 +181,9 @@ const ConfirmDeleteEntryModal = ({ isOpen, onClose, onConfirm, entryId, entryNam
 // --- Main ExpenseIncome Component ---
 const ExpenseIncome = () => {
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
-  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>(mockIncomeData);
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>(mockExpenseData);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [isAddIncomeModalOpen, setIsAddIncomeModalOpen] = useState(false); // Specific income modal
@@ -202,7 +206,25 @@ const ExpenseIncome = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-  // Initial setup of date filters on component mount
+  // Load incomes from API
+  const loadIncomes = async () => {
+    setIsLoading(true);
+    try {
+      const incomes = await incomeService.getAllIncomes();
+      setIncomeEntries(incomes.map(convertIncomeDto));
+    } catch (error) {
+      console.error('Error loading incomes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load incomes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial setup and load data
   useEffect(() => {
     const today = new Date();
     const startOfMonth = getStartOfMonth(today);
@@ -214,7 +236,9 @@ const ExpenseIncome = () => {
     setCurrentDisplayPeriod(
       `${pageTranslations.currentPeriod} ${startOfMonth.toLocaleString('default', { month: 'long' })} ${startOfMonth.getFullYear()}`
     );
-  }, []); // Run once on mount
+    
+    loadIncomes();
+  }, []);
 
   // Effect to update currentDisplayPeriod when period type or custom dates change
   useEffect(() => {
@@ -356,10 +380,47 @@ const ExpenseIncome = () => {
     }
   };
 
-  const handleSaveIncomeEntry = (entry: IncomeEntry, isEditing: boolean) => {
-    setIncomeEntries(prev =>
-      isEditing ? prev.map(inc => (inc.id === entry.id ? entry : inc)) : [...prev, entry]
-    );
+  const handleSaveIncomeEntry = async (entry: IncomeEntry, isEditing: boolean) => {
+    setIsLoading(true);
+    try {
+      if (isEditing) {
+        const updateData: IncomeUpdateDto = {
+          name: entry.name,
+          amount: entry.amount,
+          client: entry.client,
+          date: entry.date,
+          note: entry.note
+        };
+        await incomeService.updateIncome(entry.id, updateData);
+        toast({
+          title: "Success",
+          description: "Income updated successfully",
+        });
+      } else {
+        const createData: IncomeCreateDto = {
+          name: entry.name,
+          amount: entry.amount,
+          client: entry.client,
+          date: entry.date,
+          note: entry.note
+        };
+        await incomeService.createIncome(createData);
+        toast({
+          title: "Success",
+          description: "Income created successfully",
+        });
+      }
+      await loadIncomes(); // Refresh the list
+    } catch (error) {
+      console.error('Error saving income:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} income. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveExpenseEntry = (entry: ExpenseEntry, isEditing: boolean) => {
@@ -373,13 +434,30 @@ const ExpenseIncome = () => {
     setIsDeleteConfirmModalOpen(true);
   };
 
-  const handleExecuteDelete = (id: string, type: 'income' | 'expense') => {
-    if (type === 'income') {
-      setIncomeEntries(prev => prev.filter(inc => inc.id !== id));
-    } else {
-      setExpenseEntries(prev => prev.filter(exp => exp.id !== id));
+  const handleExecuteDelete = async (id: string, type: 'income' | 'expense') => {
+    setIsLoading(true);
+    try {
+      if (type === 'income') {
+        await incomeService.deleteIncome(id);
+        toast({
+          title: "Success",
+          description: "Income deleted successfully",
+        });
+        await loadIncomes(); // Refresh the list
+      } else {
+        setExpenseEntries(prev => prev.filter(exp => exp.id !== id));
+        console.log(`[UI-ONLY] Executed deletion for ${type} entry ID: ${id}`);
+      }
+    } catch (error) {
+      console.error('Error deleting income:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete income. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    console.log(`[UI-ONLY] Executed deletion for ${type} entry ID: ${id}`);
   };
 
   return (
@@ -523,7 +601,13 @@ const ExpenseIncome = () => {
                 </tr>
               </thead>
               <tbody>
-                {displayedEntries.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : displayedEntries.length > 0 ? (
                   displayedEntries.map(entry => (
                     <tr key={entry.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.name}</td>
@@ -538,14 +622,16 @@ const ExpenseIncome = () => {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleOpenEditModal(entry)}
-                            className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
+                            disabled={isLoading}
+                            className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100 disabled:opacity-50"
                             title={pageTranslations.editButton}
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleConfirmDeleteClick(entry)}
-                            className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
+                            disabled={isLoading}
+                            className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100 disabled:opacity-50"
                             title={pageTranslations.deleteButton}
                           >
                             <Trash2 size={18} />
