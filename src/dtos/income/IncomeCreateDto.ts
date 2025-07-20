@@ -1,6 +1,6 @@
 export interface IncomeCreateDto {
-  name: string;
+  title: string;
   amount: number;
   date: string;
-  note: string;
+  description?: string;
 }

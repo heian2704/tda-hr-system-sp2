@@ -1,9 +1,9 @@
 export interface IncomeDto {
   _id: string;
-  name: string;
+  title: string;
+  description: string;
   amount: number;
   date: string;
-  note: string;
   createdAt: string;
   updatedAt: string;
 }

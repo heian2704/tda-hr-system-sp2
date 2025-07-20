@@ -1,9 +1,7 @@
-// src/components/AddEditIncomeModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext'; // Adjust path as necessary
+import { useLanguage } from '../contexts/LanguageContext'; 
 
-// Data Interface for Income (re-declared for clarity in this component)
 interface IncomeEntry {
   id: string;
   name: string;

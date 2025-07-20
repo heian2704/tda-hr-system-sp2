@@ -1,6 +1,6 @@
 export interface IncomeUpdateDto {
-  name: string;
+  title: string;
   amount: number;
   date: string;
-  note: string;
+  description?: string;
 }

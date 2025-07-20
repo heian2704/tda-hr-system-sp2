@@ -79,10 +79,10 @@ interface ExpenseEntry {
 // Convert IncomeDto to IncomeEntry for UI compatibility
 const convertIncomeDto = (dto: IncomeDto): IncomeEntry => ({
   id: dto._id,
-  name: dto.name,
+  name: dto.title,             // ✅ from dto.title
   amount: dto.amount,
   date: dto.date,
-  note: dto.note
+  note: dto.description        // ✅ from dto.description
 });
 
 
@@ -377,47 +377,37 @@ const ExpenseIncome = () => {
     }
   };
 
-  const handleSaveIncomeEntry = async (entry: IncomeEntry, isEditing: boolean) => {
-    setIsLoading(true);
-    try {
-      if (isEditing) {
-        const updateData: IncomeUpdateDto = {
-          name: entry.name,
-          amount: entry.amount,
-          date: entry.date,
-          note: entry.note
-        };
-        await incomeService.updateIncome(entry.id, updateData);
-        toast({
-          title: "Success",
-          description: "Income updated successfully",
-        });
-      } else {
-        const createData: IncomeCreateDto = {
-          name: entry.name,
-          amount: entry.amount,
-          date: entry.date,
-          note: entry.note
-        };
-        await incomeService.createIncome(createData);
-        toast({
-          title: "Success",
-          description: "Income created successfully",
-        });
-      }
-      await loadIncomes(); // Refresh the list
-    } catch (error) {
-      console.error('Error saving income:', error);
-      toast({
-        title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'create'} income. Please try again.`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+   const handleSaveIncomeEntry = async (entry: IncomeEntry, isEditing: boolean) => {
+     setIsLoading(true);
+     try {
+       const incomeData: IncomeCreateDto = {
+         title: entry.name,
+         amount: entry.amount,
+         date: entry.date,
+         description: entry.note
+       };
 
+       if (isEditing) {
+         await incomeService.updateIncome(entry.id, incomeData);
+         toast({ title: "Success", description: "Income updated successfully" });
+       } else {
+         const newIncome = await incomeService.createIncome(incomeData);
+         setIncomeEntries(prev => [...prev, convertIncomeDto(newIncome)]); // Update local state
+         toast({ title: "Success", description: "Income created successfully" });
+       }
+       await loadIncomes(); // Optionally refresh the list
+     } catch (error) {
+       console.error('Error saving income:', error);
+       toast({
+         title: "Error",
+         description: `Failed to ${isEditing ? 'update' : 'create'} income. Please try again.`,
+         variant: "destructive",
+       });
+     } finally {
+       setIsLoading(false);
+     }
+   };
+   
   const handleSaveExpenseEntry = (entry: ExpenseEntry, isEditing: boolean) => {
     setExpenseEntries(prev =>
       isEditing ? prev.map(exp => (exp.id === entry.id ? entry : exp)) : [...prev, entry]
