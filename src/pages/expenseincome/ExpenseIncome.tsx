@@ -63,7 +63,6 @@ interface IncomeEntry {
   id: string;
   name: string;
   amount: number;
-  client: string;
   date: string;
   note: string;
 }
@@ -82,7 +81,6 @@ const convertIncomeDto = (dto: IncomeDto): IncomeEntry => ({
   id: dto._id,
   name: dto.name,
   amount: dto.amount,
-  client: dto.client,
   date: dto.date,
   note: dto.note
 });
@@ -328,8 +326,7 @@ const ExpenseIncome = () => {
       currentTabEntries = currentTabEntries.filter(entry =>
         entry.name.toLowerCase().includes(lowerCaseQuery) ||
         entry.amount.toString().includes(lowerCaseQuery) ||
-        ('client' in entry && entry.client.toLowerCase().includes(lowerCaseQuery)) ||
-        ('paidTo' in entry && entry.paidTo.toLowerCase().includes(lowerCaseQuery)) || // Changed to paidTo
+        ('paidTo' in entry && entry.paidTo.toLowerCase().includes(lowerCaseQuery)) ||
         entry.date.includes(lowerCaseQuery) ||
         entry.note.toLowerCase().includes(lowerCaseQuery)
       );
@@ -387,7 +384,6 @@ const ExpenseIncome = () => {
         const updateData: IncomeUpdateDto = {
           name: entry.name,
           amount: entry.amount,
-          client: entry.client,
           date: entry.date,
           note: entry.note
         };
@@ -400,7 +396,6 @@ const ExpenseIncome = () => {
         const createData: IncomeCreateDto = {
           name: entry.name,
           amount: entry.amount,
-          client: entry.client,
           date: entry.date,
           note: entry.note
         };
@@ -593,8 +588,9 @@ const ExpenseIncome = () => {
                 <tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
                   <th className="py-3 px-4 font-semibold">{activeTab === 'income' ? pageTranslations.incomeNameColumn : pageTranslations.expenseNameColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.amountColumn}</th>
-                  {/* Conditional header for Client vs Paid to */}
-                  <th className="py-3 px-4 font-semibold">{activeTab === 'income' ? pageTranslations.clientColumn : pageTranslations.paidToColumn}</th>
+                  {activeTab === 'expense' && (
+                    <th className="py-3 px-4 font-semibold">{pageTranslations.paidToColumn}</th>
+                  )}
                   <th className="py-3 px-4 font-semibold">{pageTranslations.dateColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.noteColumn}</th>
                   <th className="py-3 px-4 font-semibold text-center">{pageTranslations.actionColumn}</th>
@@ -603,7 +599,7 @@ const ExpenseIncome = () => {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                    <td colSpan={activeTab === 'expense' ? 6 : 5} className="py-8 text-center text-gray-500">
                       Loading...
                     </td>
                   </tr>
@@ -612,10 +608,11 @@ const ExpenseIncome = () => {
                     <tr key={entry.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.name}</td>
                       <td className="py-3 px-4 text-gray-700">Ks. {entry.amount.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {/* Conditional data display for Client vs Paid to */}
-                        {'client' in entry ? entry.client : ('paidTo' in entry ? entry.paidTo : 'N/A')}
-                      </td>
+                      {activeTab === 'expense' && (
+                        <td className="py-3 px-4 text-gray-700">
+                          {'paidTo' in entry ? entry.paidTo : 'N/A'}
+                        </td>
+                      )}
                       <td className="py-3 px-4 text-gray-700">{entry.date}</td>
                       <td className="py-3 px-4 text-gray-700">{entry.note || pageTranslations.na}</td>
                       <td className="py-3 px-4 text-center">
@@ -642,7 +639,7 @@ const ExpenseIncome = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                    <td colSpan={activeTab === 'expense' ? 6 : 5} className="py-8 text-center text-gray-500">
                       {pageTranslations.noEntriesFound}
                     </td>
                   </tr>

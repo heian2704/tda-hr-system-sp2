@@ -8,8 +8,7 @@ interface IncomeEntry {
   id: string;
   name: string;
   amount: number;
-  client: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   note: string;
 }
 
@@ -29,7 +28,6 @@ const AddEditIncomeModal = ({ isOpen, onClose, incomeEntryToEdit, onSave }: AddE
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [client, setClient] = useState('');
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
 
@@ -39,14 +37,12 @@ const AddEditIncomeModal = ({ isOpen, onClose, incomeEntryToEdit, onSave }: AddE
       if (incomeEntryToEdit) {
         setName(incomeEntryToEdit.name);
         setAmount(incomeEntryToEdit.amount.toString());
-        setClient(incomeEntryToEdit.client);
         setDate(incomeEntryToEdit.date);
         setNote(incomeEntryToEdit.note);
       } else {
         setName('');
         setAmount('');
-        setClient('');
-        setDate(new Date().toISOString().split('T')[0]); // Default to today's date
+        setDate(new Date().toISOString().split('T')[0]);
         setNote('');
       }
     }
@@ -79,7 +75,7 @@ const AddEditIncomeModal = ({ isOpen, onClose, incomeEntryToEdit, onSave }: AddE
     }
 
     const id = isEditing ? incomeEntryToEdit!.id : `income-${Date.now()}`;
-    const newEntry: IncomeEntry = { id, name, amount: submittedAmount, client, date, note };
+    const newEntry: IncomeEntry = { id, name, amount: submittedAmount, date, note };
 
     console.log(`[UI-ONLY] ${isEditing ? 'Editing' : 'Adding'} Income entry. Data captured for backend:`, newEntry);
     onSave(newEntry, isEditing);
@@ -128,20 +124,6 @@ const AddEditIncomeModal = ({ isOpen, onClose, incomeEntryToEdit, onSave }: AddE
               required
               min="0.01"
               step="any"
-            />
-          </div>
-          <div>
-            <label htmlFor="incomeClient" className="block text-sm font-medium text-gray-600 mb-1">
-              {modalTranslations.clientColumn}
-            </label>
-            <input
-              type="text"
-              id="incomeClient"
-              placeholder={modalTranslations.clientPlaceholder}
-              value={client}
-              onChange={(e) => setClient(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
-              required
             />
           </div>
           <div>
