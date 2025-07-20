@@ -4,6 +4,14 @@ import { useNavigate } from 'react-router-dom'; // Keep useNavigate if it was in
 // Ensure these import paths are correct relative to 'src/pages/Index.tsx'
 import TopBar from '../components/TopBar'; // e.g., src/components/TopBar.tsx
 import LoginForm from '../app/login/components/LoginForm'; // e.g., src/pages/Index/components/LoginForm.tsx
+import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import EmployeeListView from './EmployeeDummy';
+
+
+// dummy and for example
+const employeeInterface = new EmployeeInterfaceImpl();
+const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 
 // Define the interface for the props that LoginPage itself expects.
 // It receives `setIsLoggedIn` from `App.tsx` and passes it down to `LoginForm`.
@@ -26,6 +34,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsLoggedIn }) => {
           update the global authentication state upon successful login.
         */}
         <LoginForm setIsLoggedIn={setIsLoggedIn} />
+
+
+
+        {/* This is just dummy and for example. Comment that out to test. */}
+        {/* 
+        <div className="mt-12">
+          <EmployeeListView getAllEmployeeUseCase={getAllEmployeeUseCase} />
+        </div> 
+        */}
+
       </div>
     </div>
   );
