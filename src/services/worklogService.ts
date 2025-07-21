@@ -2,18 +2,27 @@
 import { worklogCreateDto } from "@/dtos/worklog/worklogCreateDto";
 import { worklogDto } from "@/dtos/worklog/worklogDto";
 import { worklogUpdateDto } from "@/dtos/worklog/worklogUpdateDto";
+import { get } from "http";
 
 const API_BASE_URL = 'https://tda-backend-khaki.vercel.app/_api';
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found. Please log in.');
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+};
 
 export const worklogService = {
   getAllWorklogs: async (): Promise<worklogDto[]> => {
     try {
+
       const response = await fetch(`${API_BASE_URL}/employee-product`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -30,12 +39,10 @@ export const worklogService = {
 
   getWorkLogById: async (id: string): Promise<worklogDto> => {
     try {
+      
         const response = await fetch(`${API_BASE_URL}/employee-product/${id}`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
+            headers: getAuthHeaders(),
         });
 
         if (!response.ok) {
@@ -56,10 +63,7 @@ export const worklogService = {
 
         const response = await fetch(`${API_BASE_URL}/employee-product`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify(worklog),
         });
   
@@ -82,14 +86,9 @@ export const worklogService = {
           if (!id) {
             throw new Error('No worklog ID provided for update');
           }
-          console.log("Updating worklog with ID:", id, "and data:", worklog);
-          console.log("token", localStorage.getItem('token'));
         const response = await fetch(`${API_BASE_URL}/employee-product/${id}`, {
-          method: 'PATCH', 
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
+          method: 'PATCH',
+          headers: getAuthHeaders(),
           body: JSON.stringify(worklog),
         });
   
@@ -116,10 +115,7 @@ export const worklogService = {
   
         const response = await fetch(`${API_BASE_URL}/employee-product/${id}`, {
           method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
+          headers: getAuthHeaders(),
         });
   
         if (!response.ok) {

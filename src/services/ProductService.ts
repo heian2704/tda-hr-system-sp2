@@ -4,16 +4,23 @@ import { ProductUpdateDto } from "@/dtos/product/ProductUpdateDto";
 import { get } from "http";
 
 const API_BASE_URL = 'https://tda-backend-khaki.vercel.app/_api';
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+    }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    };
+};
 
 export const ProductService = {
   getAllProducts: async (): Promise<ProductDto[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/product`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -32,10 +39,7 @@ export const ProductService = {
     try {
         const response = await fetch(`${API_BASE_URL}/product/${id}`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
+            headers: getAuthHeaders(),
         });
         if(!response.ok) {
             throw new Error(`Failed to fetch product: ${response.status} ${response.statusText}`);
@@ -52,10 +56,7 @@ export const ProductService = {
     try {
         const response = await fetch(`${API_BASE_URL}/product`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(product),
         });
         if (!response.ok) {
@@ -75,10 +76,7 @@ export const ProductService = {
     try {
       const response = await fetch(`${API_BASE_URL}/product/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(product),
       });
       if (!response.ok) {
@@ -98,10 +96,7 @@ export const ProductService = {
     try {
       const response = await fetch(`${API_BASE_URL}/product/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
       });
       if (!response.ok) {
         const errorText = await response.text();

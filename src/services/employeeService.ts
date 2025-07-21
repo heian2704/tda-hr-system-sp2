@@ -3,16 +3,23 @@ import { EmployeeDto } from "@/dtos/employee/EmployeeDto";
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 
 const API_BASE_URL = 'https://tda-backend-khaki.vercel.app/_api';
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found. Please log in.');
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+};
 
 export const employeeService = {
   getAllEmployees: async (): Promise<EmployeeResponse[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/employee`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+          headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -33,10 +40,7 @@ export const employeeService = {
 
       const response = await fetch(`${API_BASE_URL}/employee`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(employee),
       });
 
@@ -62,10 +66,7 @@ export const employeeService = {
 
       const response = await fetch(`${API_BASE_URL}/employee/${id}`, {
         method: 'PATCH', 
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(employee),
       });
 
@@ -92,10 +93,7 @@ export const employeeService = {
 
       const response = await fetch(`${API_BASE_URL}/employee/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -115,10 +113,7 @@ export const employeeService = {
 
       const response = await fetch(`${API_BASE_URL}/employee/${id}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status }),
       });
 
