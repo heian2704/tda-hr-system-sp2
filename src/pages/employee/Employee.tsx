@@ -319,21 +319,8 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
 
   const currentEmployeesSorted = sortedEmployees.slice(startIndex, endIndex);
 
-  if (loading) {
-    return (
-      <div className="absolute top-24 left-1/2 transform -translate-x-1/2">
-        <div className="text-sm text-gray-500 animate-pulse">Loading employees...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="absolute top-24 left-1/2 transform -translate-x-1/2">
-        <div className="text-sm text-red-500">Error: {error}</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   const handleStatusChange = async (employeeId: string, newStatus: string) => {
     try {

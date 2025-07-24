@@ -25,7 +25,6 @@ const formatDate = (date: Date): string => {
 
 const parseDate = (dateString: string): Date => {
   const [year, month, day] = dateString.split('-').map(Number);
-  // Ensure the date is treated as UTC to avoid timezone issues affecting day calculations
   return new Date(Date.UTC(year, month - 1, day));
 };
 
@@ -376,37 +375,45 @@ const ExpenseIncome = () => {
       setIsAddExpenseModalOpen(true);
     }
   };
+const handleSaveIncomeEntry = async (entry: IncomeEntry, isEditing: boolean) => {
+  setIsLoading(true);
+  try {
+    const incomeData: IncomeCreateDto = {
+      title: entry.name,
+      amount: entry.amount,
+      date: entry.date,
+      description: entry.note
+    };
 
-   const handleSaveIncomeEntry = async (entry: IncomeEntry, isEditing: boolean) => {
-     setIsLoading(true);
-     try {
-       const incomeData: IncomeCreateDto = {
-         title: entry.name,
-         amount: entry.amount,
-         date: entry.date,
-         description: entry.note
-       };
+    if (isEditing) {
+      await incomeService.updateIncome(entry.id, incomeData);
+      toast({ title: "Success", description: "Income updated successfully" });
+    } else {
+      const newIncome = await incomeService.createIncome(incomeData);
+      const createdEntry = convertIncomeDto(newIncome);
 
-       if (isEditing) {
-         await incomeService.updateIncome(entry.id, incomeData);
-         toast({ title: "Success", description: "Income updated successfully" });
-       } else {
-         const newIncome = await incomeService.createIncome(incomeData);
-         setIncomeEntries(prev => [...prev, convertIncomeDto(newIncome)]); // Update local state
-         toast({ title: "Success", description: "Income created successfully" });
-       }
-       await loadIncomes(); // Optionally refresh the list
-     } catch (error) {
-       console.error('Error saving income:', error);
-       toast({
-         title: "Error",
-         description: `Failed to ${isEditing ? 'update' : 'create'} income. Please try again.`,
-         variant: "destructive",
-       });
-     } finally {
-       setIsLoading(false);
-     }
-   };
+      setIncomeEntries(prev => [...prev, createdEntry]);
+      toast({ title: "Success", description: "Income created successfully" });
+
+      // ✅ Ensure the created entry is visible by switching to custom period
+      setPeriodType('custom');
+      setCustomStartDate(createdEntry.date);
+      setCustomEndDate(createdEntry.date);
+    }
+
+    await loadIncomes(); // Refresh the list (optional if you're manually updating state)
+  } catch (error) {
+    console.error('Error saving income:', error);
+    toast({
+      title: "Error",
+      description: `Failed to ${isEditing ? 'update' : 'create'} income. Please try again.`,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
    
   const handleSaveExpenseEntry = (entry: ExpenseEntry, isEditing: boolean) => {
     setExpenseEntries(prev =>
