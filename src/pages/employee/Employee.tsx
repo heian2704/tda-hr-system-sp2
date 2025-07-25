@@ -121,7 +121,7 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
         <div className="absolute z-10 mt-1 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           <div className="py-1">
             <button
-              onClick={() => handleStatusChange('active')}
+              onClick={() => handleStatusChange(EmpStatus.ACTIVE)}
               disabled={isUpdating}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
@@ -192,7 +192,7 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
   );
 
   const totalEmployees = filteredEmployees.length;
-  const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active').length;
+  const activeEmployees = filteredEmployees.filter(emp => emp.status === EmpStatus.ACTIVE).length;
   const onLeaveEmployees = filteredEmployees.filter(emp => emp.status === 'on_leave').length;
   const totalPages = Math.max(1, Math.ceil(totalEmployees / itemsPerPage));
 
