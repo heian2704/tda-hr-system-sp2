@@ -52,7 +52,7 @@ export const apiPostRequestsHandler = async <T, B = unknown>({
   });
 };
 
-export const apiPutRequestsHandler = async <T, B = unknown>({
+export const apiPatchRequestsHandler = async <T, B = unknown>({
   endpoint,
   body,
   token,
@@ -97,3 +97,4 @@ interface ApiPostAndPatchRequestEssentials<B = unknown> {
   body: B;
   token?: string;
 }
+

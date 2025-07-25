@@ -9,6 +9,7 @@ import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
 import { ChevronUp } from 'lucide-react';
 import EditEmployeeModal from "@/components/EditEmployeeModal/EditEmployeeModal.tsx";
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
+import { EmpStatus } from '@/constants/employee-status.enum';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
