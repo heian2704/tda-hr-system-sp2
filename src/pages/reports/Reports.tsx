@@ -135,13 +135,7 @@ const Reports = () => {
     return acc;
   }, {});
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">Loading reports...</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
