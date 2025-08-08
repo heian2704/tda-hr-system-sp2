@@ -5,5 +5,4 @@ export interface EditEmployeeModalProps {
     isOpen: boolean;
     onClose: () => void;
     editEmployeeDto?: EmployeeUpdateDto;
-    onSave: (employee: EmployeeUpdateDto) => void;
 }

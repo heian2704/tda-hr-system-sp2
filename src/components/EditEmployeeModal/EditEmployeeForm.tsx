@@ -1,18 +1,21 @@
 // EmployeeForm.tsx
 import React from 'react';
 import { useEditEmployeeForm } from './useEditEmployeeForm';
-import { employeeService } from '@/services/employeeService';
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
+import { TokenedRequest } from '@/domain/models/common/header-param';
+import { UpdateEmployeeDto } from '@/domain/models/employee/update-employee.dto';
+import { EmpStatus } from '@/constants/employee-status.enum';
+import { UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 
 interface Props {
     employeeId?: string;
     editEmployeeDto?: EmployeeUpdateDto;
-    onSave: (employee: EmployeeUpdateDto) => void;
     onClose: () => void;
     translations: any;
+    updateEmployeeUseCase: UpdateEmployeeUseCase;
 }
 
-const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave, onClose, translations }) => {
+const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClose, translations, updateEmployeeUseCase }) => {
     const {
         fullName, setFullName,
         phoneNumber, setPhoneNumber,
@@ -22,6 +25,16 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave
         status, setStatus
     } = useEditEmployeeForm(editEmployeeDto);
 
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        throw new Error('ID Token is required for authentication');
+    }
+
+    const makeTokenedRequest = (id: string): TokenedRequest => ({
+      id,
+      token: token,
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,22 +44,22 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave
         return;
     }
 
-    const submittedEmployeeData: EmployeeUpdateDto = {
+    const submittedEmployeeData: UpdateEmployeeDto = {
         name: fullName,
-        phoneNumber,
-        address,
+        phoneNumber: phoneNumber,
+        address: address,
         position: role,
-        status,
+        status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
         joinedDate: joinDate,
     };
 
-    onSave(submittedEmployeeData); // Update UI
+    // onSave(submittedEmployeeData); // Update UI
     onClose();
 
     // Async update
     (async () => {
         try {
-        await employeeService.updateEmployee(employeeId, submittedEmployeeData);
+            await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
         } catch (error) {
         console.error("Error saving employee:", error);
         }

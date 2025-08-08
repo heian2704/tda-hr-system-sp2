@@ -3,16 +3,20 @@ import { X } from 'lucide-react';
 import { AddEmployeeModalProps } from './types';
 import EmployeeForm from './EmployeeForm';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import { CreateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 
 export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   isOpen,
   onClose,
   addEmployeeDto,
-  onSave,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
   const modalTranslations = translations.employeePage;
+  const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+  const createEmployeeUseCase = new CreateEmployeeUseCase(employeeInterface)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,9 +56,9 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
         <EmployeeForm
           addEmployeeDto={addEmployeeDto}
-          onSave={onSave}
           onClose={onClose}
           translations={modalTranslations}
+          createEmployeeUseCase={createEmployeeUseCase}
         />
       </div>
     </div>
