@@ -4,15 +4,21 @@ import { useEmployeeForm } from './useEmployeeForm';
 import { employeeService } from '@/services/employeeService';
 import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
 import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
+import { CreateEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
+import { EmpStatus } from '@/constants/employee-status.enum';
+import { BearerTokenedRequest } from '@/domain/models/common/header-param';
 
 interface Props {
-  addEmployeeDto?: EmployeeResponse;
-  onSave: (employee: EmployeeDto) => void;
+  addEmployeeDto?: CreateEmployeeDto;
+  //onSave: (employee: EmployeeDto) => void;
   onClose: () => void;
   translations: any;
+  createEmployeeUseCase: CreateEmployeeUseCase;
 }
 
-const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onSave, onClose, translations }) => {
+
+const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, createEmployeeUseCase }) => {
   const {
     fullName, setFullName,
     phoneNumber, setPhoneNumber,
@@ -22,39 +28,46 @@ const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onSave, onClose, transl
     status, setStatus
   } = useEmployeeForm(addEmployeeDto);
 
+// Get the current token from localStorage
+const token = localStorage.getItem('token');
+if (!token) {
+  throw new Error('ID Token is required for authentication');
+}
 
-const handleSubmit = (e: React.FormEvent) => {
+
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  const submittedEmployeeData: EmployeeDto = {
+  const submittedEmployeeData: CreateEmployeeDto = {
     name: fullName,
-    phoneNumber,
-    address,
+    phoneNumber: phoneNumber,
+    address: address,
     position: role,
-    status,
+    status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
     joinedDate: joinDate,
   };
 
-  // Update UI immediately and close modal
-  onSave(submittedEmployeeData);
-  onClose();
-
-  // Run API call in background, no await
-  (async () => {
-    try {
-      if (addEmployeeDto !== null) {
-        await employeeService.createEmployee(submittedEmployeeData);
-      } 
-    } catch (error) {
-      console.error('Error saving employee:', error);
-    }
-  })();
+  try {
+    console.log('Submitting employee data:', submittedEmployeeData);
+    console.log('Using token:', token);
+    const result = await createEmployeeUseCase?.execute({ token: token }, submittedEmployeeData);
+    console.log('Employee created successfully:', result);
+    
+    //onSave(result); 
+    onClose();
+    
+  } catch (error) {
+    console.error('Error creating employee:', error);
+    alert('Failed to create employee. Please try again.');
+  }
 };
 
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form 
+    // onSubmit={handleSubmit}  
+    className="space-y-4">
       <div>
         <label htmlFor="fullName" className="block text-sm font-medium text-gray-600 mb-1">
           {translations.fullNameColumn}
@@ -137,8 +150,8 @@ const handleSubmit = (e: React.FormEvent) => {
               type="radio"
               name="status"
               value="active"
-              checked={status === 'active'}
-              onChange={() => setStatus('active')}
+              checked={status === EmpStatus.ACTIVE}
+              onChange={() => setStatus(EmpStatus.ACTIVE)}
               className="form-radio h-5 w-5 text-red-500 border-gray-300 focus:ring-red-400"
             />
             <span className="ml-2 text-sm text-gray-700">{translations.activeStatus}</span>
@@ -168,6 +181,7 @@ const handleSubmit = (e: React.FormEvent) => {
         <button
           type="submit"
           className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+          onClick={handleSubmit}
         >
           {translations.addButton}
         </button>

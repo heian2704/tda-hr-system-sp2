@@ -1,10 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
+import Employee from '@/pages/employee/Employee';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+import { DeleteEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { TokenedRequest } from '@/domain/models/common/header-param';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (id: string) => void;
   employeeId: string | null;
   employeeName: string;
 }
@@ -12,11 +16,23 @@ interface ConfirmDeleteModalProps {
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   isOpen,
   onClose,
-  onConfirm,
   employeeId,
   employeeName,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const employeeInterface : EmployeeInterface = new EmployeeInterfaceImpl();
+  const deleteEmployeeUseCase = new DeleteEmployeeUseCase(employeeInterface);
+
+  const token = localStorage.getItem('token');
+  if(!token)
+  {
+    throw new Error('ID Token is required for authentication');
+  }
+
+  const makeTokenedRequest = (id: string): TokenedRequest => ({
+    id,
+    token: token,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -30,8 +46,9 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
   if (!isOpen || !employeeId) return null;
 
-  const handleConfirm = () => {
-    onConfirm(employeeId);
+  const handleConfirm = async () => {
+    if (!employeeId) return;
+    await deleteEmployeeUseCase.execute(makeTokenedRequest(employeeId));
     onClose();
   };
 
@@ -55,7 +72,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             Cancel
           </button>
           <button
-            onClick={handleConfirm}
+            onClick={() => handleConfirm()}
             className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
             Delete
@@ -67,4 +84,3 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 };
 
 export default ConfirmDeleteModal;
-// ConfirmDeleteModal.tsx

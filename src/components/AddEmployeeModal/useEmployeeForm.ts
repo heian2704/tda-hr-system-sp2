@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
+import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
 
-export const useEmployeeForm = (employeeToEdit?: EmployeeResponse) => {
+export const useEmployeeForm = (employeeToEdit?: CreateEmployeeDto) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState('');

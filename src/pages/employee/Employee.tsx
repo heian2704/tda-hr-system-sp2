@@ -5,141 +5,10 @@ import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
 import { employeeService } from '@/services/employeeService';
 import AddEmployeeModal from '@/components/AddEmployeeModal/AddEmployeeModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal/ConfirmDeleteModal';
-import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
-import { ChevronUp } from 'lucide-react';
 import EditEmployeeModal from "@/components/EditEmployeeModal/EditEmployeeModal.tsx";
-import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 import { EmpStatus } from '@/constants/employee-status.enum';
-
-interface ConfirmDeleteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (id: string) => void;
-  employeeId: string | null;
-  employeeName: string;
-}
-
-interface EmployeePageTranslations {
-  active: string;
-  onLeave: string;
-  activeStatus: string;
-  onLeaveStatus: string;
-  totalEmployee: string;
-  employees: string;
-  sortBy: string;
-  joinDate: string;
-  addNewEmployee: string;
-  fullNameColumn: string;
-  employeeIdColumn: string;
-  phoneNumberColumn: string;
-  address: string;
-  roleColumn: string;
-  joinDateColumn: string;
-  statusColumn: string;
-  actionColumn: string;
-  editButton: string;
-  deleteButton: string;
-  showing: string;
-  of: string;
-}
-
-interface StatusChangerProps {
-  employeeId: string;
-  employeeName: string;
-  currentStatus: string;
-  translations: EmployeePageTranslations;
-  onStatusChange: (employeeId: string, newStatus: string) => void;
-}
-
-const StatusChanger: React.FC<StatusChangerProps> = ({
-  employeeId,
-  employeeName,
-  currentStatus,
-  translations,
-  onStatusChange
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const getStatusDisplay = (status: string) => {
-    return status === EmpStatus.ACTIVE ? translations.active : translations.onLeave;
-  };
-
-  const getBadgeStyle = (status: string) => {
-    return status === EmpStatus.ACTIVE ? {
-      bg: 'bg-[#E6FAF7]',
-      text: 'text-[#00B09A]'
-    } : {
-      bg: 'bg-[#FFF2F2]',
-      text: 'text-[#EB5757]'
-    };
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const handleStatusChange = async (newStatus: string) => {
-    if (isUpdating || newStatus === currentStatus) return;
-
-    try {
-      setIsUpdating(true);
-      console.log(`Changing status for Employee ID: ${employeeId} (${employeeName}) from "${currentStatus}" to "${newStatus}"`);
-      await onStatusChange(employeeId, newStatus);
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const currentBadgeStyle = getBadgeStyle(currentStatus);
-
-  return (
-    <div className="relative inline-block" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={isUpdating}
-        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${currentBadgeStyle.bg} ${currentBadgeStyle.text} hover:opacity-80 transition-opacity ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        <span>{getStatusDisplay(currentStatus)}</span>
-        <ChevronDown className="w-3 h-3 ml-1" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-10 mt-1 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
-            <button
-              onClick={() => handleStatusChange(EmpStatus.ACTIVE)}
-              disabled={isUpdating}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            >
-              {translations.activeStatus}
-            </button>
-            <button
-              onClick={() => handleStatusChange('on_leave')}
-              disabled={isUpdating}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            >
-              {translations.onLeaveStatus}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
+import StatusChanger from '@/components/StatusChangerModal/StatusChangerModal';
 
 interface EmployeeProps {
   currentPath?: string;
@@ -153,7 +22,7 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [employeeToDeleteDetails, setEmployeeToDeleteDetails] = useState<{ id: string, name: string } | null>(null);
-  const [selectedEmployeeForAdd, setSelectedEmployeeForAdd] = useState<EmployeeResponse | undefined>(undefined);
+  const [selectedEmployeeForAdd, setSelectedEmployeeForAdd] = useState<CreateEmployeeDto | undefined>(undefined);
   const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<EmployeeResponse | undefined>(undefined);
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,63 +96,9 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEmployee = async (newEmployee: EmployeeResponse) => {
-  try {
-    setIsAddModalOpen(false);
-    setSelectedEmployeeForAdd(undefined);
-    console.log(`Created new employee:`, newEmployee);
-    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-
-    await fetchEmployees();
-  } catch (error) {
-    console.error('Failed to save employee:', error);
-  }
-};
-
-  const handleEditEmployee = async (employee: EmployeeResponse) => {
-  try {
-    if (!selectedEmployeeForEdit || !selectedEmployeeForEdit._id) {
-      console.error('No employee selected for editing');
-      return;
-    }
-
-    await employeeService.updateEmployee(selectedEmployeeForEdit._id, employee);
-    setIsEditModalOpen(false);
-    setSelectedEmployeeForEdit(undefined);
-    console.log(`Updated employee ID: ${selectedEmployeeForEdit._id}`);
-    await fetchEmployees();
-  } catch (error) {
-    console.error('Failed to edit employee:', error);
-  }
-};
-
-
   const handleConfirmDeleteClick = (employee: EmployeeResponse) => {
     setEmployeeToDeleteDetails({ id: employee._id, name: employee.name });
     setIsDeleteConfirmModalOpen(true);
-  };
-
-  const handleExecuteDelete = async (id: string) => {
-    try {
-      await employeeService.deleteEmployee(id);
-      console.log(`Successfully deleted employee ID: ${id}`);
-      await fetchEmployees();
-      const updatedFilteredEmployees = employees.filter(emp => emp._id !== id)
-        .filter(emp =>
-          emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp.phoneNumber.includes(searchQuery)
-        );
-      const newTotalPages = Math.max(1, Math.ceil(updatedFilteredEmployees.length / itemsPerPage));
-      if (currentPage > newTotalPages) {
-        setCurrentPage(newTotalPages);
-      }
-    } catch (error) {
-      console.error('Failed to delete employee:', error);
-    } finally {
-      setIsDeleteConfirmModalOpen(false);
-    }
   };
 
   const handleSortChange = (field: 'joinedDate' | 'name' | 'status') => {
@@ -322,20 +137,6 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
-
-  const handleStatusChange = async (employeeId: string, newStatus: string) => {
-    try {
-      await employeeService.updateEmployeeStatus(employeeId, newStatus);
-      setEmployees(prevEmployees =>
-        prevEmployees.map(emp =>
-          emp._id === employeeId ? { ...emp, status: newStatus } : emp
-        )
-      );
-      console.log(`Successfully updated employee ${employeeId} status to ${newStatus}`);
-    } catch (error) {
-      console.error('Failed to update employee status:', error);
-    }
-  };
 
   return (
     <div className="font-sans antialiased text-gray-800">
@@ -460,7 +261,6 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
                           deleteButton: String(employeePageTranslations.deleteButton),
                           editButton: String(employeePageTranslations.editButton),
                         }}
-                        onStatusChange={handleStatusChange}
                       />
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -530,26 +330,23 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
         addEmployeeDto={
           selectedEmployeeForAdd  
         }
-        onSave={handleSaveEmployee}
       />
 
       {/* Edit Employee Modal */}
-        <EditEmployeeModal
-          employeeId={selectedEmployeeForEdit?._id || ''}
-          editEmployeeDto={selectedEmployeeForEdit}
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={handleEditEmployee}
-        />
+      <EditEmployeeModal
+        employeeId={selectedEmployeeForEdit?._id || ''}
+        editEmployeeDto={selectedEmployeeForEdit}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
 
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteConfirmModalOpen}
         onClose={() => setIsDeleteConfirmModalOpen(false)}
-        onConfirm={handleExecuteDelete}
         employeeId={employeeToDeleteDetails?.id || null}
-        employeeName={employeeToDeleteDetails?.name || 'this employee'}
+        employeeName={employeeToDeleteDetails?.name || ''}
       />
     </div>
   );
