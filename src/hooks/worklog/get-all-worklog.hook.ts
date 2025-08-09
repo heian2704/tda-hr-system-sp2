@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 export const useGetAllWorklogs = (useCase: GetAllWorklogUseCase) => {
     const [worklogs, setWorklogs] = useState<Worklog[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<unknown>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         useCase.execute()
             .then(setWorklogs)
-            .catch(setError)
+            .catch((err) => {
+                setError(err.message);
+            })
             .finally(() => setLoading(false));
     }, [useCase]);
 
