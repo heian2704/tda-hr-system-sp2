@@ -12,7 +12,7 @@ export class GetAllProductsUseCase {
     }
 }
 
-export class getProductByIdUseCase {
+export class GetProductByIdUseCase {
     constructor(private employeeInterface: ProductInterface) {}
 
     execute(idToken: TokenedRequest): Promise<Product> {
