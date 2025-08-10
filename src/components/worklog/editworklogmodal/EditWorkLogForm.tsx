@@ -1,30 +1,34 @@
 // EmployeeForm.tsx
-import React, { use } from 'react';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
-import { ProductDto } from '@/dtos/product/ProductDto';
+import React, { use, useState } from 'react';
 import { useWorklogEditForm } from './useWorklogEditForm';
 import { worklogService } from '@/services/worklogService';
 import { ChevronDown } from 'lucide-react';
 import { worklogUpdateDto } from '@/dtos/worklog/worklogUpdateDto';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
+import { Employee } from '@/domain/models/employee/get-employee.model';
+import { Product } from '@/domain/models/product/get-product.dto';
+import { UpdateWorklogUseCase } from '@/data/usecases/worklog.usecase';
+import { TokenedRequest } from '@/domain/models/common/header-param';
 
 interface Props {
     worklogid?: string;
-    worklogToEdit?: worklogUpdateDto;
-    onSave: (worklog: worklogUpdateDto) => void;
+    worklogToEdit?: UpdateWorklogDto;
     onClose: () => void;
-    employees: EmployeeResponse[];
-    products: ProductDto[];
+    employees: Employee[];
+    products: Product[];
+    updateWorklogUseCase: UpdateWorklogUseCase;
 }
 
-const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onSave, onClose, employees, products }) => {
-    const {
-        employeeId, setEmployeeId,
-        productId, setProductId,
-        quantity, setQuantity,
-
-    } = useWorklogEditForm(worklogToEdit);
-
+const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase }) => {
+    const [employeeId, setEmployeeId] = useState<string>(worklogToEdit?.employeeId || '');
+    const [productId, setProductId] = useState<string>(worklogToEdit?.productId || '');
+    const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity || 0);
+    const token = localStorage.getItem('token');
+    const idToken = (id: string): TokenedRequest => ({
+      id,
+      token: token,
+    });
     const t = useLanguage().translations.workLogPage;
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -39,19 +43,12 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onSave, on
           console.error("No product ID provided for update");
       }
 
-      const submittedWorkLogData: worklogUpdateDto = {
-          employeeId,
-          productId,
-          quantity,
-      };
-
-      onSave(submittedWorkLogData); // Update UI
       onClose();
 
       // Async update
       (async () => {
           try {
-              await worklogService.updateWorkLog(worklogid, submittedWorkLogData);
+              await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
           } catch (error) {
               console.error("Error saving worklog:", error);
           }

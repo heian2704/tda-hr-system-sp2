@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, ClipboardList, DollarSign, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, Box } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+  ClipboardList, 
+  Plus, 
+  ChevronDown, 
+  Edit, 
+  Trash2,
+  ChevronLeft, 
+  ChevronRight, 
+  Box 
+} from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { ProductService } from '@/services/ProductService';
-import { employeeService } from '@/services/employeeService';
 import { worklogService } from '@/services/worklogService';
 import { worklogData } from '@/dtos/worklog/worklogData';
 import { AddWorkLogModal } from '@/components/worklog/addworklogmodal/AddWorkLogModal';
@@ -11,7 +18,12 @@ import { toast } from 'react-hot-toast';
 import { ConfirmDeleteModal } from '@/components/worklog/delete-worklog/DeleteWorklogModal';
 import { WorklogInterface } from '@/domain/interfaces/worklog/WorklogInterface';
 import { WorklogInterfaceImpl } from '@/data/interface-implementation/worklog';
-import { GetAllWorklogUseCase } from '@/data/usecases/worklog.usecase';
+import { 
+  CreateWorklogUseCase, 
+  DeleteWorklogUseCase, 
+  GetAllWorklogUseCase, 
+  UpdateWorklogUseCase 
+} from '@/data/usecases/worklog.usecase';
 import { useGetAllWorklogs } from '@/hooks/worklog/get-all-worklog.hook';
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
@@ -19,10 +31,11 @@ import { ProductInterface } from '@/domain/interfaces/product/ProductInterface';
 import { ProductInterfaceImpl } from '@/data/interface-implementation/product';
 import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
 import { GetAllProductsUseCase } from '@/data/usecases/product.usecase';
-import { TokenedRequest } from '@/domain/models/common/header-param';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
+import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
+import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
 
 // use get all worklogs hook
 const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
@@ -32,6 +45,9 @@ const productInterface: ProductInterface = new ProductInterfaceImpl();
 const getAllWorklogUseCase = new GetAllWorklogUseCase(worklogInterface);
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 const getAllProductsUseCase = new GetAllProductsUseCase(productInterface);
+const createWorklogUseCase = new CreateWorklogUseCase(worklogInterface);
+const updateWorklogUseCase = new UpdateWorklogUseCase(worklogInterface);
+const deleteWorklogUseCase = new DeleteWorklogUseCase(worklogInterface);
 
 interface WorkLogProps {
   currentPath?: string;
@@ -41,9 +57,11 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const { worklogs, error, loading } = useGetAllWorklogs(getAllWorklogUseCase);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
-  const [workLogToDeleteDetails, setWorkLogToDeleteDetails] = useState<{ id: string } | null>(null);
-  const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<worklogData | undefined>(undefined);
+  const [deleteWorklogId, setDeleteWorklogId] = useState<{ id: string } | null>(null);
+  const [worklogId, setWorklogId] = useState<string | null>(null);
+  const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<UpdateWorklogDto | undefined>(undefined);
   const [workLogs, setWorkLogs] = useState<worklogData[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [products, setProducts] = useState<Product[]>([]); 
@@ -54,51 +72,6 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-
-  // Fetch all data on component mount
-  // useEffect(() => {
-  //   const fetchAllData = async () => {
-  //     setLoading(true);
-  //     setError(null);
-  //     try {
-  //       const [employeeData, productData, worklogData] = await Promise.all([
-  //         employeeService.getAllEmployees(),
-  //         ProductService.getAllProducts(),
-  //         worklogService.getAllWorklogs()
-  //       ]);
-
-  //       setEmployees(employeeData);
-  //       setProducts(productData);
-
-  //       // Transform worklog data to include employee and product details
-  //       const transformedWorkLogs = worklogData.map(log => {
-  //         const employee = employeeData.find(emp => emp._id === log.employeeId);
-  //         const product = productData.find(prod => prod._id === log.productId);
-          
-  //         return {
-  //           _id: log._id,
-  //           employeeId: log.employeeId,
-  //           productId: log.productId,
-  //           fullname: employee ? employee.name : 'Unknown Employee',
-  //           position: employee ? employee.position : 'Unknown Position',
-  //           productName: product ? product.name : 'Unknown Product',
-  //           quantity: log.quantity,
-  //           totalPrice: log.totalPrice,
-  //           updatedAt: log.updatedAt,
-  //         } as worklogData;
-  //       });
-
-  //       setWorkLogs(transformedWorkLogs);
-  //     } catch (err) {
-  //       setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
-  //       console.error('Failed to fetch data:', err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchAllData();
-  // }, []);
 
   useEffect(() => {
     const fetchAllWorklogs = async () => {
@@ -172,63 +145,24 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   };
 
   const handleOpenAddModal = () => {
-    setSelectedWorkLogForEdit(undefined);
     setIsAddModalOpen(true);
   };
 
   const handleOpenEditModal = (workLog: worklogData) => {
-    setSelectedWorkLogForEdit(workLog);
-    setIsAddModalOpen(true);
-  };
-
-  const handleSaveWorkLog = async (workLogData: any) => {
-    try {
-      // Refresh the worklog list to get updated data
-      const [employeeData, productData, worklogData] = await Promise.all([
-        employeeService.getAllEmployees(),
-        ProductService.getAllProducts(),
-        worklogService.getAllWorklogs()
-      ]);
-
-      // Transform worklog data to include employee and product details
-      const transformedWorkLogs = worklogData.map(log => {
-        const employee = employeeData.find(emp => emp._id === log.employeeId);
-        const product = productData.find(prod => prod._id === log.productId);
-        
-        return {
-          _id: log._id,
-          employeeId: log.employeeId,
-          productId: log.productId,
-          fullname: employee ? employee.name : 'Unknown Employee',
-          position: employee ? employee.position : 'Unknown Position',
-          productName: product ? product.name : 'Unknown Product',
-          quantity: log.quantity,
-          // totalPrice: log.totalPrice,
-          // updatedAt: log.updatedAt,
-        } as worklogData;
-      });
-
-      setWorkLogs(transformedWorkLogs);
-    } catch (error) {
-      console.error('Error refreshing work logs:', error);
-      toast.error("Failed to refresh work log list.");
-    }
+    const workLogToEdit: UpdateWorklogDto = {
+      employeeId: workLog.employeeId,
+      productId: workLog.productId,
+      quantity: workLog.quantity,
+      updatedAt: workLog.updatedAt
+    };
+    setWorklogId(workLog._id);
+    setSelectedWorkLogForEdit(workLogToEdit);
+    setIsEditModalOpen(true);
   };
 
   const handleConfirmDeleteClick = (workLog: worklogData) => {
-    setWorkLogToDeleteDetails({ id: workLog._id });
+    setDeleteWorklogId({ id: workLog._id });
     setIsDeleteConfirmModalOpen(true);
-  };
-
-  const handleExecuteDelete = async (id: string) => {
-    try {
-      await worklogService.deleteWorkLog(id);
-      setWorkLogs(prevLogs => prevLogs.filter(log => log._id !== id));
-      toast.success("Work log deleted successfully!");
-    } catch (error) {
-      console.error('Error deleting work log:', error);
-      toast.error("Failed to delete work log. Please try again.");
-    }
   };
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
@@ -381,18 +315,27 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
       <AddWorkLogModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        workLogToEdit={selectedWorkLogForEdit}
-        onSave={handleSaveWorkLog}
         employees={employees}
         products={products}
+        createWorklogUseCase={createWorklogUseCase}
+      />
+
+      <EditWorkLogModal
+        worklogid={worklogId}
+        workLogToEdit={selectedWorkLogForEdit}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        employees={employees}
+        products={products}
+        updateWorklogUseCase={updateWorklogUseCase}
       />
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteConfirmModalOpen}
         onClose={() => setIsDeleteConfirmModalOpen(false)}
-        onConfirm={handleExecuteDelete}
-        workLogId={workLogToDeleteDetails?.id || null}
+        workLogId={deleteWorklogId?.id || null}
+        deleteWorklogUseCase={deleteWorklogUseCase}
       />
     </div>
   );

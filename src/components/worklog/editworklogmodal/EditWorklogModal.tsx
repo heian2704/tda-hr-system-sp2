@@ -9,9 +9,9 @@ export const EditWorkLogModal: React.FC<EditWorkLogModalProps & { worklogid: str
     isOpen,
     onClose,
     workLogToEdit,
-    onSave,
     employees,
-    products
+    products,
+    updateWorklogUseCase
     }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const { translations } = useLanguage();
@@ -55,10 +55,10 @@ export const EditWorkLogModal: React.FC<EditWorkLogModalProps & { worklogid: str
                 <EditWorkLogForm
                     worklogid={worklogid}
                     worklogToEdit={workLogToEdit}
-                    onSave={onSave}
                     onClose={onClose}
                     employees={employees}
                     products={products}
+                    updateWorklogUseCase={updateWorklogUseCase}
                 />
             </div>
         </div>
