@@ -1,13 +1,14 @@
-import { EmployeeResponse } from "@/dtos/employee/EmployeeResponse";
-import { ProductDto } from "@/dtos/product/ProductDto";
-import { worklogUpdateDto } from "@/dtos/worklog/worklogUpdateDto";
+import { UpdateWorklogUseCase } from "@/data/usecases/worklog.usecase";
+import { Employee } from "@/domain/models/employee/get-employee.model";
+import { Product } from "@/domain/models/product/get-product.dto";
+import { UpdateWorklogDto } from "@/domain/models/worklog/update-worklog.dto";
 
 export interface EditWorkLogModalProps {
   worklogid: string;
   isOpen: boolean;
   onClose: () => void;
-  workLogToEdit?: worklogUpdateDto;
-  onSave: (workLog: worklogUpdateDto) => void;
-  employees: EmployeeResponse[];
-  products: ProductDto[];
+  workLogToEdit?: UpdateWorklogDto;
+  employees: Employee[];
+  products: Product[];
+  updateWorklogUseCase: UpdateWorklogUseCase;
 }

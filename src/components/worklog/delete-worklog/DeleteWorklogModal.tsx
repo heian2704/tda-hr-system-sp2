@@ -1,18 +1,25 @@
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DeleteWorklogUseCase } from "@/data/usecases/worklog.usecase";
+import { TokenedRequest } from "@/domain/models/common/header-param";
 import { Trash2, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (id: string) => void;
   workLogId: string | null;
+  deleteWorklogUseCase: DeleteWorklogUseCase;
 }
 
-export const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, workLogId }: ConfirmDeleteModalProps) => {
+export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUseCase }: ConfirmDeleteModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
   const modalTranslations = translations.workLogPage;
+  const token = localStorage.getItem("token");
+  const idToken = (id: string): TokenedRequest => ({
+      id,
+      token: token,
+    });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -29,6 +36,12 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, workLogId }: Co
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const handleConfirm = async () => {
+    if (!workLogId) return;
+    await deleteWorklogUseCase.execute(idToken(workLogId));
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -59,7 +72,7 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, workLogId }: Co
           <button
             onClick={() => {
               if (workLogId) {
-                onConfirm(workLogId);
+                handleConfirm();
               }
               onClose();
             }}
