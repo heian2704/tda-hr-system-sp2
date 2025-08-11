@@ -2,7 +2,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { DeleteWorklogUseCase } from "@/data/usecases/worklog.usecase";
 import { TokenedRequest } from "@/domain/models/common/header-param";
 import { Trash2, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface ConfirmDeleteModalProps {
 
 export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUseCase }: ConfirmDeleteModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [showDeletedAlert, setShowDeletedAlert] = useState(false);
   const { translations } = useLanguage();
   const modalTranslations = translations.workLogPage;
   const token = localStorage.getItem("token");
@@ -35,16 +36,39 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUs
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) return (
+    <>
+      {showDeletedAlert && (
+        <div
+          role="alert"
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out"
+        >
+          {modalTranslations?.deletedMessage || 'Deleted successfully'}
+        </div>
+      )}
+    </>
+  );
 
   const handleConfirm = async () => {
     if (!workLogId) return;
-    await deleteWorklogUseCase.execute(idToken(workLogId));
+    const result = await deleteWorklogUseCase.execute(idToken(workLogId));
+    if (result) {
+      setShowDeletedAlert(true);
+      setTimeout(() => {setShowDeletedAlert(false);}, 3000);
+    }
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {showDeletedAlert && (
+        <div
+          role="alert"
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out"
+        >
+          {modalTranslations?.deletedMessage || 'Deleted successfully'}
+        </div>
+      )}
       <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
         <button
           onClick={onClose}

@@ -18,9 +18,10 @@ interface Props {
     employees: Employee[];
     products: Product[];
     updateWorklogUseCase: UpdateWorklogUseCase;
+    setShowEditAlert?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase }) => {
+const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase, setShowEditAlert }) => {
     const [employeeId, setEmployeeId] = useState<string>(worklogToEdit?.employeeId || '');
     const [productId, setProductId] = useState<string>(worklogToEdit?.productId || '');
     const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity || 0);
@@ -48,7 +49,12 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
       // Async update
       (async () => {
           try {
-              await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
+              var result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
+              if(result)
+              {
+                setShowEditAlert(true);
+                setTimeout(() => setShowEditAlert(false), 3000);
+              }
           } catch (error) {
               console.error("Error saving worklog:", error);
           }
