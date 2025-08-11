@@ -65,6 +65,8 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [workLogs, setWorkLogs] = useState<worklogData[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [products, setProducts] = useState<Product[]>([]); 
+  const [showCreatedAlert, setShowCreatedAlert] = useState(false);
+  const [showEditAlert, setShowEditAlert] = useState(false);
 
   const { translations } = useLanguage();
   const workLogPageTranslations = translations.workLogPage;
@@ -152,8 +154,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     const workLogToEdit: UpdateWorklogDto = {
       employeeId: workLog.employeeId,
       productId: workLog.productId,
-      quantity: workLog.quantity,
-      updatedAt: workLog.updatedAt
+      quantity: workLog.quantity
     };
     setWorklogId(workLog._id);
     setSelectedWorkLogForEdit(workLogToEdit);
@@ -170,6 +171,16 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
 
   return (
     <div className="font-sans antialiased text-gray-800">
+      {showCreatedAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {workLogPageTranslations.createdSuccessfully || 'Worklog Created'}
+        </div>
+      )}
+      {showEditAlert && (                                        
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {workLogPageTranslations.updatedSuccessfully || 'Worklog Updated'}
+        </div>
+      )}
       <div className="space-y-4">
         {/* Stats Section */}
         <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
@@ -318,6 +329,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         employees={employees}
         products={products}
         createWorklogUseCase={createWorklogUseCase}
+        setShowCreatedAlert={setShowCreatedAlert}
       />
 
       <EditWorkLogModal
@@ -328,6 +340,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         employees={employees}
         products={products}
         updateWorklogUseCase={updateWorklogUseCase}
+        setShowEditAlert={setShowEditAlert}
       />
 
       {/* Delete Confirmation Modal */}

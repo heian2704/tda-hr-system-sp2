@@ -1,9 +1,7 @@
-import { EmployeePageTranslations } from '@/contexts/LanguageContext';
 import { CreateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { BearerTokenedRequest } from '@/domain/models/common/header-param';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
-import { useCreateWorklog } from '@/hooks/worklog/create-worklog.hook';
 import { ChevronDown } from 'lucide-react';
 import { use, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -14,9 +12,10 @@ interface WorkLogFormProps {
   translations: any;
   onClose: () => void;
   createWorklogUseCase: CreateWorklogUseCase;
+  setShowCreatedAlert?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase }: WorkLogFormProps) {
+export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert }: WorkLogFormProps) {
   const translation = translations.workLogPage;
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -55,9 +54,12 @@ export function WorkLogForm({ employees, products, translations, onClose, create
       quantity: quantity,
     };
 
-    console.log('Creating worklog with data:', createWorklogDto);
     const result = createWorklogUseCase.execute(useTokenRequest, createWorklogDto);
-    console.log("Worklog created successfully:", result);
+    if(result)
+    {
+      setShowCreatedAlert(true);
+      setTimeout(() => setShowCreatedAlert(false), 3000);
+    }
     onClose();
   };
 

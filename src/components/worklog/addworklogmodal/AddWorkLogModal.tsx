@@ -14,6 +14,7 @@ interface AddWorkLogModalProps {
   employees: Employee[];
   products: Product[];
   createWorklogUseCase: CreateWorklogUseCase;
+  setShowCreatedAlert: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const AddWorkLogModal = ({
@@ -21,12 +22,14 @@ export const AddWorkLogModal = ({
   onClose,
   employees,
   products,
-  createWorklogUseCase
+  createWorklogUseCase,
+  setShowCreatedAlert
 }: AddWorkLogModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
   const t = translations.workLogPage;
   const [loading, setLoading] = useState(false);
+  
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -66,6 +69,7 @@ export const AddWorkLogModal = ({
             translations={translations}
             onClose={onClose}
             createWorklogUseCase={createWorklogUseCase}
+            setShowCreatedAlert={setShowCreatedAlert}
           />
       </div>
     </div>

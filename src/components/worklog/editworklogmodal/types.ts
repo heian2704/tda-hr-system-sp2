@@ -11,4 +11,5 @@ export interface EditWorkLogModalProps {
   employees: Employee[];
   products: Product[];
   updateWorklogUseCase: UpdateWorklogUseCase;
+  setShowEditAlert?: React.Dispatch<React.SetStateAction<boolean>>;
 }
