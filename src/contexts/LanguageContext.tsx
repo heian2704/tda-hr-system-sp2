@@ -114,6 +114,7 @@ interface PayrollPageTranslations {
   sortBy: string;
   date: string;
   fullNameColumn: string;
+  roleColumn: string;
   productRateColumn: string;
   totalQuantityColumn: string;
   totalSalaryColumn: string;
@@ -135,6 +136,7 @@ interface PayrollPageTranslations {
   saveButton: string;
   invalidAmount: string;
   // Period selection translations
+  periodColumn: string;
   periodTypeLabel: string;
   periodTypeDay: string;
   periodTypeWeek: string;
@@ -197,6 +199,7 @@ interface ExpenseIncomePageTranslations {
   confirmDeleteMessage2: string;
   deleteButtonConfirm: string;
   // NEW: Period selection translations
+  periodColumn:string;
   periodTypeLabel: string;
   periodTypeDay: string;
   periodTypeWeek: string;
@@ -373,6 +376,7 @@ const allAppTranslations: AllTranslationsCollection = {
       sortBy: "Sort by:",
       date: "Date",
       fullNameColumn: "Full Name",
+      roleColumn: "Role",
       productRateColumn: "Product Rate",
       totalQuantityColumn: "Total Quantity",
       totalSalaryColumn: "Total Salary",
@@ -394,6 +398,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveButton: "Save",
       invalidAmount: "Please enter a valid positive amount.",
       // Period selection translations
+      periodColumn: "Date",
       periodTypeLabel: "Select Period:",
       periodTypeDay: "Day",
       periodTypeWeek: "Week",
@@ -455,6 +460,7 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage2: "? This action cannot be undone.",
       deleteButtonConfirm: "Delete",
       // NEW: Period selection translations
+      periodColumn: "Date",
       periodTypeLabel: "Select Period:",
       periodTypeDay: "Day",
       periodTypeWeek: "Week",
@@ -593,6 +599,7 @@ const allAppTranslations: AllTranslationsCollection = {
       sortBy: "စီစစ်ရန်:",
       date: "နေ့စွဲ",
       fullNameColumn: "အမည်အပြည့်အစုံ",
+      roleColumn: "ရာထူး",
       productRateColumn: "ထုတ်ကုန်နှုန်း",
       totalQuantityColumn: "စုစုပေါင်းပမာဏ",
       totalSalaryColumn: "စုစုပေါင်းလစာ",
@@ -614,6 +621,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveButton: "သိမ်းဆည်းရန်",
       invalidAmount: "မှန်ကန်သော ပမာဏကို ထည့်သွင်းပါ။",
       // Period selection translations
+      periodColumn: "နေ့စွဲ",
       periodTypeLabel: "ကာလရွေးချယ်ပါ:",
       periodTypeDay: "နေ့စဉ်",
       periodTypeWeek: "အပတ်စဉ်",
@@ -675,6 +683,7 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage2: " ဤလုပ်ဆောင်ချက်ကို ပြန်ဖျက်၍မရပါ။",
       deleteButtonConfirm: "ဖျက်ရန်",
       // NEW: Period selection translations
+      periodColumn: "နေ့စွဲ",
       periodTypeLabel: "ကာလရွေးချယ်ပါ:",
       periodTypeDay: "နေ့စဉ်",
       periodTypeWeek: "အပတ်စဉ်",

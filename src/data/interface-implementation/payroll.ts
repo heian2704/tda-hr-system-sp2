@@ -3,9 +3,9 @@ import { Payroll } from "@/domain/models/payroll/get-payroll.dto";
 import { apiGetRequestsHandler } from "@/services/network/api";
 
 export class PayrollInterfaceImpl implements PayrollInterface {
-    async getAllPayrolls(employeeId?: string, month?: string, year?: string): Promise<Payroll[]> {
+    async getAllPayrolls(query?: string): Promise<Payroll[]> {
         return apiGetRequestsHandler<Payroll[]>({
-            endpoint: `/payroll?employeeId=${employeeId}&month=${month}&year=${year}`
+            endpoint: `/payroll${query ? `?${query}` : ''}`
         });
     }
 
