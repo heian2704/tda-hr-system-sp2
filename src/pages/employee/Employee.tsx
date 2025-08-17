@@ -9,13 +9,28 @@ import EditEmployeeModal from "@/components/EditEmployeeModal/EditEmployeeModal.
 import { EmpStatus } from '@/constants/employee-status.enum';
 import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
 import StatusChanger from '@/components/StatusChangerModal/StatusChangerModal';
+import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { useGetAllEmployees } from '@/hooks/employee/get-all-employee.hook';
+import type { Employee } from '@/domain/models/employee/get-employee.model';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 
 interface EmployeeProps {
   currentPath?: string;
   searchQuery?: string;
+  getAllEmployeeUseCase: GetAllEmployeeUseCase;
 }
 
-const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
+const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+const defaultGetAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+
+const Employee = ({ 
+   currentPath,
+   searchQuery = "", 
+   getAllEmployeeUseCase = defaultGetAllEmployeeUseCase }: EmployeeProps) => {
+  const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
+  console.log("Employees:  ", employees);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -23,10 +38,7 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [employeeToDeleteDetails, setEmployeeToDeleteDetails] = useState<{ id: string, name: string } | null>(null);
   const [selectedEmployeeForAdd, setSelectedEmployeeForAdd] = useState<CreateEmployeeDto | undefined>(undefined);
-  const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<EmployeeResponse | undefined>(undefined);
-  const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<Employee | undefined>(undefined);
   const { language, translations } = useLanguage();
   const employeePageTranslations = translations.employeePage;
 
@@ -34,24 +46,6 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await employeeService.getAllEmployees();
-      setEmployees(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching employees');
-      console.error('Failed to fetch employees:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredEmployees = employees.filter(emp =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,12 +85,12 @@ const Employee = ({ currentPath, searchQuery = "" }: EmployeeProps) => {
     setIsAddModalOpen(true);
   };
 
-  const handleOpenEditModal = (employee: EmployeeResponse) => {
+  const handleOpenEditModal = (employee: Employee) => {
     setSelectedEmployeeForEdit(employee);
     setIsEditModalOpen(true);
   };
 
-  const handleConfirmDeleteClick = (employee: EmployeeResponse) => {
+  const handleConfirmDeleteClick = (employee: Employee) => {
     setEmployeeToDeleteDetails({ id: employee._id, name: employee.name });
     setIsDeleteConfirmModalOpen(true);
   };
