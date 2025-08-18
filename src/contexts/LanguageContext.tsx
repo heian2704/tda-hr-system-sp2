@@ -163,11 +163,9 @@ interface ExpenseIncomePageTranslations {
   amount: string; // Used for "Sort by: Amount"
   addNewIncome: string;
   addNewExpense: string;
-  incomeNameColumn: string;
-  expenseNameColumn: string;
-  amountColumn: string;
-  clientColumn: string;
-  paidToColumn: string; // Changed from categoryColumn to paidToColumn
+  incomeTitleColumn: string;
+  expenseTitleColumn: string;
+  amountColumn: string; // Changed from categoryColumn to paidToColumn
   dateColumn: string;
   noteColumn: string;
   actionColumn: string;
@@ -194,6 +192,7 @@ interface ExpenseIncomePageTranslations {
   saveChangesButton: string;
   optional: string;
   invalidAmount: string;
+  deleteMessage: string;
   confirmDeleteTitle: string;
   confirmDeleteMessage1: string;
   confirmDeleteMessage2: string;
@@ -424,11 +423,9 @@ const allAppTranslations: AllTranslationsCollection = {
       amount: "Amount", // for "Sort by: Amount"
       addNewIncome: "Add New Income",
       addNewExpense: "Add New Expense",
-      incomeNameColumn: "Income Name",
-      expenseNameColumn: "Expense Name",
+      incomeTitleColumn: "Income Title",
+      expenseTitleColumn: "Expense Title",
       amountColumn: "Amount",
-      clientColumn: "Client",
-      paidToColumn: "Paid to", // Changed from Category to Paid to
       dateColumn: "Date",
       noteColumn: "Note",
       actionColumn: "Action",
@@ -455,6 +452,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveChangesButton: "Save Changes",
       optional: "Optional",
       invalidAmount: "Please enter a valid positive amount.",
+      deleteMessage: "Deleted successfully.",
       confirmDeleteTitle: "Confirm Deletion",
       confirmDeleteMessage1: "Are you sure you want to delete",
       confirmDeleteMessage2: "? This action cannot be undone.",
@@ -647,11 +645,9 @@ const allAppTranslations: AllTranslationsCollection = {
       amount: "ပမာဏ", // for "Sort by: Amount"
       addNewIncome: "ဝင်ငွေအသစ်ထည့်ရန်",
       addNewExpense: "အသုံးစရိတ်အသစ်ထည့်ရန်",
-      incomeNameColumn: "ဝင်ငွေအမည်",
-      expenseNameColumn: "အသုံးစရိတ်အမည်",
+      incomeTitleColumn: "ဝင်ငွေခေါင်းစဥ်",
+      expenseTitleColumn: "အသုံးစရိတ်ခေါင်းစဥ်",
       amountColumn: "ပမာဏ",
-      clientColumn: "ဖောက်သည်",
-      paidToColumn: "ပေးချေသူ", // Changed from Category to Paid to
       dateColumn: "နေ့စွဲ",
       noteColumn: "မှတ်စု",
       actionColumn: "လုပ်ဆောင်ချက်",
@@ -678,6 +674,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       optional: "ရွေးချယ်နိုင်သည်",
       invalidAmount: "မှန်ကန်သော ပမာဏကို ထည့်သွင်းပါ။",
+      deleteMessage: "အောင်မြင်စွာ ဖျက်လိုက်ပါပြီ။",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "ဖျက်ရန်သေချာပါသလား",
       confirmDeleteMessage2: " ဤလုပ်ဆောင်ချက်ကို ပြန်ဖျက်၍မရပါ။",
