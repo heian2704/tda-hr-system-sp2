@@ -29,8 +29,6 @@ const Employee = ({
    searchQuery = "", 
    getAllEmployeeUseCase = defaultGetAllEmployeeUseCase }: EmployeeProps) => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
-  console.log("Employees:  ", employees);
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

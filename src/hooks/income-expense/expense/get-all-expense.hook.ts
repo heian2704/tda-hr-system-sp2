@@ -1,23 +1,30 @@
 import { GetAllExpenseUseCase } from "@/data/usecases/expense.usecase";
 import { Expense } from "@/domain/models/income-expense/expense/get-expense.dto";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+// Mirrors useGetAllEmployees: auto-fetches on mount and returns a simple { data, loading, error } shape
 export const useGetAllExpense = (useCase: GetAllExpenseUseCase) => {
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
 
-    const getAllExpenses = async () => {
-        setLoading(true);
-        try {
-            const result = await useCase.execute();
-            setExpenses(result);
-        } catch (error) {
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        let isMounted = true;
+        useCase
+            .execute()
+            .then((result) => {
+                if (isMounted) setExpenses(result);
+            })
+            .catch((err: any) => {
+                if (isMounted) setError(err?.message ?? String(err));
+            })
+            .finally(() => {
+                if (isMounted) setLoading(false);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [useCase]);
 
-    return { expenses, error, loading, getAllExpenses };
-}
+    return { expenses, loading, error };
+};
