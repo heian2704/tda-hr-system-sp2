@@ -1,7 +1,6 @@
 import { CreateExpenseUseCase } from "@/data/usecases/expense.usecase";
 import { CreateIncomeUseCase } from "@/data/usecases/income.usecase";
 import { BearerTokenedRequest } from "@/domain/models/common/header-param";
-import { Income } from "@/domain/models/income-expense/income/get-income.dto";
 import { useState } from "react";
 
 interface EntryFormProps {
