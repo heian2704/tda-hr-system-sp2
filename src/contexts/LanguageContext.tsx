@@ -44,6 +44,9 @@ export interface EmployeePageTranslations {
   cancelButton: string;
   addButton: string;
   // --- NEW EDIT/DELETE MODAL TRANSLATIONS ---
+  createSuccessfully: ReactNode;
+  editSuccessfully: ReactNode;
+  deleteSuccessfully: ReactNode;
   editEmployeeTitle: ReactNode;
   saveChangesButton: ReactNode;
   confirmDeleteTitle: ReactNode;
@@ -55,6 +58,9 @@ export interface EmployeePageTranslations {
 // UPDATED: Define specific types for Work Log page translation structure
 interface WorkLogPageTranslations {
   [x: string]: string;
+  createdSuccessfully: string;
+  updatedSuccessfully: string;
+  deleteSuccessfully: string;
   totalWorkLogs: string;
   totalCompletedWorklogs: string;
   totalQuantityProduced: string;
@@ -183,9 +189,9 @@ interface ExpenseIncomePageTranslations {
   editIncomeTitle: string;
   editExpenseTitle: string;
   incomeNamePlaceholder: string;
-  expenseNamePlaceholder: string;
+  expenseTitlePlaceholder: string;
   clientPlaceholder: string;
-  paidToPlaceholder: string; // Changed from categoryPlaceholder to paidToPlaceholder
+  amountPlaceholder: string;
   notePlaceholder: string;
   cancelButton: string;
   addButton: string;
@@ -197,6 +203,9 @@ interface ExpenseIncomePageTranslations {
   confirmDeleteMessage1: string;
   confirmDeleteMessage2: string;
   deleteButtonConfirm: string;
+  createSuccessfully: string;
+  editSuccessfully: string;
+  deleteSuccessfully: string;
   // NEW: Period selection translations
   periodColumn:string;
   periodTypeLabel: string;
@@ -308,6 +317,9 @@ const allAppTranslations: AllTranslationsCollection = {
       cancelButton: "Cancel",
       addButton: "Add",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
+      createSuccessfully: "Employee created successfully.",
+      editSuccessfully: "Employee updated successfully.",
+      deleteSuccessfully: "Employee deleted successfully.",
       editEmployeeTitle: "Edit Employee",
       saveChangesButton: "Save Changes",
       confirmDeleteTitle: "Confirm Deletion",
@@ -317,6 +329,9 @@ const allAppTranslations: AllTranslationsCollection = {
     },
     // UPDATED: Work Log Page Translations (Added 'all' key)
     workLogPage: {
+      createdSuccessfully: "Worklog Created",
+      updatedSuccessfully: "Worklog Updated",
+      deleteSuccessfully: "Worklog Deleted",
       totalWorkLogs: "Total Work Logs",
       totalCompletedWorklogs: "Total Completed Worklogs",
       totalQuantityProduced: "Total Quantity Produced",
@@ -443,9 +458,9 @@ const allAppTranslations: AllTranslationsCollection = {
       editIncomeTitle: "Edit Income",
       editExpenseTitle: "Edit Expense",
       incomeNamePlaceholder: "Income Name",
-      expenseNamePlaceholder: "Expense Name",
+      expenseTitlePlaceholder: "Expense Title",
       clientPlaceholder: "Client",
-      paidToPlaceholder: "Paid to", // Changed from Category to Paid to
+      amountPlaceholder: "Amount",
       notePlaceholder: "Additional Note...",
       cancelButton: "Cancel",
       addButton: "Add",
@@ -457,6 +472,9 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage1: "Are you sure you want to delete",
       confirmDeleteMessage2: "? This action cannot be undone.",
       deleteButtonConfirm: "Delete",
+      createSuccessfully: "Entry created successfully.",
+      editSuccessfully: "Entry updated successfully.",
+      deleteSuccessfully: "Entry deleted successfully.",
       // NEW: Period selection translations
       periodColumn: "Date",
       periodTypeLabel: "Select Period:",
@@ -530,6 +548,9 @@ const allAppTranslations: AllTranslationsCollection = {
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
+      createSuccessfully: "ဝန်ထမ်းအသစ်ဖန်တီးပြီးပါပြီ။",
+      editSuccessfully: "ဝန်ထမ်းပြင်ဆင်ပြီးပါပြီ။",
+      deleteSuccessfully: "ဝန်ထမ်းဖျက်ပြီးပါပြီ။",
       editEmployeeTitle: "ဝန်ထမ်းပြင်ဆင်ရန်",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
@@ -539,6 +560,9 @@ const allAppTranslations: AllTranslationsCollection = {
     },
     // UPDATED: Work Log Page Translations (Added 'all' key)
     workLogPage: {
+      createdSuccessfully: "အလုပ်မှတ်တမ်းအသစ်ထည့်ပြီးပါပြီ",
+      updatedSuccessfully: "အလုပ်မှတ်တမ်းပြင်ဆင်ပြီးပါပြီ",
+      deleteSuccessfully: "အလုပ်မှတ်တမ်းဖျက်ပြီးပါပြီ",
       totalWorkLogs: "စုစုပေါင်းအလုပ်မှတ်တမ်းများ",
       totalCompletedWorklogs: "ပြီးစီးလုပ်ငန်းမှတ်တမ်းအရေအတွက်",
       totalQuantityProduced: "စုစုပေါင်းထုတ်လုပ်မှုပမာဏ",
@@ -665,9 +689,9 @@ const allAppTranslations: AllTranslationsCollection = {
       editIncomeTitle: "ဝင်ငွေပြင်ဆင်ရန်",
       editExpenseTitle: "အသုံးစရိတ်ပြင်ဆင်ရန်",
       incomeNamePlaceholder: "ဝင်ငွေအမည်",
-      expenseNamePlaceholder: "အသုံးစရိတ်အမည်",
+      expenseTitlePlaceholder: "အသုံးစရိတ်ခေါင်းစဥ်",
       clientPlaceholder: "ဖောက်သည်",
-      paidToPlaceholder: "ပေးချေသူ", // Changed from Category to Paid to
+      amountPlaceholder: "ပမာဏ",
       notePlaceholder: "အခြားမှတ်စုများ...",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
@@ -679,6 +703,9 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage1: "ဖျက်ရန်သေချာပါသလား",
       confirmDeleteMessage2: " ဤလုပ်ဆောင်ချက်ကို ပြန်ဖျက်၍မရပါ။",
       deleteButtonConfirm: "ဖျက်ရန်",
+      createSuccessfully: "စာရင်းအသစ်ဖန်တီးပြီးပါပြီ။",
+      editSuccessfully: "စာရင်းပြင်ဆင်ပြီးပါပြီ။",
+      deleteSuccessfully: "စာရင်းဖျက်ပြီးပါပြီ။",
       // NEW: Period selection translations
       periodColumn: "နေ့စွဲ",
       periodTypeLabel: "ကာလရွေးချယ်ပါ:",

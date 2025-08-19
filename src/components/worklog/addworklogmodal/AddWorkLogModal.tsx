@@ -2,11 +2,9 @@ import { useRef, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { WorkLogForm } from './WorkLogForm';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { worklogData } from '@/dtos/worklog/worklogData';
 import { CreateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
-import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 
 interface AddWorkLogModalProps {
   isOpen: boolean;

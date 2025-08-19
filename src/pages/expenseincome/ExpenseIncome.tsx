@@ -1,101 +1,30 @@
 // src/pages/ExpenseIncome.tsx
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { DollarSign, BarChart, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { BarChart, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
 
 // Import the new specific modals
 import { ExpenseInterfaceImpl } from '@/data/interface-implementation/expense';
 import { ExpenseInterface } from '@/domain/interfaces/income-expense/expense/ExpenseInterface';
-import { DeleteExpenseUseCase, GetAllExpenseUseCase } from '@/data/usecases/expense.usecase';
+import { CreateExpenseUseCase, DeleteExpenseUseCase, GetAllExpenseUseCase } from '@/data/usecases/expense.usecase';
 import { Expense } from '@/domain/models/income-expense/expense/get-expense.dto';
 import { IncomeInterfaceImpl } from '@/data/interface-implementation/income';
 import { IncomeInterface } from '@/domain/interfaces/income-expense/income/IncomeInterface';
-import { DeleteIncomeUseCase, GetAllIncomesUseCase } from '@/data/usecases/income.usecase';
+import { CreateIncomeUseCase, DeleteIncomeUseCase, GetAllIncomesUseCase } from '@/data/usecases/income.usecase';
 import { Income } from '@/domain/models/income-expense/income/get-income.dto';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import ConfirmDeleteModal from '@/components/income-expense/ConfirmDeleteModal/ConfirmDeleteEntryModal';
-
-// --- Confirm Delete Modal Component (Re-used/Adapted) ---
-interface ConfirmDeleteEntryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (id: string, type: 'income' | 'expense') => void;
-  entryId: string | null;
-  entryName: string;
-  type: 'income' | 'expense';
-}
-
-const ConfirmDeleteEntryModal = ({ isOpen, onClose, onConfirm, entryId, entryName, type }: ConfirmDeleteEntryModalProps) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const { translations } = useLanguage();
-  const modalTranslations = translations.expenseIncomePage;
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-          aria-label="Close"
-        >
-          <X size={24} />
-        </button>
-
-        <Trash2 className="mx-auto text-red-500 w-16 h-16 mb-4" />
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          {modalTranslations.confirmDeleteTitle}
-        </h2>
-        <p className="text-gray-600 mb-6">
-          {modalTranslations.confirmDeleteMessage1} <span className="font-semibold text-red-600">{entryName}</span> {modalTranslations.confirmDeleteMessage2}
-        </p>
-
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-          >
-            {modalTranslations.cancelButton}
-          </button>
-          <button
-            onClick={() => {
-              if (entryId) {
-                console.log(`[UI-ONLY] Confirming deletion of ${type} entry ID: ${entryId} (Name: ${entryName})`);
-                onConfirm(entryId, type);
-              }
-              onClose();
-            }}
-            className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-          >
-            {modalTranslations.deleteButtonConfirm}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import AddEntryModal from '@/components/income-expense/AddModal/AddEntryModal';
+import { set } from 'date-fns';
 
 const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
 const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
 
 const getAllExpenseUseCase = new GetAllExpenseUseCase(expenseInterface);
 const getAllIncomeUseCase = new GetAllIncomesUseCase(incomeInterface);
+const createExpenseUseCase = new CreateExpenseUseCase(expenseInterface);
+const createIncomeUseCase = new CreateIncomeUseCase(incomeInterface);
 const deleteExpenseUseCase = new DeleteExpenseUseCase(expenseInterface);
 const deleteIncomeUseCase = new DeleteIncomeUseCase(incomeInterface);
 
@@ -109,10 +38,13 @@ const ExpenseIncome = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [entryToDeleteDetails, setEntryToDeleteDetails] = useState<{ id: string; name: string; type: 'income' | 'expense' } | null>(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
-  const [isAddIncomeModalOpen, setIsAddIncomeModalOpen] = useState(false); // Specific income modal
-  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false); // Specific expense modal
-  const [selectedIncomeEntryForEdit, setSelectedIncomeEntryForEdit] = useState<Income | null>(null); // Specific income edit
-  const [selectedExpenseEntryForEdit, setSelectedExpenseEntryForEdit] = useState<Expense | null>(null); // Specific expense edit
+  const [isAddEntryModalOpen, setIsAddEntryModalOpen] = useState(false);
+  const [selectedEntryForEdit, setSelectedEntryForEdit] = useState<Income | Expense | null>(null);
+  const [showCreatedAlert, setShowCreatedAlert] = useState(false);
+  const [showEditedAlert, setShowEditedAlert] = useState(false);
+  const [showDeletedAlert, setShowDeletedAlert] = useState(false);
+  const [selectedIncomeEntryForEdit, setSelectedIncomeEntryForEdit] = useState<Income | null>(null);
+  const [selectedExpenseEntryForEdit, setSelectedExpenseEntryForEdit] = useState<Expense | null>(null);
 
   // NEW: Period selection states
   const [periodType, setPeriodType] = useState<'month' | 'week' | 'day' | 'custom'>('month');
@@ -188,25 +120,13 @@ const ExpenseIncome = () => {
     setCurrentPage(page);
   };
 
-  // Handlers for specific modals
   const handleOpenAddModal = () => {
-    if (activeTab === 'income') {
-      setSelectedIncomeEntryForEdit(null);
-      setIsAddIncomeModalOpen(true);
-    } else {
-      setSelectedExpenseEntryForEdit(null);
-      setIsAddExpenseModalOpen(true);
-    }
+    setIsAddEntryModalOpen(true);
   };
 
   const handleOpenEditModal = (entry: Income | Expense) => {
-    if (activeTab === 'income') {
-      setSelectedIncomeEntryForEdit(entry as Income);
-      setIsAddIncomeModalOpen(true);
-    } else {
-      setSelectedExpenseEntryForEdit(entry as Expense);
-      setIsAddExpenseModalOpen(true);
-    }
+    setSelectedEntryForEdit(entry);
+    setIsAddEntryModalOpen(true);
   };
 
   const handleConfirmDeleteClick = (entry: Income | Expense) => {
@@ -216,6 +136,21 @@ const ExpenseIncome = () => {
 
   return (
     <div className="font-sans antialiased text-gray-800">
+      {showCreatedAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {pageTranslations.createSuccessfully || '{entryType} Created'}
+        </div>
+      )}
+      {showEditedAlert && (                                        
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {pageTranslations.editSuccessfully || '{entryType} Updated'}
+        </div>
+      )}
+      {showDeletedAlert && (
+        <div className="fixed top-34 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {pageTranslations.deleteSuccessfully || '{entryType} Deleted'}
+        </div>
+      )}
       <div className="space-y-4">
         {/* Stats Section */}
         <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
@@ -442,6 +377,14 @@ const ExpenseIncome = () => {
         entryTitle={entryToDeleteDetails?.name || ''}
         entryType={entryToDeleteDetails?.type || 'income'}
         deleteUseCase={activeTab === 'income' ? deleteIncomeUseCase : deleteExpenseUseCase}
+      />
+
+      <AddEntryModal
+        isOpen={isAddEntryModalOpen}
+        onClose={() => setIsAddEntryModalOpen(false)}
+        entryType={activeTab}
+        useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
+        setShowCreatedAlert={setShowCreatedAlert}
       />
     </div>
   );
