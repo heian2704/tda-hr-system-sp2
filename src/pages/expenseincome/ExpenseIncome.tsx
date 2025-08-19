@@ -7,24 +7,30 @@ import { useSearchParams } from 'react-router-dom';
 // Import the new specific modals
 import { ExpenseInterfaceImpl } from '@/data/interface-implementation/expense';
 import { ExpenseInterface } from '@/domain/interfaces/income-expense/expense/ExpenseInterface';
-import { CreateExpenseUseCase, DeleteExpenseUseCase, GetAllExpenseUseCase } from '@/data/usecases/expense.usecase';
+import { CreateExpenseUseCase, DeleteExpenseUseCase, GetAllExpenseUseCase, GetExpenseByIdUseCase, UpdateExpenseUseCase } from '@/data/usecases/expense.usecase';
 import { Expense } from '@/domain/models/income-expense/expense/get-expense.dto';
 import { IncomeInterfaceImpl } from '@/data/interface-implementation/income';
 import { IncomeInterface } from '@/domain/interfaces/income-expense/income/IncomeInterface';
-import { CreateIncomeUseCase, DeleteIncomeUseCase, GetAllIncomesUseCase } from '@/data/usecases/income.usecase';
+import { CreateIncomeUseCase, DeleteIncomeUseCase, GetAllIncomesUseCase, GetIncomeByIdUseCase, UpdateIncomeUseCase } from '@/data/usecases/income.usecase';
 import { Income } from '@/domain/models/income-expense/income/get-income.dto';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import ConfirmDeleteModal from '@/components/income-expense/ConfirmDeleteModal/ConfirmDeleteEntryModal';
-import AddEntryModal from '@/components/income-expense/AddModal/AddEntryModal';
-import { set } from 'date-fns';
+import AddEntryModal from '@/components/income-expense/AddEntryModal/AddEntryModal';
+import { EditEntryModal } from '@/components/income-expense/EditEntryModal/EditEntryModal';
+import { UpdateIncomeDto } from '@/domain/models/income-expense/income/update-income.dto';
+import { UpdateExpenseDto } from '@/domain/models/income-expense/expense/update-expense.dto';
 
 const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
 const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
 
 const getAllExpenseUseCase = new GetAllExpenseUseCase(expenseInterface);
 const getAllIncomeUseCase = new GetAllIncomesUseCase(incomeInterface);
+const getExpenseByIdUseCase = new GetExpenseByIdUseCase(expenseInterface);
+const getIncomeByIdUseCase = new GetIncomeByIdUseCase(incomeInterface);
 const createExpenseUseCase = new CreateExpenseUseCase(expenseInterface);
 const createIncomeUseCase = new CreateIncomeUseCase(incomeInterface);
+const updateExpenseUseCase = new UpdateExpenseUseCase(expenseInterface);
+const updateIncomeUseCase = new UpdateIncomeUseCase(incomeInterface);
 const deleteExpenseUseCase = new DeleteExpenseUseCase(expenseInterface);
 const deleteIncomeUseCase = new DeleteIncomeUseCase(incomeInterface);
 
@@ -39,6 +45,7 @@ const ExpenseIncome = () => {
   const [entryToDeleteDetails, setEntryToDeleteDetails] = useState<{ id: string; name: string; type: 'income' | 'expense' } | null>(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [isAddEntryModalOpen, setIsAddEntryModalOpen] = useState(false);
+  const [isEditEntryModalOpen, setIsEditEntryModalOpen] = useState(false);
   const [selectedEntryForEdit, setSelectedEntryForEdit] = useState<Income | Expense | null>(null);
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditedAlert, setShowEditedAlert] = useState(false);
@@ -57,25 +64,26 @@ const ExpenseIncome = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
+  
 
   useEffect(() => {
     const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const expensesResp = await getAllExpenseUseCase.execute();
-      const incomesResp = await getAllIncomeUseCase.execute();
-      setExpenses(Array.isArray(expensesResp) ? expensesResp : []);
-      setIncomes(Array.isArray(incomesResp) ? incomesResp : []);
-    } catch (e) {
-      console.error('Failed to load income/expense:', e);
-      setExpenses([]);
-      setIncomes([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  loadData();
-}, [getAllExpenseUseCase, getAllIncomeUseCase]);
+      setIsLoading(true);
+      try {
+        const expensesResp = await getAllExpenseUseCase.execute();
+        const incomesResp = await getAllIncomeUseCase.execute();
+        setExpenses(Array.isArray(expensesResp) ? expensesResp : []);
+        setIncomes(Array.isArray(incomesResp) ? incomesResp : []);
+      } catch (e) {
+        console.error("Failed to load income/expense:", e);
+        setExpenses([]);
+        setIncomes([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Calculate totals based on date-filtered entries (before search query)
   const totalIncome = incomes.reduce((sum, entry) => sum + entry.amount, 0);
@@ -120,13 +128,32 @@ const ExpenseIncome = () => {
     setCurrentPage(page);
   };
 
+  const refetchExpenses = async () => {
+    try {
+      const data = await getExpenseByIdUseCase.execute(selectedEntryForEdit._id);
+      setExpenses(expenses.map(expense => expense._id === data._id ? data : expense));
+      //loadData();
+    } catch (e) {
+      console.error('Refetch expenses failed', e);
+    }
+  };
+  const refetchIncomes = async () => {
+    try {
+      const data = await getIncomeByIdUseCase.execute(selectedEntryForEdit._id);
+      setIncomes(incomes.map(income => income._id === data._id ? data : income));
+      //loadData();
+    } catch (e) {
+      console.error('Refetch incomes failed', e);
+    }
+  };
+
   const handleOpenAddModal = () => {
     setIsAddEntryModalOpen(true);
   };
 
-  const handleOpenEditModal = (entry: Income | Expense) => {
+  const handleOpenEditModal = (entry: Expense | Income) => {
     setSelectedEntryForEdit(entry);
-    setIsAddEntryModalOpen(true);
+    setIsEditEntryModalOpen(true);
   };
 
   const handleConfirmDeleteClick = (entry: Income | Expense) => {
@@ -385,6 +412,18 @@ const ExpenseIncome = () => {
         entryType={activeTab}
         useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
+      />
+
+      <EditEntryModal
+        isOpen={isEditEntryModalOpen}
+        onClose={() => setIsEditEntryModalOpen(false)}
+        entryId={selectedEntryForEdit?._id || null}
+        entry={selectedEntryForEdit || null}
+        entryType={activeTab}
+        useCase={activeTab === 'income' ? updateIncomeUseCase : updateExpenseUseCase}
+        showEditAlert={setShowEditedAlert}
+        translations={pageTranslations}
+        onUpdated={activeTab === 'expense' ? refetchExpenses() : refetchIncomes()}
       />
     </div>
   );
