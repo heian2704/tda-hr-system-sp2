@@ -9,14 +9,16 @@ interface ConfirmDeleteModalProps {
   onClose: () => void;
   workLogId: string | null;
   deleteWorklogUseCase: DeleteWorklogUseCase;
+  onUpdate: any;
 }
 
-export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUseCase }: ConfirmDeleteModalProps) => {
+export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUseCase, onUpdate }: ConfirmDeleteModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
   const { translations } = useLanguage();
   const modalTranslations = translations.workLogPage;
   const token = localStorage.getItem("token");
+  const [submitting, setSubmitting] = useState(false);
   const idToken = (id: string): TokenedRequest => ({
       id,
       token: token,
@@ -51,11 +53,20 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUs
 
   const handleConfirm = async () => {
     if (!workLogId) return;
-    const result = await deleteWorklogUseCase.execute(idToken(workLogId));
-    if (result) {
-      setShowDeletedAlert(true);
-      setTimeout(() => {setShowDeletedAlert(false);}, 3000);
+    if (submitting) return;
+    try {
+      setSubmitting(true);
+      const result = await deleteWorklogUseCase.execute(idToken(workLogId));
+      if (result) {
+        setShowDeletedAlert(true);
+      }
+    } catch (error) {
+      console.error('Error deleting work log:', error);
+    } finally {
+      setSubmitting(false);
     }
+    setTimeout(() => {setShowDeletedAlert(false);}, 3000);
+    onUpdate();
     onClose();
   };
 
@@ -89,6 +100,7 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUs
         <div className="flex justify-center gap-3">
           <button
             onClick={onClose}
+            disabled={submitting}
             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
           >
             {modalTranslations.cancelButton}
@@ -100,9 +112,10 @@ export const ConfirmDeleteModal = ({ isOpen, onClose, workLogId, deleteWorklogUs
               }
               onClose();
             }}
+            disabled={submitting}
             className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
-            {modalTranslations.deleteButton}
+            {submitting ? modalTranslations.deleting : modalTranslations.deleteButton}
           </button>
         </div>
       </div>

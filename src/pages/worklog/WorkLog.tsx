@@ -11,10 +11,8 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { worklogService } from '@/services/worklogService';
 import { worklogData } from '@/dtos/worklog/worklogData';
 import { AddWorkLogModal } from '@/components/worklog/addworklogmodal/AddWorkLogModal';
-import { toast } from 'react-hot-toast';
 import { ConfirmDeleteModal } from '@/components/worklog/delete-worklog/DeleteWorklogModal';
 import { WorklogInterface } from '@/domain/interfaces/worklog/WorklogInterface';
 import { WorklogInterfaceImpl } from '@/data/interface-implementation/worklog';
@@ -74,6 +72,45 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
+  const refetchWorklogs = async () => {
+    try {
+      // fetch latest worklogs
+      const freshWorklogs = await getAllWorklogUseCase.execute();
+      if (!Array.isArray(freshWorklogs) || freshWorklogs.length === 0) {
+        setWorkLogs([]);
+        return;
+      }
+
+      // ensure we have employees & products
+      const [employeesResp, productsResp] = await Promise.all([
+        getAllEmployeeUseCase.execute(),
+        getAllProductsUseCase.execute()
+      ]);
+
+      const fullWorklogInfoList = (freshWorklogs || []).map(log => {
+        const employee = Array.isArray(employeesResp) ? employeesResp.find((emp: Employee) => emp._id === log.employeeId) : undefined;
+        const product = Array.isArray(productsResp) ? productsResp.find((prod: Product) => prod._id === log.productId) : undefined;
+
+        return {
+          _id: log._id,
+          employeeId: log.employeeId,
+          productId: log.productId,
+          fullname: employee ? employee.name : 'Unknown Employee',
+          position: employee ? employee.position : 'Unknown Position',
+          productName: product ? product.name : 'Unknown Product',
+          quantity: log.quantity,
+          totalPrice: log.totalPrice,
+          updatedAt: log.updatedAt,
+        } as worklogData;
+      });
+
+      setEmployees(Array.isArray(employeesResp) ? employeesResp : []);
+      setProducts(Array.isArray(productsResp) ? productsResp : []);
+      setWorkLogs(fullWorklogInfoList);
+    } catch (err) {
+      console.error('Refetch worklogs failed:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchAllWorklogs = async () => {
@@ -250,37 +287,37 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
               </thead>
               <tbody>
                 {currentWorkLogs.map(log => (
-                  <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.position}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.productName}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
-                    {/* <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
-                    <td className="py-3 px-4 text-gray-700">{new Date(log.updatedAt).toLocaleDateString()}</td> */}
-                    {/* NEW: Dropdown for Status in each table row */}
-                    {/* <td className="py-3 px-4 text-left">
-                      
-                    </td> */}
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEditModal(log)}
-                          className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
-                          title={workLogPageTranslations.editButton}
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleConfirmDeleteClick(log)}
-                          className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
-                          title={workLogPageTranslations.deleteButton}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.position}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.productName}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
+                        {/* <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
+                        <td className="py-3 px-4 text-gray-700">{new Date(log.updatedAt).toLocaleDateString()}</td> */}
+                        {/* NEW: Dropdown for Status in each table row */}
+                        {/* <td className="py-3 px-4 text-left">
+                          
+                        </td> */}
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenEditModal(log)}
+                              className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
+                              title={workLogPageTranslations.editButton}
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleConfirmDeleteClick(log)}
+                              className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
+                              title={workLogPageTranslations.deleteButton}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
@@ -330,6 +367,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         products={products}
         createWorklogUseCase={createWorklogUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
+        onUpdate={refetchWorklogs}
       />
 
       <EditWorkLogModal
@@ -341,6 +379,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         products={products}
         updateWorklogUseCase={updateWorklogUseCase}
         setShowEditAlert={setShowEditAlert}
+        onUpdate={refetchWorklogs}
       />
 
       {/* Delete Confirmation Modal */}
@@ -349,6 +388,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         onClose={() => setIsDeleteConfirmModalOpen(false)}
         workLogId={deleteWorklogId?.id || null}
         deleteWorklogUseCase={deleteWorklogUseCase}
+        onUpdate={refetchWorklogs}
       />
     </div>
   );

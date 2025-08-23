@@ -13,6 +13,7 @@ interface AddWorkLogModalProps {
   products: Product[];
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert: React.Dispatch<React.SetStateAction<boolean>>;
+  onUpdate: any;
 }
 
 export const AddWorkLogModal = ({
@@ -21,7 +22,8 @@ export const AddWorkLogModal = ({
   employees,
   products,
   createWorklogUseCase,
-  setShowCreatedAlert
+  setShowCreatedAlert,
+  onUpdate
 }: AddWorkLogModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
@@ -68,6 +70,7 @@ export const AddWorkLogModal = ({
             onClose={onClose}
             createWorklogUseCase={createWorklogUseCase}
             setShowCreatedAlert={setShowCreatedAlert}
+            onUpdate={onUpdate}
           />
       </div>
     </div>
