@@ -12,6 +12,7 @@ interface ConfirmDeleteModalProps {
   entryTitle: string;
   entryType: "income" | "expense";
   deleteUseCase: DeleteIncomeUseCase | DeleteExpenseUseCase;
+  onUpdate: any;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
@@ -21,6 +22,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   entryTitle,
   entryType,
   deleteUseCase,
+  onUpdate
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
@@ -70,6 +72,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       setTimeout(() => {setShowDeletedAlert(false);}, 3000);
     }
     onClose();
+    onUpdate();
   };
 
   return (
