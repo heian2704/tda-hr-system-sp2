@@ -83,6 +83,7 @@ interface WorkLogPageTranslations {
   workLogs: string;
   editButton: string;
   deleteButton: string;
+  deleting: string;
   // Modal specific translations for WorkLog
   addNewWorkLogTitle: string;
   editWorkLogTitle: string;
@@ -357,6 +358,7 @@ const allAppTranslations: AllTranslationsCollection = {
       workLogs: "work logs",
       editButton: "Edit",
       deleteButton: "Delete",
+      deleting: "Deleting...",
       // Modal specific translations for WorkLog
       addNewWorkLogTitle: "Add New Work Log",
       editWorkLogTitle: "Edit Work Log",
@@ -591,6 +593,7 @@ const allAppTranslations: AllTranslationsCollection = {
       workLogs: "အလုပ်မှတ်တမ်းများ",
       editButton: "ပြင်ဆင်ရန်",
       deleteButton: "ဖျက်ရန်",
+      deleting: "ဖျက်နေသည်...",
       // Modal specific translations for WorkLog
       addNewWorkLogTitle: "အလုပ်မှတ်တမ်းအသစ်ထည့်ရန်",
       editWorkLogTitle: "အလုပ်မှတ်တမ်းပြင်ဆင်ရန်",

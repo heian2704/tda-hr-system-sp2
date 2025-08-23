@@ -10,6 +10,7 @@ import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
 import { UpdateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { TokenedRequest } from '@/domain/models/common/header-param';
+import { on } from 'events';
 
 interface Props {
     worklogid?: string;
@@ -19,12 +20,14 @@ interface Props {
     products: Product[];
     updateWorklogUseCase: UpdateWorklogUseCase;
     setShowEditAlert?: React.Dispatch<React.SetStateAction<boolean>>;
+    onUpdate: any;
 }
 
-const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase, setShowEditAlert }) => {
+const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase, setShowEditAlert, onUpdate }) => {
     const [employeeId, setEmployeeId] = useState<string>(worklogToEdit?.employeeId || '');
     const [productId, setProductId] = useState<string>(worklogToEdit?.productId || '');
     const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity || 0);
+    const [submitting, setSubmitting] = useState(false);
     const token = localStorage.getItem('token');
     const idToken = (id: string): TokenedRequest => ({
       id,
@@ -44,19 +47,22 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
           console.error("No product ID provided for update");
       }
 
-      onClose();
-
       // Async update
       (async () => {
           try {
+              setSubmitting(true);
               var result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
               if(result)
               {
                 setShowEditAlert(true);
                 setTimeout(() => setShowEditAlert(false), 3000);
               }
+              onUpdate();
+              onClose();
           } catch (error) {
               console.error("Error saving worklog:", error);
+          } finally {
+              setSubmitting(false);
           }
       })();
     };
@@ -147,15 +153,17 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
           <button
             type="button"
             onClick={onClose}
+            disabled={submitting}
             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
           >
             {t.cancelButton}
           </button>
           <button
             type="submit"
+            disabled={submitting}
             className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
-            {t.editButton}
+            {submitting ? t.saving : t.editButton}
           </button>
         </div>
       </form>

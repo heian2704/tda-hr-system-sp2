@@ -2,6 +2,7 @@ import { CreateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { BearerTokenedRequest } from '@/domain/models/common/header-param';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
+import { on } from 'events';
 import { ChevronDown } from 'lucide-react';
 import { use, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -13,14 +14,16 @@ interface WorkLogFormProps {
   onClose: () => void;
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert?: React.Dispatch<React.SetStateAction<boolean>>;
+  onUpdate: any;
 }
 
-export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert }: WorkLogFormProps) {
+export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert, onUpdate }: WorkLogFormProps) {
   const translation = translations.workLogPage;
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const token = localStorage.getItem('token');
+  const [submitting, setSubmitting] = useState(false);
   const useTokenRequest = { token } as BearerTokenedRequest;
 
   const handleEmployeeSelect = (employeeId: string) => {
@@ -31,9 +34,10 @@ export function WorkLogForm({ employees, products, translations, onClose, create
     setSelectedProductId(productId);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (submitting) return;
+    
     // Validation
     if (!selectedEmployeeId) {
       toast.error("Please select an employee.");
@@ -47,19 +51,25 @@ export function WorkLogForm({ employees, products, translations, onClose, create
       toast.error("Please enter a valid quantity.");
       return;
     }
+    try {
+      setSubmitting(true);
+      const createWorklogDto = {
+        employeeId: selectedEmployeeId,
+        productId: selectedProductId,
+        quantity: quantity,
+      };
 
-    const createWorklogDto = {
-      employeeId: selectedEmployeeId,
-      productId: selectedProductId,
-      quantity: quantity,
-    };
-
-    const result = createWorklogUseCase.execute(useTokenRequest, createWorklogDto);
-    if(result)
-    {
-      setShowCreatedAlert(true);
-      setTimeout(() => setShowCreatedAlert(false), 3000);
+      const result = await createWorklogUseCase.execute(useTokenRequest, createWorklogDto);
+      if(result) {
+        setShowCreatedAlert(true);
+        setTimeout(() => setShowCreatedAlert(false), 3000);
+      }
+    } catch (error) {
+      toast.error("Error creating worklog.");
+    } finally {
+      setSubmitting(false);
     }
+    onUpdate();
     onClose();
   };
 
@@ -148,15 +158,17 @@ export function WorkLogForm({ employees, products, translations, onClose, create
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className={`px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100`}
             >
               {translation.cancelButton}
             </button>
             <button
               type="submit"
+              disabled={submitting}
               className={`px-6 py-2 bg-[#FF6767] text-white rounded-lg hover:bg-red-600 flex items-center justify-center`}
             >
-              {translation.addWorkLogButton}
+              {submitting ? translation.saving : translation.addWorkLogButton}
             </button>
           </div>
     </form>
