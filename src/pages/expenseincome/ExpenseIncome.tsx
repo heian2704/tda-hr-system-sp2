@@ -241,57 +241,6 @@ const ExpenseIncome = () => {
 
             {/* Sort by and Add New Button */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {/* Sort by Dropdown (now positioned first in this group) */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm cursor-pointer w-full sm:w-auto">
-                <span className="font-medium text-gray-700">{pageTranslations.sortBy}</span>
-                <span className="font-semibold text-gray-900">{pageTranslations.amount}</span>
-                <ChevronDown className="w-4 h-4" />
-              </div>
-
-               {/* Period Type Dropdown (moved here, next to Sort by) */}
-               <div className="relative w-full sm:w-auto">
-                <select
-                  value={periodType}
-                  onChange={(e) => {
-                    setPeriodType(e.target.value as 'month' | 'week' | 'day' | 'custom');
-                    // Reset custom dates if switching away from custom
-                    if (e.target.value !== 'custom') {
-                      setCustomStartDate('');
-                      setCustomEndDate('');
-                    }
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-300"
-                >
-                  <option value="month">{pageTranslations.periodTypeMonth}</option>
-                  <option value="week">{pageTranslations.periodTypeWeek}</option>
-                  <option value="day">{pageTranslations.periodTypeDay}</option>
-                  <option value="custom">{pageTranslations.periodTypeCustom}</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-              </div>
-
-              {/* Conditional Custom Date Inputs */}
-              {periodType === 'custom' && (
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
-                  <label htmlFor="startDate" className="sr-only">{pageTranslations.startDateLabel}</label>
-                  <input
-                    type="date"
-                    id="startDate"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-                  />
-                  <label htmlFor="endDate" className="sr-only">{pageTranslations.endDateLabel}</label>
-                  <input
-                    type="date"
-                    id="endDate"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-                  />
-                </div>
-              )}
-
               <button
                 onClick={handleOpenAddModal}
                 className="flex items-center justify-center gap-2 px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors w-full sm:w-auto"
