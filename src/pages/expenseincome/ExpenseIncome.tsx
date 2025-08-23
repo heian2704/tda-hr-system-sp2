@@ -17,8 +17,6 @@ import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import ConfirmDeleteModal from '@/components/income-expense/ConfirmDeleteModal/ConfirmDeleteEntryModal';
 import AddEntryModal from '@/components/income-expense/AddEntryModal/AddEntryModal';
 import { EditEntryModal } from '@/components/income-expense/EditEntryModal/EditEntryModal';
-import { UpdateIncomeDto } from '@/domain/models/income-expense/income/update-income.dto';
-import { UpdateExpenseDto } from '@/domain/models/income-expense/expense/update-expense.dto';
 
 const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
 const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
@@ -50,13 +48,6 @@ const ExpenseIncome = () => {
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditedAlert, setShowEditedAlert] = useState(false);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
-  const [selectedIncomeEntryForEdit, setSelectedIncomeEntryForEdit] = useState<Income | null>(null);
-  const [selectedExpenseEntryForEdit, setSelectedExpenseEntryForEdit] = useState<Expense | null>(null);
-
-  // NEW: Period selection states
-  const [periodType, setPeriodType] = useState<'month' | 'week' | 'day' | 'custom'>('month');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   const { translations } = useLanguage();
   const pageTranslations = translations.expenseIncomePage;
@@ -121,7 +112,7 @@ const ExpenseIncome = () => {
   // Reset page when tab, search query, or period changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchQuery, periodType, customStartDate, customEndDate]);
+  }, [activeTab, searchQuery]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -130,16 +121,16 @@ const ExpenseIncome = () => {
 
   const refetchExpenses = async () => {
     try {
-      const data = await getExpenseByIdUseCase.execute(selectedEntryForEdit._id);
-      setExpenses(expenses.map(expense => expense._id === data._id ? data : expense));
+      const data = await getAllExpenseUseCase.execute();
+      setExpenses(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Refetch expenses failed', e);
     }
   };
   const refetchIncomes = async () => {
     try {
-      const data = await getIncomeByIdUseCase.execute(selectedEntryForEdit._id);
-      setIncomes(incomes.map(income => income._id === data._id ? data : income));
+      const data = await getAllIncomeUseCase.execute();
+      setIncomes(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Refetch incomes failed', e);
     }
