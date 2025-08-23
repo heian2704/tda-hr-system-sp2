@@ -12,9 +12,10 @@ interface AddEntryModalProps {
   entryType: 'expense' | 'income';
   useCase: CreateExpenseUseCase | CreateIncomeUseCase;
   setShowCreatedAlert?: (show: boolean) => void;
+  onUpdate: any;
 }
 
-const AddEntryModal = ({ isOpen, onClose, entryType, useCase, setShowCreatedAlert }: AddEntryModalProps) => {
+const AddEntryModal = ({ isOpen, onClose, entryType, useCase, setShowCreatedAlert, onUpdate }: AddEntryModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
   const modalTranslations = translations.expenseIncomePage;
@@ -56,6 +57,7 @@ const AddEntryModal = ({ isOpen, onClose, entryType, useCase, setShowCreatedAler
           entryType={entryType}
           translations={modalTranslations}
           setShowCreatedAlert={setShowCreatedAlert}
+          onUpdate={onUpdate}
         />
       </div>
     </div>

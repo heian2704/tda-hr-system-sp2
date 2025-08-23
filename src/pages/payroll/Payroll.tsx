@@ -88,7 +88,6 @@ const Payroll = () => {
       }
 
       try {
-        console.log("Payrolls fetched:", payrolls);
         const uniqueIds = Array.from(
           new Set(payrolls.map((p) => p.employeeId))
         );

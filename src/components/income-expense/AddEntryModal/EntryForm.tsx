@@ -1,6 +1,8 @@
 import { CreateExpenseUseCase } from "@/data/usecases/expense.usecase";
 import { CreateIncomeUseCase } from "@/data/usecases/income.usecase";
 import { BearerTokenedRequest } from "@/domain/models/common/header-param";
+import { set } from "date-fns";
+import { on } from "events";
 import { useState } from "react";
 
 interface EntryFormProps {
@@ -9,17 +11,21 @@ interface EntryFormProps {
   entryType: 'expense' | 'income';
   createUseCase: CreateExpenseUseCase | CreateIncomeUseCase;
   setShowCreatedAlert: (show: boolean) => void;
+  onUpdate: any;
 }
 
-export function EntryForm({ onClose, createUseCase, translations, entryType, setShowCreatedAlert }: EntryFormProps) {
+export function EntryForm({ onClose, createUseCase, translations, entryType, setShowCreatedAlert, onUpdate }: EntryFormProps) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState(0);
   const [date, setDate] = useState('');
   const [description, setDescription] = useState('');
-  
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (submitting) return;
+
     const token = localStorage.getItem("token");
     const useTokenRequest = { token } as BearerTokenedRequest;
 
@@ -31,6 +37,7 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
     }
 
     try {
+      setSubmitting(true);
       const result = await createUseCase.execute(useTokenRequest, createEntryDto);
       if(result)
       {
@@ -38,8 +45,11 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
         setTimeout(() => setShowCreatedAlert(false), 3000);
       }
       onClose();
+      onUpdate();
     } catch (error) {
       console.error("Error creating entry:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -101,14 +111,16 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
               type="button"
               onClick={onClose}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+              disabled={submitting}
             >
               {translations.cancelButton}
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+              disabled={submitting}
             >
-              {translations.addButton}
+              {submitting ? translations.saving : translations.addButton}
             </button>
           </div>
         </form>

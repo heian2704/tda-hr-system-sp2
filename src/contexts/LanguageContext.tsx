@@ -43,6 +43,7 @@ export interface EmployeePageTranslations {
   onLeaveStatus: string;
   cancelButton: string;
   addButton: string;
+  saving: string;
   // --- NEW EDIT/DELETE MODAL TRANSLATIONS ---
   createSuccessfully: ReactNode;
   editSuccessfully: ReactNode;
@@ -94,6 +95,7 @@ interface WorkLogPageTranslations {
   notePlaceholder: string;
   cancelButton: string;
   addWorkLogButton: string;
+  saving: string;
   saveChangesButton: string;
   confirmDeleteTitle: string;
   confirmDeleteMessage1: string;
@@ -195,6 +197,7 @@ interface ExpenseIncomePageTranslations {
   notePlaceholder: string;
   cancelButton: string;
   addButton: string;
+  saving: string;
   saveChangesButton: string;
   optional: string;
   invalidAmount: string;
@@ -316,6 +319,7 @@ const allAppTranslations: AllTranslationsCollection = {
       onLeaveStatus: "On Leave",
       cancelButton: "Cancel",
       addButton: "Add",
+      saving: "Saving...",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
       createSuccessfully: "Employee created successfully.",
       editSuccessfully: "Employee updated successfully.",
@@ -365,6 +369,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "Any additional notes...",
       cancelButton: "Cancel",
       addWorkLogButton: "Add Work Log",
+      saving: "Saving...",
       saveChangesButton: "Save Changes",
       confirmDeleteTitle: "Confirm Deletion",
       confirmDeleteMessage1: "Are you sure you want to delete the work log entry for",
@@ -464,6 +469,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "Additional Note...",
       cancelButton: "Cancel",
       addButton: "Add",
+      saving: "Saving...",
       saveChangesButton: "Save Changes",
       optional: "Optional",
       invalidAmount: "Please enter a valid positive amount.",
@@ -547,6 +553,7 @@ const allAppTranslations: AllTranslationsCollection = {
       onLeaveStatus: "ခွင့်ယူထား",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
+      saving: "သိမ်းဆည်းနေသည်...",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
       createSuccessfully: "ဝန်ထမ်းအသစ်ဖန်တီးပြီးပါပြီ။",
       editSuccessfully: "ဝန်ထမ်းပြင်ဆင်ပြီးပါပြီ။",
@@ -596,6 +603,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "အခြားမှတ်စုများ...",
       cancelButton: "ပယ်ဖျက်ရန်",
       addWorkLogButton: "အလုပ်မှတ်တမ်းထည့်ရန်",
+      saving: "သိမ်းဆည်းနေသည်...",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "အလုပ်မှတ်တမ်းအတွက် ဖျက်ရန်သေချာပါသလား",
@@ -695,6 +703,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "အခြားမှတ်စုများ...",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
+      saving: "သိမ်းဆည်းနေသည်...",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       optional: "ရွေးချယ်နိုင်သည်",
       invalidAmount: "မှန်ကန်သော ပမာဏကို ထည့်သွင်းပါ။",

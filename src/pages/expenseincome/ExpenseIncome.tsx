@@ -132,7 +132,6 @@ const ExpenseIncome = () => {
     try {
       const data = await getExpenseByIdUseCase.execute(selectedEntryForEdit._id);
       setExpenses(expenses.map(expense => expense._id === data._id ? data : expense));
-      //loadData();
     } catch (e) {
       console.error('Refetch expenses failed', e);
     }
@@ -141,7 +140,6 @@ const ExpenseIncome = () => {
     try {
       const data = await getIncomeByIdUseCase.execute(selectedEntryForEdit._id);
       setIncomes(incomes.map(income => income._id === data._id ? data : income));
-      //loadData();
     } catch (e) {
       console.error('Refetch incomes failed', e);
     }
@@ -353,6 +351,7 @@ const ExpenseIncome = () => {
         entryTitle={entryToDeleteDetails?.name || ''}
         entryType={entryToDeleteDetails?.type || 'income'}
         deleteUseCase={activeTab === 'income' ? deleteIncomeUseCase : deleteExpenseUseCase}
+        onUpdate={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
       />
 
       <AddEntryModal
@@ -361,6 +360,7 @@ const ExpenseIncome = () => {
         entryType={activeTab}
         useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
+        onUpdate={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
       />
 
       <EditEntryModal
@@ -372,7 +372,7 @@ const ExpenseIncome = () => {
         useCase={activeTab === 'income' ? updateIncomeUseCase : updateExpenseUseCase}
         showEditAlert={setShowEditedAlert}
         translations={pageTranslations}
-        onUpdated={activeTab === 'expense' ? refetchExpenses() : refetchIncomes()}
+        onUpdated={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
       />
     </div>
   );
