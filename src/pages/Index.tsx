@@ -4,6 +4,20 @@ import { useNavigate } from 'react-router-dom'; // Keep useNavigate if it was in
 // Ensure these import paths are correct relative to 'src/pages/Index.tsx'
 import TopBar from '../components/TopBar'; // e.g., src/components/TopBar.tsx
 import LoginForm from '../app/login/components/LoginForm'; // e.g., src/pages/Index/components/LoginForm.tsx
+import { CreateEmployeeUseCase, DeleteEmployeeUseCase, GetAllEmployeeUseCase, GetEmployeeByIdUseCase, UpdateEmployeeStatusUseCase, UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import EmployeeListView from './EmployeeDummy';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+
+
+// dummy and for example
+const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
+const createEmployeeUseCase = new CreateEmployeeUseCase(employeeInterface);
+const updateEmployeeUseCase = new UpdateEmployeeUseCase(employeeInterface);
+const updateEmployeeStatusUseCase = new UpdateEmployeeStatusUseCase(employeeInterface);
+const deleteEmployeeUseCase = new DeleteEmployeeUseCase(employeeInterface);
 
 // Define the interface for the props that LoginPage itself expects.
 // It receives `setIsLoggedIn` from `App.tsx` and passes it down to `LoginForm`.
@@ -26,6 +40,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsLoggedIn }) => {
           update the global authentication state upon successful login.
         */}
         <LoginForm setIsLoggedIn={setIsLoggedIn} />
+
+
+
+        {/* This is just dummy and for example. Comment that out to test. */}
+        
+        <div className="mt-12">
+          <EmployeeListView 
+          getAllEmployeeUseCase={getAllEmployeeUseCase} 
+          getEmployeeByIdUseCase={getEmployeeByIdUseCase} 
+          createEmployeeUseCase={createEmployeeUseCase} 
+          updateEmployeeUseCase={updateEmployeeUseCase} 
+          updateEmployeeStatusUseCase={updateEmployeeStatusUseCase} 
+          deleteEmployeeUseCase={deleteEmployeeUseCase} 
+          />
+        </div> 
+       
+
       </div>
     </div>
   );

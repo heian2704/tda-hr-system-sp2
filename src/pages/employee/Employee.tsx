@@ -9,6 +9,7 @@ import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
 import { ChevronUp } from 'lucide-react';
 import EditEmployeeModal from "@/components/EditEmployeeModal/EditEmployeeModal.tsx";
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
+import { EmpStatus } from '@/constants/employee-status.enum';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -62,11 +63,11 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getStatusDisplay = (status: string) => {
-    return status === 'active' ? translations.active : translations.onLeave;
+    return status === EmpStatus.ACTIVE ? translations.active : translations.onLeave;
   };
 
   const getBadgeStyle = (status: string) => {
-    return status === 'active' ? {
+    return status === EmpStatus.ACTIVE ? {
       bg: 'bg-[#E6FAF7]',
       text: 'text-[#00B09A]'
     } : {
