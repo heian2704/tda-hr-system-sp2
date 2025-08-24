@@ -43,7 +43,12 @@ export interface EmployeePageTranslations {
   onLeaveStatus: string;
   cancelButton: string;
   addButton: string;
+  saving: string;
   // --- NEW EDIT/DELETE MODAL TRANSLATIONS ---
+  createSuccessfully: ReactNode;
+  editSuccessfully: ReactNode;
+  deleteSuccessfully: ReactNode;
+  statusUpdate: ReactNode;
   editEmployeeTitle: ReactNode;
   saveChangesButton: ReactNode;
   confirmDeleteTitle: ReactNode;
@@ -55,6 +60,9 @@ export interface EmployeePageTranslations {
 // UPDATED: Define specific types for Work Log page translation structure
 interface WorkLogPageTranslations {
   [x: string]: string;
+  createdSuccessfully: string;
+  updatedSuccessfully: string;
+  deleteSuccessfully: string;
   totalWorkLogs: string;
   totalCompletedWorklogs: string;
   totalQuantityProduced: string;
@@ -76,6 +84,7 @@ interface WorkLogPageTranslations {
   workLogs: string;
   editButton: string;
   deleteButton: string;
+  deleting: string;
   // Modal specific translations for WorkLog
   addNewWorkLogTitle: string;
   editWorkLogTitle: string;
@@ -88,6 +97,7 @@ interface WorkLogPageTranslations {
   notePlaceholder: string;
   cancelButton: string;
   addWorkLogButton: string;
+  saving: string;
   saveChangesButton: string;
   confirmDeleteTitle: string;
   confirmDeleteMessage1: string;
@@ -114,6 +124,7 @@ interface PayrollPageTranslations {
   sortBy: string;
   date: string;
   fullNameColumn: string;
+  roleColumn: string;
   productRateColumn: string;
   totalQuantityColumn: string;
   totalSalaryColumn: string;
@@ -135,6 +146,7 @@ interface PayrollPageTranslations {
   saveButton: string;
   invalidAmount: string;
   // Period selection translations
+  periodColumn: string;
   periodTypeLabel: string;
   periodTypeDay: string;
   periodTypeWeek: string;
@@ -161,11 +173,9 @@ interface ExpenseIncomePageTranslations {
   amount: string; // Used for "Sort by: Amount"
   addNewIncome: string;
   addNewExpense: string;
-  incomeNameColumn: string;
-  expenseNameColumn: string;
-  amountColumn: string;
-  clientColumn: string;
-  paidToColumn: string; // Changed from categoryColumn to paidToColumn
+  incomeTitleColumn: string;
+  expenseTitleColumn: string;
+  amountColumn: string; // Changed from categoryColumn to paidToColumn
   dateColumn: string;
   noteColumn: string;
   actionColumn: string;
@@ -183,20 +193,26 @@ interface ExpenseIncomePageTranslations {
   editIncomeTitle: string;
   editExpenseTitle: string;
   incomeNamePlaceholder: string;
-  expenseNamePlaceholder: string;
+  expenseTitlePlaceholder: string;
   clientPlaceholder: string;
-  paidToPlaceholder: string; // Changed from categoryPlaceholder to paidToPlaceholder
+  amountPlaceholder: string;
   notePlaceholder: string;
   cancelButton: string;
   addButton: string;
+  saving: string;
   saveChangesButton: string;
   optional: string;
   invalidAmount: string;
+  deleteMessage: string;
   confirmDeleteTitle: string;
   confirmDeleteMessage1: string;
   confirmDeleteMessage2: string;
   deleteButtonConfirm: string;
+  createSuccessfully: string;
+  editSuccessfully: string;
+  deleteSuccessfully: string;
   // NEW: Period selection translations
+  periodColumn:string;
   periodTypeLabel: string;
   periodTypeDay: string;
   periodTypeWeek: string;
@@ -253,8 +269,7 @@ const allAppTranslations: AllTranslationsCollection = {
       { path: "/employee", label: "Employee", icon: "🧑‍💼" },
       { path: "/worklog", label: "Work Log", icon: "🕒" },
       { path: "/payroll", label: "Payroll", icon: "💵" },
-      { path: "/expense-income", label: "Expense & Income", icon: "💳" },
-      { path: "/reports", label: "Reports", icon: "📈" },
+      { path: "/expense-income", label: "Expense & Income", icon: "💳" }
     ],
     searchPlaceholder: "Search",
     logout: "Log out",
@@ -305,7 +320,12 @@ const allAppTranslations: AllTranslationsCollection = {
       onLeaveStatus: "On Leave",
       cancelButton: "Cancel",
       addButton: "Add",
+      saving: "Saving...",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
+      createSuccessfully: "Employee created successfully.",
+      editSuccessfully: "Employee updated successfully.",
+      deleteSuccessfully: "Employee deleted successfully.",
+      statusUpdate: "Status updated successfully.",
       editEmployeeTitle: "Edit Employee",
       saveChangesButton: "Save Changes",
       confirmDeleteTitle: "Confirm Deletion",
@@ -315,6 +335,9 @@ const allAppTranslations: AllTranslationsCollection = {
     },
     // UPDATED: Work Log Page Translations (Added 'all' key)
     workLogPage: {
+      createdSuccessfully: "Worklog Created",
+      updatedSuccessfully: "Worklog Updated",
+      deleteSuccessfully: "Worklog Deleted",
       totalWorkLogs: "Total Work Logs",
       totalCompletedWorklogs: "Total Completed Worklogs",
       totalQuantityProduced: "Total Quantity Produced",
@@ -336,6 +359,7 @@ const allAppTranslations: AllTranslationsCollection = {
       workLogs: "work logs",
       editButton: "Edit",
       deleteButton: "Delete",
+      deleting: "Deleting...",
       // Modal specific translations for WorkLog
       addNewWorkLogTitle: "Add New Work Log",
       editWorkLogTitle: "Edit Work Log",
@@ -348,6 +372,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "Any additional notes...",
       cancelButton: "Cancel",
       addWorkLogButton: "Add Work Log",
+      saving: "Saving...",
       saveChangesButton: "Save Changes",
       confirmDeleteTitle: "Confirm Deletion",
       confirmDeleteMessage1: "Are you sure you want to delete the work log entry for",
@@ -373,6 +398,7 @@ const allAppTranslations: AllTranslationsCollection = {
       sortBy: "Sort by:",
       date: "Date",
       fullNameColumn: "Full Name",
+      roleColumn: "Role",
       productRateColumn: "Product Rate",
       totalQuantityColumn: "Total Quantity",
       totalSalaryColumn: "Total Salary",
@@ -394,6 +420,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveButton: "Save",
       invalidAmount: "Please enter a valid positive amount.",
       // Period selection translations
+      periodColumn: "Date",
       periodTypeLabel: "Select Period:",
       periodTypeDay: "Day",
       periodTypeWeek: "Week",
@@ -419,11 +446,9 @@ const allAppTranslations: AllTranslationsCollection = {
       amount: "Amount", // for "Sort by: Amount"
       addNewIncome: "Add New Income",
       addNewExpense: "Add New Expense",
-      incomeNameColumn: "Income Name",
-      expenseNameColumn: "Expense Name",
+      incomeTitleColumn: "Income Title",
+      expenseTitleColumn: "Expense Title",
       amountColumn: "Amount",
-      clientColumn: "Client",
-      paidToColumn: "Paid to", // Changed from Category to Paid to
       dateColumn: "Date",
       noteColumn: "Note",
       actionColumn: "Action",
@@ -441,20 +466,26 @@ const allAppTranslations: AllTranslationsCollection = {
       editIncomeTitle: "Edit Income",
       editExpenseTitle: "Edit Expense",
       incomeNamePlaceholder: "Income Name",
-      expenseNamePlaceholder: "Expense Name",
+      expenseTitlePlaceholder: "Expense Title",
       clientPlaceholder: "Client",
-      paidToPlaceholder: "Paid to", // Changed from Category to Paid to
+      amountPlaceholder: "Amount",
       notePlaceholder: "Additional Note...",
       cancelButton: "Cancel",
       addButton: "Add",
+      saving: "Saving...",
       saveChangesButton: "Save Changes",
       optional: "Optional",
       invalidAmount: "Please enter a valid positive amount.",
+      deleteMessage: "Deleted successfully.",
       confirmDeleteTitle: "Confirm Deletion",
       confirmDeleteMessage1: "Are you sure you want to delete",
       confirmDeleteMessage2: "? This action cannot be undone.",
       deleteButtonConfirm: "Delete",
+      createSuccessfully: "Entry created successfully.",
+      editSuccessfully: "Entry updated successfully.",
+      deleteSuccessfully: "Entry deleted successfully.",
       // NEW: Period selection translations
+      periodColumn: "Date",
       periodTypeLabel: "Select Period:",
       periodTypeDay: "Day",
       periodTypeWeek: "Week",
@@ -473,8 +504,7 @@ const allAppTranslations: AllTranslationsCollection = {
       { path: "/employee", label: "ဝန်ထမ်း", icon: "🧑‍💼" },
       { path: "/worklog", label: "အလုပ်မှတ်တမ်း", icon: "🕒" },
       { path: "/payroll", label: "လစာ", icon: "💵" },
-      { path: "/expense-income", label: "ကုန်ကျစရိတ်နှင့် ဝင်ငွေ", icon: "💳" },
-      { path: "/reports", label: "အစီရင်ခံစာများ", icon: "📈" },
+      { path: "/expense-income", label: "ကုန်ကျစရိတ်နှင့် ဝင်ငွေ", icon: "💳" }
     ],
     searchPlaceholder: "ရှာဖွေပါ",
     logout: "ထွက်ရန်",
@@ -525,8 +555,13 @@ const allAppTranslations: AllTranslationsCollection = {
       onLeaveStatus: "ခွင့်ယူထား",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
+      saving: "မှတ်သားနေသည်...",
       // --- EDIT/DELETE MODAL TRANSLATIONS ---
+      createSuccessfully: "ဝန်ထမ်းအသစ်ဖန်တီးပြီးပါပြီ။",
+      editSuccessfully: "ဝန်ထမ်းပြင်ဆင်ပြီးပါပြီ။",
+      deleteSuccessfully: "ဝန်ထမ်းဖျက်ပြီးပါပြီ။",
       editEmployeeTitle: "ဝန်ထမ်းပြင်ဆင်ရန်",
+      statusUpdate: "အခြေအနေပြောင်းလဲပြီးပါပြီ။",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "ဖျက်ရန်သေချာပါသလား",
@@ -535,6 +570,9 @@ const allAppTranslations: AllTranslationsCollection = {
     },
     // UPDATED: Work Log Page Translations (Added 'all' key)
     workLogPage: {
+      createdSuccessfully: "အလုပ်မှတ်တမ်းအသစ်ထည့်ပြီးပါပြီ",
+      updatedSuccessfully: "အလုပ်မှတ်တမ်းပြင်ဆင်ပြီးပါပြီ",
+      deleteSuccessfully: "အလုပ်မှတ်တမ်းဖျက်ပြီးပါပြီ",
       totalWorkLogs: "စုစုပေါင်းအလုပ်မှတ်တမ်းများ",
       totalCompletedWorklogs: "ပြီးစီးလုပ်ငန်းမှတ်တမ်းအရေအတွက်",
       totalQuantityProduced: "စုစုပေါင်းထုတ်လုပ်မှုပမာဏ",
@@ -556,6 +594,7 @@ const allAppTranslations: AllTranslationsCollection = {
       workLogs: "အလုပ်မှတ်တမ်းများ",
       editButton: "ပြင်ဆင်ရန်",
       deleteButton: "ဖျက်ရန်",
+      deleting: "ဖျက်နေသည်...",
       // Modal specific translations for WorkLog
       addNewWorkLogTitle: "အလုပ်မှတ်တမ်းအသစ်ထည့်ရန်",
       editWorkLogTitle: "အလုပ်မှတ်တမ်းပြင်ဆင်ရန်",
@@ -568,6 +607,7 @@ const allAppTranslations: AllTranslationsCollection = {
       notePlaceholder: "အခြားမှတ်စုများ...",
       cancelButton: "ပယ်ဖျက်ရန်",
       addWorkLogButton: "အလုပ်မှတ်တမ်းထည့်ရန်",
+      saving: "မှတ်သားနေသည်...",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "အလုပ်မှတ်တမ်းအတွက် ဖျက်ရန်သေချာပါသလား",
@@ -593,6 +633,7 @@ const allAppTranslations: AllTranslationsCollection = {
       sortBy: "စီစစ်ရန်:",
       date: "နေ့စွဲ",
       fullNameColumn: "အမည်အပြည့်အစုံ",
+      roleColumn: "ရာထူး",
       productRateColumn: "ထုတ်ကုန်နှုန်း",
       totalQuantityColumn: "စုစုပေါင်းပမာဏ",
       totalSalaryColumn: "စုစုပေါင်းလစာ",
@@ -614,6 +655,7 @@ const allAppTranslations: AllTranslationsCollection = {
       saveButton: "သိမ်းဆည်းရန်",
       invalidAmount: "မှန်ကန်သော ပမာဏကို ထည့်သွင်းပါ။",
       // Period selection translations
+      periodColumn: "နေ့စွဲ",
       periodTypeLabel: "ကာလရွေးချယ်ပါ:",
       periodTypeDay: "နေ့စဉ်",
       periodTypeWeek: "အပတ်စဉ်",
@@ -639,11 +681,9 @@ const allAppTranslations: AllTranslationsCollection = {
       amount: "ပမာဏ", // for "Sort by: Amount"
       addNewIncome: "ဝင်ငွေအသစ်ထည့်ရန်",
       addNewExpense: "အသုံးစရိတ်အသစ်ထည့်ရန်",
-      incomeNameColumn: "ဝင်ငွေအမည်",
-      expenseNameColumn: "အသုံးစရိတ်အမည်",
+      incomeTitleColumn: "ဝင်ငွေခေါင်းစဥ်",
+      expenseTitleColumn: "အသုံးစရိတ်ခေါင်းစဥ်",
       amountColumn: "ပမာဏ",
-      clientColumn: "ဖောက်သည်",
-      paidToColumn: "ပေးချေသူ", // Changed from Category to Paid to
       dateColumn: "နေ့စွဲ",
       noteColumn: "မှတ်စု",
       actionColumn: "လုပ်ဆောင်ချက်",
@@ -661,20 +701,26 @@ const allAppTranslations: AllTranslationsCollection = {
       editIncomeTitle: "ဝင်ငွေပြင်ဆင်ရန်",
       editExpenseTitle: "အသုံးစရိတ်ပြင်ဆင်ရန်",
       incomeNamePlaceholder: "ဝင်ငွေအမည်",
-      expenseNamePlaceholder: "အသုံးစရိတ်အမည်",
+      expenseTitlePlaceholder: "အသုံးစရိတ်ခေါင်းစဥ်",
       clientPlaceholder: "ဖောက်သည်",
-      paidToPlaceholder: "ပေးချေသူ", // Changed from Category to Paid to
+      amountPlaceholder: "ပမာဏ",
       notePlaceholder: "အခြားမှတ်စုများ...",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",
+      saving: "မှတ်သားနေသည်...",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       optional: "ရွေးချယ်နိုင်သည်",
       invalidAmount: "မှန်ကန်သော ပမာဏကို ထည့်သွင်းပါ။",
+      deleteMessage: "အောင်မြင်စွာ ဖျက်လိုက်ပါပြီ။",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "ဖျက်ရန်သေချာပါသလား",
       confirmDeleteMessage2: " ဤလုပ်ဆောင်ချက်ကို ပြန်ဖျက်၍မရပါ။",
       deleteButtonConfirm: "ဖျက်ရန်",
+      createSuccessfully: "စာရင်းအသစ်ဖန်တီးပြီးပါပြီ။",
+      editSuccessfully: "စာရင်းပြင်ဆင်ပြီးပါပြီ။",
+      deleteSuccessfully: "စာရင်းဖျက်ပြီးပါပြီ။",
       // NEW: Period selection translations
+      periodColumn: "နေ့စွဲ",
       periodTypeLabel: "ကာလရွေးချယ်ပါ:",
       periodTypeDay: "နေ့စဉ်",
       periodTypeWeek: "အပတ်စဉ်",

@@ -1,18 +1,27 @@
 // EmployeeForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useEmployeeForm } from './useEmployeeForm';
 import { employeeService } from '@/services/employeeService';
 import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
 import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
+import { CreateEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
+import { EmpStatus } from '@/constants/employee-status.enum';
+import { BearerTokenedRequest } from '@/domain/models/common/header-param';
+import { set } from 'date-fns';
 
 interface Props {
-  addEmployeeDto?: EmployeeResponse;
-  onSave: (employee: EmployeeDto) => void;
+  addEmployeeDto?: CreateEmployeeDto;
+  //onSave: (employee: EmployeeDto) => void;
   onClose: () => void;
   translations: any;
+  showCreateAlert: any;
+  onUpdate: any;
+  createEmployeeUseCase: CreateEmployeeUseCase;
 }
 
-const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onSave, onClose, translations }) => {
+
+const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, createEmployeeUseCase, onUpdate, showCreateAlert }) => {
   const {
     fullName, setFullName,
     phoneNumber, setPhoneNumber,
@@ -21,40 +30,52 @@ const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onSave, onClose, transl
     address, setAddress,
     status, setStatus
   } = useEmployeeForm(addEmployeeDto);
+const [submitting, setSubmitting] = useState(false);
+
+// Get the current token from localStorage
+const token = localStorage.getItem('token');
+if (!token) {
+  throw new Error('ID Token is required for authentication');
+}
 
 
-const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
+  if (submitting) return;
+  try {
+    
+    const submittedEmployeeData: CreateEmployeeDto = {
+      name: fullName,
+      phoneNumber: phoneNumber,
+      address: address,
+      position: role,
+      status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
+      joinedDate: joinDate,
+    };
 
-  const submittedEmployeeData: EmployeeDto = {
-    name: fullName,
-    phoneNumber,
-    address,
-    position: role,
-    status,
-    joinedDate: joinDate,
-  };
-
-  // Update UI immediately and close modal
-  onSave(submittedEmployeeData);
-  onClose();
-
-  // Run API call in background, no await
-  (async () => {
-    try {
-      if (addEmployeeDto !== null) {
-        await employeeService.createEmployee(submittedEmployeeData);
-      } 
-    } catch (error) {
-      console.error('Error saving employee:', error);
+    setSubmitting(true);
+    const result = await createEmployeeUseCase?.execute({ token: token }, submittedEmployeeData);
+    if(result)
+    {
+      showCreateAlert(true);
+      setTimeout(() => showCreateAlert(false), 3000);
     }
-  })();
+    onUpdate();
+    onClose();
+    
+  } catch (error) {
+    console.error('Error creating employee:', error);
+  } finally {
+    setSubmitting(false);
+  }
 };
 
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form 
+    // onSubmit={handleSubmit}  
+    className="space-y-4">
       <div>
         <label htmlFor="fullName" className="block text-sm font-medium text-gray-600 mb-1">
           {translations.fullNameColumn}
@@ -137,8 +158,8 @@ const handleSubmit = (e: React.FormEvent) => {
               type="radio"
               name="status"
               value="active"
-              checked={status === 'active'}
-              onChange={() => setStatus('active')}
+              checked={status === EmpStatus.ACTIVE}
+              onChange={() => setStatus(EmpStatus.ACTIVE)}
               className="form-radio h-5 w-5 text-red-500 border-gray-300 focus:ring-red-400"
             />
             <span className="ml-2 text-sm text-gray-700">{translations.activeStatus}</span>
@@ -161,15 +182,18 @@ const handleSubmit = (e: React.FormEvent) => {
         <button
           type="button"
           onClick={onClose}
+          disabled={submitting}
           className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
         >
           {translations.cancelButton}
         </button>
         <button
           type="submit"
+          disabled={submitting}
           className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+          onClick={handleSubmit}
         >
-          {translations.addButton}
+          {submitting ? translations.saving : translations.addButton}
         </button>
       </div>
     </form>

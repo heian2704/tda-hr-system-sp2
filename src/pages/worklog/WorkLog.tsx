@@ -1,103 +1,70 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, ClipboardList, DollarSign, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, Box } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+  ClipboardList, 
+  Plus, 
+  ChevronDown, 
+  Edit, 
+  Trash2,
+  ChevronLeft, 
+  ChevronRight, 
+  Box 
+} from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { ProductService } from '@/services/ProductService';
-import { employeeService } from '@/services/employeeService';
-import { worklogService } from '@/services/worklogService';
 import { worklogData } from '@/dtos/worklog/worklogData';
 import { AddWorkLogModal } from '@/components/worklog/addworklogmodal/AddWorkLogModal';
-import { ProductDto } from '@/dtos/product/ProductDto';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
-import { toast } from 'react-hot-toast';
+import { ConfirmDeleteModal } from '@/components/worklog/delete-worklog/DeleteWorklogModal';
+import { WorklogInterface } from '@/domain/interfaces/worklog/WorklogInterface';
+import { WorklogInterfaceImpl } from '@/data/interface-implementation/worklog';
+import { 
+  CreateWorklogUseCase, 
+  DeleteWorklogUseCase, 
+  GetAllWorklogUseCase, 
+  UpdateWorklogUseCase 
+} from '@/data/usecases/worklog.usecase';
+import { useGetAllWorklogs } from '@/hooks/worklog/get-all-worklog.hook';
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+import { ProductInterface } from '@/domain/interfaces/product/ProductInterface';
+import { ProductInterfaceImpl } from '@/data/interface-implementation/product';
+import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { GetAllProductsUseCase } from '@/data/usecases/product.usecase';
+import { Employee } from '@/domain/models/employee/get-employee.model';
+import { Product } from '@/domain/models/product/get-product.dto';
+import { ITEMS_PER_PAGE } from '@/constants/page-utils';
+import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
+import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
 
-interface ConfirmDeleteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (id: string) => void;
-  workLogId: string | null;
-}
+// use get all worklogs hook
+const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
+const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+const productInterface: ProductInterface = new ProductInterfaceImpl();
 
-const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, workLogId }: ConfirmDeleteModalProps) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const { translations } = useLanguage();
-  const modalTranslations = translations.workLogPage;
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-          aria-label="Close"
-        >
-          <X size={24} />
-        </button>
-
-        <Trash2 className="mx-auto text-red-500 w-16 h-16 mb-4" />
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          {modalTranslations.confirmDeleteTitle}
-        </h2>
-        <p className="text-gray-600 mb-6">
-          {modalTranslations.confirmDeleteMessage1} <span className="font-semibold text-red-600"></span>{modalTranslations.confirmDeleteMessage2}
-        </p>
-
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-          >
-            {modalTranslations.cancelButton}
-          </button>
-          <button
-            onClick={() => {
-              if (workLogId) {
-                onConfirm(workLogId);
-              }
-              onClose();
-            }}
-            className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-          >
-            {modalTranslations.deleteButton}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const getAllWorklogUseCase = new GetAllWorklogUseCase(worklogInterface);
+const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+const getAllProductsUseCase = new GetAllProductsUseCase(productInterface);
+const createWorklogUseCase = new CreateWorklogUseCase(worklogInterface);
+const updateWorklogUseCase = new UpdateWorklogUseCase(worklogInterface);
+const deleteWorklogUseCase = new DeleteWorklogUseCase(worklogInterface);
 
 interface WorkLogProps {
   currentPath?: string;
 }
 
 const WorkLog = ({ currentPath }: WorkLogProps) => {
+  const { worklogs, error, loading } = useGetAllWorklogs(getAllWorklogUseCase);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
-  const [workLogToDeleteDetails, setWorkLogToDeleteDetails] = useState<{ id: string } | null>(null);
-  const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<worklogData | undefined>(undefined);
+  const [deleteWorklogId, setDeleteWorklogId] = useState<{ id: string } | null>(null);
+  const [worklogId, setWorklogId] = useState<string | null>(null);
+  const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<UpdateWorklogDto | undefined>(undefined);
   const [workLogs, setWorkLogs] = useState<worklogData[]>([]);
-  const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
-  const [products, setProducts] = useState<ProductDto[]>([]); 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [products, setProducts] = useState<Product[]>([]); 
+  const [showCreatedAlert, setShowCreatedAlert] = useState(false);
+  const [showEditAlert, setShowEditAlert] = useState(false);
 
   const { translations } = useLanguage();
   const workLogPageTranslations = translations.workLogPage;
@@ -105,26 +72,65 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-  // Fetch all data on component mount
+  const refetchWorklogs = async () => {
+    try {
+      // fetch latest worklogs
+      const freshWorklogs = await getAllWorklogUseCase.execute();
+      if (!Array.isArray(freshWorklogs) || freshWorklogs.length === 0) {
+        setWorkLogs([]);
+        return;
+      }
+
+      // ensure we have employees & products
+      const [employeesResp, productsResp] = await Promise.all([
+        getAllEmployeeUseCase.execute(),
+        getAllProductsUseCase.execute()
+      ]);
+
+      const fullWorklogInfoList = (freshWorklogs || []).map(log => {
+        const employee = Array.isArray(employeesResp) ? employeesResp.find((emp: Employee) => emp._id === log.employeeId) : undefined;
+        const product = Array.isArray(productsResp) ? productsResp.find((prod: Product) => prod._id === log.productId) : undefined;
+
+        return {
+          _id: log._id,
+          employeeId: log.employeeId,
+          productId: log.productId,
+          fullname: employee ? employee.name : 'Unknown Employee',
+          position: employee ? employee.position : 'Unknown Position',
+          productName: product ? product.name : 'Unknown Product',
+          quantity: log.quantity,
+          totalPrice: log.totalPrice,
+          updatedAt: log.updatedAt,
+        } as worklogData;
+      });
+
+      setEmployees(Array.isArray(employeesResp) ? employeesResp : []);
+      setProducts(Array.isArray(productsResp) ? productsResp : []);
+      setWorkLogs(fullWorklogInfoList);
+    } catch (err) {
+      console.error('Refetch worklogs failed:', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchAllWorklogs = async () => {
       try {
-        const [employeeData, productData, worklogData] = await Promise.all([
-          employeeService.getAllEmployees(),
-          ProductService.getAllProducts(),
-          worklogService.getAllWorklogs()
-        ]);
+        if (loading || error) {
+          return;
+        }
+        console.log('worklogs: ', worklogs);
 
-        setEmployees(employeeData);
-        setProducts(productData);
+        if (worklogs.length === 0) {
+          setWorkLogs([]); // Set empty array if no worklogs
+          return;
+        }
+        const employees = await getAllEmployeeUseCase.execute();
+        const products = await getAllProductsUseCase.execute();
 
-        // Transform worklog data to include employee and product details
-        const transformedWorkLogs = worklogData.map(log => {
-          const employee = employeeData.find(emp => emp._id === log.employeeId);
-          const product = productData.find(prod => prod._id === log.productId);
-          
+        const fullWorklogInfoList = worklogs.map(log => {
+          const employee = employees.find(emp => emp._id === log.employeeId);
+          const product = products.find(prod => prod._id === log.productId);
+
           return {
             _id: log._id,
             employeeId: log.employeeId,
@@ -138,17 +144,16 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           } as worklogData;
         });
 
-        setWorkLogs(transformedWorkLogs);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
-        console.error('Failed to fetch data:', err);
-      } finally {
-        setLoading(false);
+        setEmployees(employees);
+        setProducts(products);
+        setWorkLogs(fullWorklogInfoList);
+      } catch (error) {
+        console.error('Error fetching work logs:', error);
       }
     };
 
-    fetchAllData();
-  }, []);
+    fetchAllWorklogs();
+  }, [worklogs, loading, error]);
 
   // Filter work logs based on search query
   const filteredWorkLogs = workLogs.filter(log => {
@@ -163,11 +168,11 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
 
   const totalWorkLogs = filteredWorkLogs.length;
   const totalQuantityProduced = filteredWorkLogs.reduce((sum, log) => sum + log.quantity, 0);
-  const totalCompletedWorklogs = filteredWorkLogs.length; // Placeholder logic
+  const totalCompletedWorklogs = filteredWorkLogs.length;
 
-  const totalPages = Math.ceil(totalWorkLogs / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const totalPages = Math.ceil(totalWorkLogs / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentWorkLogs = filteredWorkLogs.slice(startIndex, endIndex);
 
   useEffect(() => {
@@ -179,63 +184,23 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   };
 
   const handleOpenAddModal = () => {
-    setSelectedWorkLogForEdit(undefined);
     setIsAddModalOpen(true);
   };
 
   const handleOpenEditModal = (workLog: worklogData) => {
-    setSelectedWorkLogForEdit(workLog);
-    setIsAddModalOpen(true);
-  };
-
-  const handleSaveWorkLog = async (workLogData: any) => {
-    try {
-      // Refresh the worklog list to get updated data
-      const [employeeData, productData, worklogData] = await Promise.all([
-        employeeService.getAllEmployees(),
-        ProductService.getAllProducts(),
-        worklogService.getAllWorklogs()
-      ]);
-
-      // Transform worklog data to include employee and product details
-      const transformedWorkLogs = worklogData.map(log => {
-        const employee = employeeData.find(emp => emp._id === log.employeeId);
-        const product = productData.find(prod => prod._id === log.productId);
-        
-        return {
-          _id: log._id,
-          employeeId: log.employeeId,
-          productId: log.productId,
-          fullname: employee ? employee.name : 'Unknown Employee',
-          position: employee ? employee.position : 'Unknown Position',
-          productName: product ? product.name : 'Unknown Product',
-          quantity: log.quantity,
-          // totalPrice: log.totalPrice,
-          // updatedAt: log.updatedAt,
-        } as worklogData;
-      });
-
-      setWorkLogs(transformedWorkLogs);
-    } catch (error) {
-      console.error('Error refreshing work logs:', error);
-      toast.error("Failed to refresh work log list.");
-    }
+    const workLogToEdit: UpdateWorklogDto = {
+      employeeId: workLog.employeeId,
+      productId: workLog.productId,
+      quantity: workLog.quantity
+    };
+    setWorklogId(workLog._id);
+    setSelectedWorkLogForEdit(workLogToEdit);
+    setIsEditModalOpen(true);
   };
 
   const handleConfirmDeleteClick = (workLog: worklogData) => {
-    setWorkLogToDeleteDetails({ id: workLog._id });
+    setDeleteWorklogId({ id: workLog._id });
     setIsDeleteConfirmModalOpen(true);
-  };
-
-  const handleExecuteDelete = async (id: string) => {
-    try {
-      await worklogService.deleteWorkLog(id);
-      setWorkLogs(prevLogs => prevLogs.filter(log => log._id !== id));
-      toast.success("Work log deleted successfully!");
-    } catch (error) {
-      console.error('Error deleting work log:', error);
-      toast.error("Failed to delete work log. Please try again.");
-    }
   };
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
@@ -243,6 +208,16 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
 
   return (
     <div className="font-sans antialiased text-gray-800">
+      {showCreatedAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {workLogPageTranslations.createdSuccessfully || 'Worklog Created'}
+        </div>
+      )}
+      {showEditAlert && (                                        
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {workLogPageTranslations.updatedSuccessfully || 'Worklog Updated'}
+        </div>
+      )}
       <div className="space-y-4">
         {/* Stats Section */}
         <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
@@ -312,37 +287,37 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
               </thead>
               <tbody>
                 {currentWorkLogs.map(log => (
-                  <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.position}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.productName}</td>
-                    <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
-                    {/* <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
-                    <td className="py-3 px-4 text-gray-700">{new Date(log.updatedAt).toLocaleDateString()}</td> */}
-                    {/* NEW: Dropdown for Status in each table row */}
-                    {/* <td className="py-3 px-4 text-left">
-                      
-                    </td> */}
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEditModal(log)}
-                          className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
-                          title={workLogPageTranslations.editButton}
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleConfirmDeleteClick(log)}
-                          className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
-                          title={workLogPageTranslations.deleteButton}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.position}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.productName}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
+                        {/* <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
+                        <td className="py-3 px-4 text-gray-700">{new Date(log.updatedAt).toLocaleDateString()}</td> */}
+                        {/* NEW: Dropdown for Status in each table row */}
+                        {/* <td className="py-3 px-4 text-left">
+                          
+                        </td> */}
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenEditModal(log)}
+                              className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
+                              title={workLogPageTranslations.editButton}
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleConfirmDeleteClick(log)}
+                              className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
+                              title={workLogPageTranslations.deleteButton}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
@@ -388,18 +363,32 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
       <AddWorkLogModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        workLogToEdit={selectedWorkLogForEdit}
-        onSave={handleSaveWorkLog}
         employees={employees}
         products={products}
+        createWorklogUseCase={createWorklogUseCase}
+        setShowCreatedAlert={setShowCreatedAlert}
+        onUpdate={refetchWorklogs}
+      />
+
+      <EditWorkLogModal
+        worklogid={worklogId}
+        workLogToEdit={selectedWorkLogForEdit}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        employees={employees}
+        products={products}
+        updateWorklogUseCase={updateWorklogUseCase}
+        setShowEditAlert={setShowEditAlert}
+        onUpdate={refetchWorklogs}
       />
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteConfirmModalOpen}
         onClose={() => setIsDeleteConfirmModalOpen(false)}
-        onConfirm={handleExecuteDelete}
-        workLogId={workLogToDeleteDetails?.id || null}
+        workLogId={deleteWorklogId?.id || null}
+        deleteWorklogUseCase={deleteWorklogUseCase}
+        onUpdate={refetchWorklogs}
       />
     </div>
   );

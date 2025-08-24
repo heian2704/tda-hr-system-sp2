@@ -7,7 +7,7 @@ import { UpdateEmployeeDto, UpdateEmpStatus } from "@/domain/models/employee/upd
 export interface EmployeeInterface {
     getAllEmployee(): Promise<Employee[]>;
     getEmployeeById(id: string): Promise<Employee>;
-    createEmployee(idToken: BearerTokenedRequest, createEmployeeDto: CreateEmployeeDto): Promise<Employee>
+    createEmployee(token: BearerTokenedRequest, createEmployeeDto: CreateEmployeeDto): Promise<Employee>
     updateEmployee(idToken: TokenedRequest, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee>
     deleteEmployee(idToken: TokenedRequest): Promise<Employee>
     updateEmployeeStatus(idToken: TokenedRequest, status: UpdateEmpStatus): Promise<Employee>

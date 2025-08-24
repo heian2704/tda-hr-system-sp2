@@ -1,21 +1,91 @@
+import { CreateWorklogUseCase } from '@/data/usecases/worklog.usecase';
+import { BearerTokenedRequest } from '@/domain/models/common/header-param';
+import { Employee } from '@/domain/models/employee/get-employee.model';
+import { Product } from '@/domain/models/product/get-product.dto';
+import { on } from 'events';
 import { ChevronDown } from 'lucide-react';
+import { use, useState } from 'react';
+import toast from 'react-hot-toast';
 
-export function WorkLogForm({ formData, setters, employees, products, translations }) {
-  const t = translations.workLogPage;
+interface WorkLogFormProps {
+  employees: Employee[];
+  products: Product[];
+  translations: any;
+  onClose: () => void;
+  createWorklogUseCase: CreateWorklogUseCase;
+  setShowCreatedAlert?: React.Dispatch<React.SetStateAction<boolean>>;
+  onUpdate: any;
+}
+
+export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert, onUpdate }: WorkLogFormProps) {
+  const translation = translations.workLogPage;
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const token = localStorage.getItem('token');
+  const [submitting, setSubmitting] = useState(false);
+  const useTokenRequest = { token } as BearerTokenedRequest;
+
+  const handleEmployeeSelect = (employeeId: string) => {
+    setSelectedEmployeeId(employeeId);
+  };
+
+  const handleProductSelect = (productId: string) => {
+    setSelectedProductId(productId);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    
+    // Validation
+    if (!selectedEmployeeId) {
+      toast.error("Please select an employee.");
+      return;
+    }
+    if (!selectedProductId) {
+      toast.error("Please select a product.");
+      return;
+    }
+    if (quantity <= 0) {
+      toast.error("Please enter a valid quantity.");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const createWorklogDto = {
+        employeeId: selectedEmployeeId,
+        productId: selectedProductId,
+        quantity: quantity,
+      };
+
+      const result = await createWorklogUseCase.execute(useTokenRequest, createWorklogDto);
+      if(result) {
+        setShowCreatedAlert(true);
+        setTimeout(() => setShowCreatedAlert(false), 3000);
+      }
+    } catch (error) {
+      toast.error("Error creating worklog.");
+    } finally {
+      setSubmitting(false);
+    }
+    onUpdate();
+    onClose();
+  };
 
   return (
-    <>
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="employee" className="block text-sm font-medium">{t.fullNameColumn}</label>
+        <label htmlFor="employee" className="block text-sm font-medium">{translation.fullNameColumn}</label>
         <div className="relative">
           <select
             id="employee"
-            value={formData.selectedEmployeeId}
-            onChange={e => setters.handleEmployeeSelect(e.target.value)}
+            value={selectedEmployeeId}
+            onChange={e => handleEmployeeSelect(e.target.value)}
             className="w-full px-4 py-3 border rounded-lg appearance-none"
             required
           >
-            <option value="" disabled>{t.selectEmployee}</option>
+            <option value="" disabled>{translation.selectEmployee}</option>
             {employees.map(emp => (
               <option key={emp._id} value={emp._id}>
                 {emp.name}
@@ -40,16 +110,16 @@ export function WorkLogForm({ formData, setters, employees, products, translatio
 
       {/* Product Name */}
       <div>
-        <label className="block text-sm font-medium">{t.productNameColumn}</label>
+        <label className="block text-sm font-medium">{translation.productNameColumn}</label>
         <div className="relative">
           <select
             id="product"
-            value={formData.selectProductId}
-            onChange={e => setters.handleProductSelect(e.target.value)}
+            value={selectedProductId}
+            onChange={e => handleProductSelect(e.target.value)}
             className="w-full px-4 py-3 border rounded-lg appearance-none"
             required
           >
-            <option value="" disabled>{t.selectProduct}</option>
+            <option value="" disabled>{translation.selectProduct}</option>
             {products.map(prod => (
               <option key={prod._id} value={prod._id}>
                 {prod.name}
@@ -62,11 +132,11 @@ export function WorkLogForm({ formData, setters, employees, products, translatio
 
       {/* Quantity */}
       <div>
-        <label className="block text-sm font-medium">{t.quantityColumn}</label>
+        <label className="block text-sm font-medium">{translation.quantityColumn}</label>
           <input
             type="number"
-            value={formData.quantity ?? ''}   // fallback to empty string if undefined
-            onChange={e => setters.setQuantity(Number(e.target.value))}
+            value={quantity ?? ''}   // fallback to empty string if undefined
+            onChange={e => setQuantity(Number(e.target.value))}
             className="w-full px-4 py-3 border rounded-lg"
             required
           />              
@@ -83,6 +153,24 @@ export function WorkLogForm({ formData, setters, employees, products, translatio
           required
         />
       </div> */}
-    </>
+
+      <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className={`px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100`}
+            >
+              {translation.cancelButton}
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`px-6 py-2 bg-[#FF6767] text-white rounded-lg hover:bg-red-600 flex items-center justify-center`}
+            >
+              {submitting ? translation.saving : translation.addWorkLogButton}
+            </button>
+          </div>
+    </form>
   );
 }

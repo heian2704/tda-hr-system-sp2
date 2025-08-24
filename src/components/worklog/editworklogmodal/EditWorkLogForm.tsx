@@ -1,30 +1,38 @@
 // EmployeeForm.tsx
-import React, { use } from 'react';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
-import { ProductDto } from '@/dtos/product/ProductDto';
+import React, { use, useState } from 'react';
 import { useWorklogEditForm } from './useWorklogEditForm';
 import { worklogService } from '@/services/worklogService';
 import { ChevronDown } from 'lucide-react';
 import { worklogUpdateDto } from '@/dtos/worklog/worklogUpdateDto';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
+import { Employee } from '@/domain/models/employee/get-employee.model';
+import { Product } from '@/domain/models/product/get-product.dto';
+import { UpdateWorklogUseCase } from '@/data/usecases/worklog.usecase';
+import { TokenedRequest } from '@/domain/models/common/header-param';
+import { on } from 'events';
 
 interface Props {
     worklogid?: string;
-    worklogToEdit?: worklogUpdateDto;
-    onSave: (worklog: worklogUpdateDto) => void;
+    worklogToEdit?: UpdateWorklogDto;
     onClose: () => void;
-    employees: EmployeeResponse[];
-    products: ProductDto[];
+    employees: Employee[];
+    products: Product[];
+    updateWorklogUseCase: UpdateWorklogUseCase;
+    setShowEditAlert?: React.Dispatch<React.SetStateAction<boolean>>;
+    onUpdate: any;
 }
 
-const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onSave, onClose, employees, products }) => {
-    const {
-        employeeId, setEmployeeId,
-        productId, setProductId,
-        quantity, setQuantity,
-
-    } = useWorklogEditForm(worklogToEdit);
-
+const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase, setShowEditAlert, onUpdate }) => {
+    const [employeeId, setEmployeeId] = useState<string>(worklogToEdit?.employeeId || '');
+    const [productId, setProductId] = useState<string>(worklogToEdit?.productId || '');
+    const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity || 0);
+    const [submitting, setSubmitting] = useState(false);
+    const token = localStorage.getItem('token');
+    const idToken = (id: string): TokenedRequest => ({
+      id,
+      token: token,
+    });
     const t = useLanguage().translations.workLogPage;
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -39,21 +47,22 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onSave, on
           console.error("No product ID provided for update");
       }
 
-      const submittedWorkLogData: worklogUpdateDto = {
-          employeeId,
-          productId,
-          quantity,
-      };
-
-      onSave(submittedWorkLogData); // Update UI
-      onClose();
-
       // Async update
       (async () => {
           try {
-              await worklogService.updateWorkLog(worklogid, submittedWorkLogData);
+              setSubmitting(true);
+              var result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
+              if(result)
+              {
+                setShowEditAlert(true);
+                setTimeout(() => setShowEditAlert(false), 3000);
+              }
+              onUpdate();
+              onClose();
           } catch (error) {
               console.error("Error saving worklog:", error);
+          } finally {
+              setSubmitting(false);
           }
       })();
     };
@@ -144,15 +153,17 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onSave, on
           <button
             type="button"
             onClick={onClose}
+            disabled={submitting}
             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
           >
             {t.cancelButton}
           </button>
           <button
             type="submit"
+            disabled={submitting}
             className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
-            {t.editButton}
+            {submitting ? t.saving : t.editButton}
           </button>
         </div>
       </form>

@@ -1,18 +1,23 @@
 // EmployeeForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useEditEmployeeForm } from './useEditEmployeeForm';
-import { employeeService } from '@/services/employeeService';
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
+import { TokenedRequest } from '@/domain/models/common/header-param';
+import { UpdateEmployeeDto } from '@/domain/models/employee/update-employee.dto';
+import { EmpStatus } from '@/constants/employee-status.enum';
+import { UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 
 interface Props {
     employeeId?: string;
     editEmployeeDto?: EmployeeUpdateDto;
-    onSave: (employee: EmployeeUpdateDto) => void;
     onClose: () => void;
     translations: any;
+    updateEmployeeUseCase: UpdateEmployeeUseCase;
+    showEditedAlert: any;
+    onUpdate: any;
 }
 
-const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave, onClose, translations }) => {
+const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClose, translations, updateEmployeeUseCase, showEditedAlert, onUpdate }) => {
     const {
         fullName, setFullName,
         phoneNumber, setPhoneNumber,
@@ -21,7 +26,17 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave
         address, setAddress,
         status, setStatus
     } = useEditEmployeeForm(editEmployeeDto);
+    const [submitting, setSubmitting] = useState(false);
+    const token = localStorage.getItem('token');
 
+    if (!token) {
+        throw new Error('ID Token is required for authentication');
+    }
+
+    const makeTokenedRequest = (id: string): TokenedRequest => ({
+      id,
+      token: token,
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,25 +45,33 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave
         console.error("No employee ID provided for update");
         return;
     }
+    if (submitting) return;
 
-    const submittedEmployeeData: EmployeeUpdateDto = {
+    const submittedEmployeeData: UpdateEmployeeDto = {
         name: fullName,
-        phoneNumber,
-        address,
+        phoneNumber: phoneNumber,
+        address: address,
         position: role,
-        status,
+        status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
         joinedDate: joinDate,
     };
-
-    onSave(submittedEmployeeData); // Update UI
-    onClose();
-
+    
     // Async update
     (async () => {
         try {
-        await employeeService.updateEmployee(employeeId, submittedEmployeeData);
+            setSubmitting(true);
+            var result = await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
+            if(result)
+            {
+                showEditedAlert(true);
+                setTimeout(() => showEditedAlert(false), 3000);
+            }
+            onUpdate();
+            onClose();
         } catch (error) {
-        console.error("Error saving employee:", error);
+            console.error("Error saving employee:", error);
+        } finally {
+            setSubmitting(false);
         }
     })();
     };
@@ -162,15 +185,17 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onSave
                 <button
                     type="button"
                     onClick={onClose}
+                    disabled={submitting}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
                 >
                     {translations.cancelButton}
                 </button>
                 <button
                     type="submit"
+                    disabled={submitting}
                     className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 >
-                    {translations.editButton}
+                    {submitting ? translations.saving : translations.editButton}
                 </button>
             </div>
         </form>

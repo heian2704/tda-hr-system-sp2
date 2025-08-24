@@ -10,7 +10,7 @@ const EmployeeListView: React.FC<EmployeeDummyProps> = ({ getAllEmployeeUseCase 
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
 
   if (loading) return <div>Loading employees...</div>;
-  if (error) return <div>Error: {error}</div>; 
+  if (error) return <div>Error: {String(error)}</div>; 
   
   const [searchParams] = useSearchParams(); // Get the search params from the URL
   const searchQuery = searchParams.get('q') || ''; // Get the 'q' parameter

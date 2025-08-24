@@ -1,6 +1,5 @@
 // useEmployeeForm.ts
 import { useState, useEffect } from 'react';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 
 export const useEditEmployeeForm = (employeeToEdit?: EmployeeUpdateDto) => {

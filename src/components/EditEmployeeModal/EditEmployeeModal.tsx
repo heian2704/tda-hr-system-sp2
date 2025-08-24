@@ -3,17 +3,23 @@ import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EditEmployeeModalProps } from "@/components/EditEmployeeModal/types.ts";
 import EditEmployeeForm from "@/components/EditEmployeeModal/EditEmployeeForm.tsx";
+import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
+import { UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 
 export const EditEmployeeModal: React.FC<EditEmployeeModalProps & { employeeId: string }> = ({
                                                                       isOpen,
                                                                       onClose,
                                                                       editEmployeeDto,
-                                                                      onSave,
                                                                       employeeId,
-                                                                  }) => {
+                                                                        onUpdate,
+                                                                        showEditedAlert
+                                                                    }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const { translations } = useLanguage();
     const modalTranslations = translations.employeePage;
+    const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+    const updateEmployeeUseCase = new UpdateEmployeeUseCase(employeeInterface);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -53,9 +59,11 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps & { employeeId: 
                 <EditEmployeeForm
                     employeeId={employeeId}
                     editEmployeeDto={editEmployeeDto}
-                    onSave={onSave}
                     onClose={onClose}
                     translations={modalTranslations}
+                    updateEmployeeUseCase={updateEmployeeUseCase}
+                    showEditedAlert={showEditedAlert}
+                    onUpdate={onUpdate}
                 />
             </div>
         </div>
