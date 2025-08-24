@@ -40,21 +40,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsLoggedIn }) => {
           update the global authentication state upon successful login.
         */}
         <LoginForm setIsLoggedIn={setIsLoggedIn} />
-
-
-
-        {/* This is just dummy and for example. Comment that out to test. */}
-        
-        <div className="mt-12">
-          <EmployeeListView 
-          getAllEmployeeUseCase={getAllEmployeeUseCase} 
-          getEmployeeByIdUseCase={getEmployeeByIdUseCase} 
-          createEmployeeUseCase={createEmployeeUseCase} 
-          updateEmployeeUseCase={updateEmployeeUseCase} 
-          updateEmployeeStatusUseCase={updateEmployeeStatusUseCase} 
-          deleteEmployeeUseCase={deleteEmployeeUseCase} 
-          />
-        </div> 
        
 
       </div>
