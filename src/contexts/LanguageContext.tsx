@@ -48,6 +48,7 @@ export interface EmployeePageTranslations {
   createSuccessfully: ReactNode;
   editSuccessfully: ReactNode;
   deleteSuccessfully: ReactNode;
+  statusUpdate: ReactNode;
   editEmployeeTitle: ReactNode;
   saveChangesButton: ReactNode;
   confirmDeleteTitle: ReactNode;
@@ -325,6 +326,7 @@ const allAppTranslations: AllTranslationsCollection = {
       createSuccessfully: "Employee created successfully.",
       editSuccessfully: "Employee updated successfully.",
       deleteSuccessfully: "Employee deleted successfully.",
+      statusUpdate: "Status updated successfully.",
       editEmployeeTitle: "Edit Employee",
       saveChangesButton: "Save Changes",
       confirmDeleteTitle: "Confirm Deletion",
@@ -561,6 +563,7 @@ const allAppTranslations: AllTranslationsCollection = {
       editSuccessfully: "ဝန်ထမ်းပြင်ဆင်ပြီးပါပြီ။",
       deleteSuccessfully: "ဝန်ထမ်းဖျက်ပြီးပါပြီ။",
       editEmployeeTitle: "ဝန်ထမ်းပြင်ဆင်ရန်",
+      statusUpdate: "အခြေအနေပြောင်းလဲပြီးပါပြီ။",
       saveChangesButton: "အပြောင်းအလဲများ သိမ်းဆည်းရန်",
       confirmDeleteTitle: "ဖျက်ရန် အတည်ပြုပါ",
       confirmDeleteMessage1: "ဖျက်ရန်သေချာပါသလား",

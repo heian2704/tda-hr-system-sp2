@@ -1,16 +1,19 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import Employee from '@/pages/employee/Employee';
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
 import { DeleteEmployeeUseCase } from '@/data/usecases/employee.usecase';
 import { TokenedRequest } from '@/domain/models/common/header-param';
+import { on } from 'events';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   employeeId: string | null;
   employeeName: string;
+  onUpdate: any;
+  showDeleteAlert: any;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
@@ -18,11 +21,13 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   onClose,
   employeeId,
   employeeName,
+  onUpdate,
+  showDeleteAlert
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const employeeInterface : EmployeeInterface = new EmployeeInterfaceImpl();
   const deleteEmployeeUseCase = new DeleteEmployeeUseCase(employeeInterface);
-
+  const [submitting, setSubmitting] = useState(false);
   const token = localStorage.getItem('token');
   if(!token)
   {
@@ -48,8 +53,22 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
   const handleConfirm = async () => {
     if (!employeeId) return;
-    await deleteEmployeeUseCase.execute(makeTokenedRequest(employeeId));
-    onClose();
+    if (submitting) return;
+    try{
+      setSubmitting(true);
+      var result = await deleteEmployeeUseCase.execute(makeTokenedRequest(employeeId));
+      if(result)
+      {
+      showDeleteAlert(true);
+      setTimeout(() => showDeleteAlert(false), 3000);
+      }
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -73,6 +92,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           </button>
           <button
             onClick={() => handleConfirm()}
+            disabled={submitting}
             className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
             Delete

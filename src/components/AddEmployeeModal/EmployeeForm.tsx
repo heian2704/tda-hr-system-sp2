@@ -1,5 +1,5 @@
 // EmployeeForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useEmployeeForm } from './useEmployeeForm';
 import { employeeService } from '@/services/employeeService';
 import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
@@ -8,17 +8,20 @@ import { CreateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
 import { EmpStatus } from '@/constants/employee-status.enum';
 import { BearerTokenedRequest } from '@/domain/models/common/header-param';
+import { set } from 'date-fns';
 
 interface Props {
   addEmployeeDto?: CreateEmployeeDto;
   //onSave: (employee: EmployeeDto) => void;
   onClose: () => void;
   translations: any;
+  showCreateAlert: any;
+  onUpdate: any;
   createEmployeeUseCase: CreateEmployeeUseCase;
 }
 
 
-const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, createEmployeeUseCase }) => {
+const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, createEmployeeUseCase, onUpdate, showCreateAlert }) => {
   const {
     fullName, setFullName,
     phoneNumber, setPhoneNumber,
@@ -27,6 +30,7 @@ const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, 
     address, setAddress,
     status, setStatus
   } = useEmployeeForm(addEmployeeDto);
+const [submitting, setSubmitting] = useState(false);
 
 // Get the current token from localStorage
 const token = localStorage.getItem('token');
@@ -37,28 +41,32 @@ if (!token) {
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-
-  const submittedEmployeeData: CreateEmployeeDto = {
-    name: fullName,
-    phoneNumber: phoneNumber,
-    address: address,
-    position: role,
-    status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
-    joinedDate: joinDate,
-  };
-
+  if (submitting) return;
   try {
-    console.log('Submitting employee data:', submittedEmployeeData);
-    console.log('Using token:', token);
-    const result = await createEmployeeUseCase?.execute({ token: token }, submittedEmployeeData);
-    console.log('Employee created successfully:', result);
     
-    //onSave(result); 
+    const submittedEmployeeData: CreateEmployeeDto = {
+      name: fullName,
+      phoneNumber: phoneNumber,
+      address: address,
+      position: role,
+      status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
+      joinedDate: joinDate,
+    };
+
+    setSubmitting(true);
+    const result = await createEmployeeUseCase?.execute({ token: token }, submittedEmployeeData);
+    if(result)
+    {
+      showCreateAlert(true);
+      setTimeout(() => showCreateAlert(false), 3000);
+    }
+    onUpdate();
     onClose();
     
   } catch (error) {
     console.error('Error creating employee:', error);
-    alert('Failed to create employee. Please try again.');
+  } finally {
+    setSubmitting(false);
   }
 };
 
@@ -174,12 +182,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         <button
           type="button"
           onClick={onClose}
+          disabled={submitting}
           className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
         >
           {translations.cancelButton}
         </button>
         <button
           type="submit"
+          disabled={submitting}
           className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           onClick={handleSubmit}
         >
