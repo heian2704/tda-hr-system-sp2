@@ -40,6 +40,7 @@ const ExpenseIncome = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [entryToDeleteDetails, setEntryToDeleteDetails] = useState<{ id: string; name: string; type: 'income' | 'expense' } | null>(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [isAddEntryModalOpen, setIsAddEntryModalOpen] = useState(false);
@@ -74,6 +75,9 @@ const ExpenseIncome = () => {
       }
     };
     loadData();
+    if (!selectedMonth) {
+      setSelectedMonth(new Date().toISOString().slice(0,7));
+    }
   }, []);
 
   // Calculate totals based on date-filtered entries (before search query)
@@ -93,6 +97,19 @@ const ExpenseIncome = () => {
         entry.date.includes(lowerCaseQuery) ||
         entry.description.toLowerCase().includes(lowerCaseQuery)
       );
+    }
+
+    if (selectedMonth) {
+      const [selYearStr, selMonthStr] = selectedMonth.split('-');
+      const selYear = Number(selYearStr);
+      const selMonth = Number(selMonthStr); // 1..12
+      if (!Number.isNaN(selYear) && !Number.isNaN(selMonth)) {
+        currentTabEntries = currentTabEntries.filter(entry => {
+          const d = new Date(entry.date);
+          if (isNaN(d.getTime())) return false;
+          return d.getFullYear() === selYear && (d.getMonth() + 1) === selMonth;
+        });
+      }
     }
     return currentTabEntries;
   }, [activeTab, incomes, expenses, searchQuery]);
@@ -230,6 +247,13 @@ const ExpenseIncome = () => {
 
             {/* Sort by and Add New Button */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                title="Filter by month"
+              />
               <button
                 onClick={handleOpenAddModal}
                 className="flex items-center justify-center gap-2 px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors w-full sm:w-auto"
