@@ -19,16 +19,14 @@ import { set } from 'date-fns';
 interface EmployeeProps {
   currentPath?: string;
   searchQuery?: string;
-  getAllEmployeeUseCase: GetAllEmployeeUseCase;
 }
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
-const defaultGetAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 
 const Employee = ({ 
    currentPath,
-   searchQuery = "", 
-   getAllEmployeeUseCase = defaultGetAllEmployeeUseCase }: EmployeeProps) => {
+   searchQuery = ""}: EmployeeProps) => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [currentPage, setCurrentPage] = useState(1);

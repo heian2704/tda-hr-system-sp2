@@ -128,16 +128,6 @@ const App = () => {
                 </ProtectedElement>
               }
             />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedElement>
-                  <Layout setIsLoggedIn={setIsLoggedIn}>
-                    <Reports />
-                  </Layout>
-                </ProtectedElement>
-              }
-            />
 
             {/*
               Not Found Route:
