@@ -1,3 +1,4 @@
+import { UpdateEmployeeUseCase } from "@/data/usecases/employee.usecase";
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 
 export interface EditEmployeeModalProps {
@@ -5,4 +6,6 @@ export interface EditEmployeeModalProps {
     isOpen: boolean;
     onClose: () => void;
     editEmployeeDto?: EmployeeUpdateDto;
+    onUpdate: any;
+    showEditedAlert: any;
 }

@@ -1,5 +1,5 @@
 // EmployeeForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useEditEmployeeForm } from './useEditEmployeeForm';
 import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 import { TokenedRequest } from '@/domain/models/common/header-param';
@@ -13,9 +13,11 @@ interface Props {
     onClose: () => void;
     translations: any;
     updateEmployeeUseCase: UpdateEmployeeUseCase;
+    showEditedAlert: any;
+    onUpdate: any;
 }
 
-const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClose, translations, updateEmployeeUseCase }) => {
+const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClose, translations, updateEmployeeUseCase, showEditedAlert, onUpdate }) => {
     const {
         fullName, setFullName,
         phoneNumber, setPhoneNumber,
@@ -24,7 +26,7 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
         address, setAddress,
         status, setStatus
     } = useEditEmployeeForm(editEmployeeDto);
-
+    const [submitting, setSubmitting] = useState(false);
     const token = localStorage.getItem('token');
 
     if (!token) {
@@ -43,6 +45,7 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
         console.error("No employee ID provided for update");
         return;
     }
+    if (submitting) return;
 
     const submittedEmployeeData: UpdateEmployeeDto = {
         name: fullName,
@@ -54,14 +57,24 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
     };
 
     // onSave(submittedEmployeeData); // Update UI
-    onClose();
+    
 
     // Async update
     (async () => {
         try {
-            await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
+            setSubmitting(true);
+            var result = await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
+            if(result)
+            {
+                showEditedAlert(true);
+                setTimeout(() => showEditedAlert(false), 3000);
+            }
+            onUpdate();
+            onClose();
         } catch (error) {
-        console.error("Error saving employee:", error);
+            console.error("Error saving employee:", error);
+        } finally {
+            setSubmitting(false);
         }
     })();
     };
@@ -175,12 +188,14 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
                 <button
                     type="button"
                     onClick={onClose}
+                    disabled={submitting}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors"
                 >
                     {translations.cancelButton}
                 </button>
                 <button
                     type="submit"
+                    disabled={submitting}
                     className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 >
                     {translations.editButton}

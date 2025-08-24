@@ -12,7 +12,9 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps & { employeeId: 
                                                                       onClose,
                                                                       editEmployeeDto,
                                                                       employeeId,
-                                                                  }) => {
+                                                                        onUpdate,
+                                                                        showEditedAlert
+                                                                    }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const { translations } = useLanguage();
     const modalTranslations = translations.employeePage;
@@ -60,6 +62,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps & { employeeId: 
                     onClose={onClose}
                     translations={modalTranslations}
                     updateEmployeeUseCase={updateEmployeeUseCase}
+                    showEditedAlert={showEditedAlert}
+                    onUpdate={onUpdate}
                 />
             </div>
         </div>

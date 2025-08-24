@@ -11,6 +11,8 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   isOpen,
   onClose,
   addEmployeeDto,
+  onUpdate,
+  showCreateAlert
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
@@ -59,6 +61,8 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
           onClose={onClose}
           translations={modalTranslations}
           createEmployeeUseCase={createEmployeeUseCase}
+          onUpdate={onUpdate}
+          showCreateAlert={showCreateAlert}
         />
       </div>
     </div>

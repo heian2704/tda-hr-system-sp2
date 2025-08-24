@@ -13,17 +13,19 @@ interface StatusChangerProps {
   employeeName: string;
   currentStatus: string;
   translations: EmployeePageTranslations;
+  onUpdate: any;
 }
 
 const StatusChanger: React.FC<StatusChangerProps> = ({
   employeeId,
-  employeeName,
   currentStatus,
-  translations
+  translations,
+  onUpdate
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showStatusEditAlert, setShowStatusEditAlert] = useState(false);
   const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
   const updateEmployeeStatusUseCase = new UpdateEmployeeStatusUseCase(employeeInterface);
 
@@ -68,9 +70,14 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
     if (isUpdating || newStatus.status === currentStatus) return;
     try {
       setIsUpdating(true);
-      await updateEmployeeStatusUseCase.execute(makeTokenedRequest(employeeId), newStatus);
-      console.log(`Successfully updated employee ${employeeId} status to ${newStatus.status}`);
+      var result = await updateEmployeeStatusUseCase.execute(makeTokenedRequest(employeeId), newStatus);
       setIsOpen(false);
+      if(result)
+      {
+        onUpdate();
+        setShowStatusEditAlert(true);
+        setTimeout(() => setShowStatusEditAlert(false), 3000);
+      }
     } catch (error) {
       console.error('Failed to update employee status:', error);
     } finally {
@@ -82,6 +89,11 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
 
   return (
     <div className="relative inline-block" ref={dropdownRef}>
+      {showStatusEditAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {translations.statusUpdate || '{entryType} Updated'}
+        </div>
+      )}
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isUpdating}

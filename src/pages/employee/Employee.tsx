@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import { Users, Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X, Edit, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
@@ -14,6 +14,7 @@ import { useGetAllEmployees } from '@/hooks/employee/get-all-employee.hook';
 import type { Employee } from '@/domain/models/employee/get-employee.model';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
+import { set } from 'date-fns';
 
 interface EmployeeProps {
   currentPath?: string;
@@ -29,6 +30,7 @@ const Employee = ({
    searchQuery = "", 
    getAllEmployeeUseCase = defaultGetAllEmployeeUseCase }: EmployeeProps) => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,13 +41,19 @@ const Employee = ({
   const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<Employee | undefined>(undefined);
   const { language, translations } = useLanguage();
   const employeePageTranslations = translations.employeePage;
+  const [showEditedAlert, setShowEditedAlert] = useState(false);
+  const [showDeletedAlert, setShowDeletedAlert] = useState(false);
+  const [showCreatedAlert, setShowCreatedAlert] = useState(false);
 
   const [sortField, setSortField] = useState<'joinedDate' | 'name' | 'status'>('joinedDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setAllEmployees(employees);
+  }, [employees]);
 
-  const filteredEmployees = employees.filter(emp =>
+  const filteredEmployees = allEmployees.filter(emp =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,6 +81,15 @@ const Employee = ({
   const endIndex = Math.min(startIndex + itemsPerPage, totalEmployees);
   const currentEmployees = filteredEmployees.slice(startIndex, endIndex);
 
+  const refetchEmployees = async () => {
+    try{
+      const refetchedEmps = await getAllEmployeeUseCase.execute();
+      setAllEmployees(refetchedEmps);
+    } catch (error) {
+      console.error('Error refetching employees:', error);
+    }
+  };
+  
   const handlePageChange = (page: number) => {
     const clampedPage = Math.max(1, Math.min(page, totalPages));
     setCurrentPage(clampedPage);
@@ -132,6 +149,21 @@ const Employee = ({
 
   return (
     <div className="font-sans antialiased text-gray-800">
+      {showCreatedAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {employeePageTranslations.createSuccessfully || '{entryType} Created'}
+        </div>
+      )}
+      {showEditedAlert && (                                        
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {employeePageTranslations.editSuccessfully || '{entryType} Updated'}
+        </div>
+      )}
+      {showDeletedAlert && (
+        <div className="fixed top-34 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {employeePageTranslations.deleteSuccessfully || '{entryType} Deleted'}
+        </div>
+      )}
       <div className="space-y-4">
         {/* Stats Section */}
         <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
@@ -253,6 +285,7 @@ const Employee = ({
                           deleteButton: String(employeePageTranslations.deleteButton),
                           editButton: String(employeePageTranslations.editButton),
                         }}
+                        onUpdate={refetchEmployees}
                       />
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -322,6 +355,8 @@ const Employee = ({
         addEmployeeDto={
           selectedEmployeeForAdd  
         }
+        showCreateAlert={setShowCreatedAlert}
+        onUpdate={refetchEmployees}
       />
 
       {/* Edit Employee Modal */}
@@ -330,6 +365,8 @@ const Employee = ({
         editEmployeeDto={selectedEmployeeForEdit}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+        onUpdate={refetchEmployees}
+        showEditedAlert={setShowEditedAlert}
       />
 
 
@@ -339,6 +376,8 @@ const Employee = ({
         onClose={() => setIsDeleteConfirmModalOpen(false)}
         employeeId={employeeToDeleteDetails?.id || null}
         employeeName={employeeToDeleteDetails?.name || ''}
+        onUpdate={refetchEmployees}
+        showDeleteAlert={setShowDeletedAlert}
       />
     </div>
   );
