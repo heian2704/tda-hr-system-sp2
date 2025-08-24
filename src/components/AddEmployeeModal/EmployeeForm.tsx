@@ -193,7 +193,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           onClick={handleSubmit}
         >
-          {translations.addButton}
+          {submitting ? translations.saving : translations.addButton}
         </button>
       </div>
     </form>

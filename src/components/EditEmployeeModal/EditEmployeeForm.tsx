@@ -55,10 +55,7 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
         status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
         joinedDate: joinDate,
     };
-
-    // onSave(submittedEmployeeData); // Update UI
     
-
     // Async update
     (async () => {
         try {
@@ -198,7 +195,7 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
                     disabled={submitting}
                     className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 >
-                    {translations.editButton}
+                    {submitting ? translations.saving : translations.editButton}
                 </button>
             </div>
         </form>

@@ -6,6 +6,7 @@ import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterfac
 import { DeleteEmployeeUseCase } from '@/data/usecases/employee.usecase';
 import { TokenedRequest } from '@/domain/models/common/header-param';
 import { on } from 'events';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -29,6 +30,8 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   const deleteEmployeeUseCase = new DeleteEmployeeUseCase(employeeInterface);
   const [submitting, setSubmitting] = useState(false);
   const token = localStorage.getItem('token');
+  const translations = useLanguage();
+  const employeePageTranslations = translations.translations.employeePage;
   if(!token)
   {
     throw new Error('ID Token is required for authentication');
@@ -95,7 +98,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             disabled={submitting}
             className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
           >
-            Delete
+            {submitting ? employeePageTranslations.saving : employeePageTranslations.deleteButton}
           </button>
         </div>
       </div>

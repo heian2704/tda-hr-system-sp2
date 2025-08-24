@@ -1,22 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  DollarSign,
   FileText,
-  Plus,
   ChevronDown,
-  Edit,
-  X,
   ChevronLeft,
   ChevronRight,
-  Calculator,
-  Minus,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
-import { PayrollDto } from "@/dtos/payroll/PayrollDto";
-import { EmployeeResponse } from "@/dtos/employee/EmployeeResponse";
-import { PayrollService } from "@/services/PayrollService";
-import { employeeService } from "@/services/employeeService";
 import { PayrollData } from "@/dtos/payroll/PayrollData";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
@@ -24,13 +14,10 @@ import { PayrollInterfaceImpl } from "@/data/interface-implementation/payroll";
 import { PayrollInterface } from "@/domain/interfaces/payroll/PayrollInterface";
 import { GetEmployeeByIdUseCase } from "@/data/usecases/employee.usecase";
 import { GetAllPayrollUseCase } from "@/data/usecases/payroll.usecase";
-import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook";
-import { useGetEmployeeById } from "@/hooks/employee/get-employee-by-id.hook";
+import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook"
 import { TokenedRequest } from "@/domain/models/common/header-param";
 import { Employee } from "@/domain/models/employee/get-employee.model";
 import {
-  formatISOWeek,
-  formatYYYYMM,
   getISOWeekStartEnd,
   ITEMS_PER_PAGE,
 } from "@/constants/page-utils";
@@ -42,13 +29,13 @@ const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
 const getAllPayrollUseCase = new GetAllPayrollUseCase(payrollInterface);
 // --- Main Payroll Component ---
 const Payroll = () => {
-  const { loading, error, payrolls, getAllPayrolls } =
-    useGetAllPayroll(getAllPayrollUseCase);
+  const { loading, error, payrolls } = useGetAllPayroll(getAllPayrollUseCase);
   const [periodType, setPeriodType] = useState<"month" | "week" | "day">("month");
-  const [selectedMonth, setSelectedMonth] = useState<string>(""); // YYYY-MM
-  const [selectedWeek, setSelectedWeek] = useState<string>("");   // YYYY-Www
-  const [selectedDay, setSelectedDay]   = useState<string>("");   // YYYY-MM-DD
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedWeek, setSelectedWeek] = useState<string>("");
+  const [selectedDay, setSelectedDay] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
   const [payrollEntries, setPayrollEntries] = useState<PayrollData[]>([]);
   const token = localStorage.getItem("token");
   const idToken = (id: string): TokenedRequest => ({
@@ -62,21 +49,11 @@ const Payroll = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
 
-  useEffect(() => {
-    getAllPayrolls();
-  }, []);
-
-  // useEffect(() => {
-  //   const now = new Date();
-  //   setSelectedMonth(formatYYYYMM(now));
-  //   setSelectedWeek(formatISOWeek(now));
-  //   setSelectedDay(now.toISOString().slice(0, 10));
-  // }, []);
-
   // Fetch payroll and employee data
   useEffect(() => {
     const fetchPayrollData = async () => {
       if (loading) return;
+      setPageLoading(true);
       if (error) {
         console.error("Payroll load error:", error);
         setPayrollEntries([]);
@@ -182,16 +159,8 @@ const Payroll = () => {
     setCurrentPage(page);
   };
 
-  if (loading)
-    return (
-      <div className="text-center py-8">{translations.common.loading}...</div>
-    );
-  if (error)
-    return (
-      <div className="text-center py-8 text-red-600">
-        {translations.common.error}: {error}
-      </div>
-    );
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
     <div className="font-sans antialiased text-gray-800">
@@ -279,27 +248,27 @@ const Payroll = () => {
               </thead>
               <tbody>
                 {currentPayrollEntries.map((entry) => (
-                  <tr
-                    key={entry._id}
-                    className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-                  >
-                    <td className="py-3 px-4 font-medium text-gray-900">
-                      {entry.fullName}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {entry.position}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {entry.totalQuantity.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      Ks. {entry.totalSalary.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {entry.period.toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
+                    <tr
+                      key={entry._id}
+                      className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                    >
+                      <td className="py-3 px-4 font-medium text-gray-900">
+                        {entry.fullName}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.position}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.totalQuantity.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        Ks. {entry.totalSalary.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.period.toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
