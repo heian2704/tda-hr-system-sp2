@@ -66,12 +66,12 @@ const Payroll = () => {
     getAllPayrolls();
   }, []);
 
-  useEffect(() => {
-    const now = new Date();
-    setSelectedMonth(formatYYYYMM(now));
-    setSelectedWeek(formatISOWeek(now));
-    setSelectedDay(now.toISOString().slice(0, 10));
-  }, []);
+  // useEffect(() => {
+  //   const now = new Date();
+  //   setSelectedMonth(formatYYYYMM(now));
+  //   setSelectedWeek(formatISOWeek(now));
+  //   setSelectedDay(now.toISOString().slice(0, 10));
+  // }, []);
 
   // Fetch payroll and employee data
   useEffect(() => {
