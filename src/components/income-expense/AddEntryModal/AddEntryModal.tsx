@@ -12,7 +12,7 @@ interface AddEntryModalProps {
   entryType: 'expense' | 'income';
   useCase: CreateExpenseUseCase | CreateIncomeUseCase;
   setShowCreatedAlert?: (show: boolean) => void;
-  onUpdate: any;
+  onUpdate: () => void;
 }
 
 const AddEntryModal = ({ isOpen, onClose, entryType, useCase, setShowCreatedAlert, onUpdate }: AddEntryModalProps) => {

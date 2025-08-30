@@ -1,3 +1,4 @@
+import { ExpenseIncomePageTranslations } from "@/contexts/LanguageContext";
 import { UpdateExpenseUseCase } from "@/data/usecases/expense.usecase";
 import { UpdateIncomeUseCase } from "@/data/usecases/income.usecase";
 import { TokenedRequest } from "@/domain/models/common/header-param";
@@ -7,13 +8,13 @@ import { useState } from "react";
 
 interface EditEntryFormProps {
   onClose: () => void;
-  translations: any;
+  translations: ExpenseIncomePageTranslations;
   entryType: "expense" | "income";
   entryId: string;
   entry: UpdateExpenseDto | UpdateIncomeDto;
   updateUseCase: UpdateExpenseUseCase | UpdateIncomeUseCase;
   setShowEditAlert: (show: boolean) => void;
-  onUpdated: any;
+  onUpdated: () => void;
 }
 
 export function EditEntryForm({
@@ -27,7 +28,7 @@ export function EditEntryForm({
   onUpdated
 }: EditEntryFormProps) {
   const [title, setTitle] = useState(entry.title ?? "");
-  const [amount, setAmount] = useState<number>(Number(entry.amount) ?? 0);
+  const [amount, setAmount] = useState<number>(Number(entry.amount));
   const [date, setDate] = useState<string>(
     typeof entry.date === "string" ? entry.date.slice(0, 10) : ""
   );
@@ -62,7 +63,7 @@ export function EditEntryForm({
     }
   };
 
-  const t = translations?.expenseIncomePage ?? translations ?? {};
+  const t = translations;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,7 +113,7 @@ export function EditEntryForm({
 
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-600 mb-1">
-          {(t.descriptionColumn || "Description")} ({t.optional || "optional"})
+          {(t.noteColumn || "Description")}
         </label>
         <textarea
           id="description"

@@ -64,8 +64,8 @@ const ExpenseIncome = () => {
       try {
         const expensesResp = await getAllExpenseUseCase.execute();
         const incomesResp = await getAllIncomeUseCase.execute();
-        setExpenses(Array.isArray(expensesResp) ? expensesResp : []);
-        setIncomes(Array.isArray(incomesResp) ? incomesResp : []);
+        setExpenses(expensesResp.reverse());
+        setIncomes(incomesResp.reverse());
       } catch (e) {
         console.error("Failed to load income/expense:", e);
         setExpenses([]);
@@ -75,9 +75,6 @@ const ExpenseIncome = () => {
       }
     };
     loadData();
-    if (!selectedMonth) {
-      setSelectedMonth(new Date().toISOString().slice(0,7));
-    }
   }, []);
 
   // Calculate totals based on date-filtered entries (before search query)
@@ -139,7 +136,7 @@ const ExpenseIncome = () => {
   const refetchExpenses = async () => {
     try {
       const data = await getAllExpenseUseCase.execute();
-      setExpenses(Array.isArray(data) ? data : []);
+      setExpenses(data.reverse());
     } catch (e) {
       console.error('Refetch expenses failed', e);
     }
@@ -147,7 +144,7 @@ const ExpenseIncome = () => {
   const refetchIncomes = async () => {
     try {
       const data = await getAllIncomeUseCase.execute();
-      setIncomes(Array.isArray(data) ? data : []);
+      setIncomes(data.reverse());
     } catch (e) {
       console.error('Refetch incomes failed', e);
     }
@@ -366,7 +363,7 @@ const ExpenseIncome = () => {
         entryTitle={entryToDeleteDetails?.name || ''}
         entryType={entryToDeleteDetails?.type || 'income'}
         deleteUseCase={activeTab === 'income' ? deleteIncomeUseCase : deleteExpenseUseCase}
-        onUpdate={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
+        onUpdate={activeTab === 'income' ? refetchIncomes : refetchExpenses}
       />
 
       <AddEntryModal
@@ -375,7 +372,7 @@ const ExpenseIncome = () => {
         entryType={activeTab}
         useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
-        onUpdate={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
+        onUpdate={activeTab === 'income' ? refetchIncomes : refetchExpenses}
       />
 
       <EditEntryModal
@@ -387,7 +384,7 @@ const ExpenseIncome = () => {
         useCase={activeTab === 'income' ? updateIncomeUseCase : updateExpenseUseCase}
         showEditAlert={setShowEditedAlert}
         translations={pageTranslations}
-        onUpdated={activeTab === 'income' ? refetchIncomes() : refetchExpenses()}
+        onUpdated={activeTab === 'income' ? refetchIncomes : refetchExpenses}
       />
     </div>
   );

@@ -43,14 +43,15 @@ const Employee = ({
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
 
-  const [sortField, setSortField] = useState<'joinedDate' | 'name' | 'status'>('joinedDate');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<'joinedDate' | 'name' | 'status'>(undefined);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(undefined);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    setAllEmployees(employees);
+    setAllEmployees(employees.reverse());
   }, [employees]);
 
+  console.log("LAST EMPLOYEE :", allEmployees[allEmployees.length - 1]);
   const filteredEmployees = allEmployees.filter(emp =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -82,7 +83,7 @@ const Employee = ({
   const refetchEmployees = async () => {
     try{
       const refetchedEmps = await getAllEmployeeUseCase.execute();
-      setAllEmployees(refetchedEmps);
+      setAllEmployees(refetchedEmps.reverse());
     } catch (error) {
       console.error('Error refetching employees:', error);
     }
@@ -118,8 +119,10 @@ const Employee = ({
   };
 
   const sortedEmployees = [...filteredEmployees].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
+    let aValue: number | string;
+    let bValue: number | string;
+    const order = { active: 1, on_leave: 2 };
+
     switch (sortField) {
       case 'joinedDate':
         aValue = new Date(a.joinedDate || 0).getTime();
@@ -130,7 +133,6 @@ const Employee = ({
         bValue = b.name.toLowerCase();
         break;
       case 'status':
-        const order = { active: 1, on_leave: 2 };
         aValue = order[a.status] || 99;
         bValue = order[b.status] || 99;
         break;

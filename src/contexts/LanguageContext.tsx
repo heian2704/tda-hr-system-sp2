@@ -163,7 +163,7 @@ interface PayrollPageTranslations {
 }
 
 // UPDATED: Define specific types for Expense & Income page translation structure
-interface ExpenseIncomePageTranslations {
+export interface ExpenseIncomePageTranslations {
   totalNetIncomeExpense: string;
   totalIncome: string;
   totalExpense: string;

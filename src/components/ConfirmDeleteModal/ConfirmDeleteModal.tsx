@@ -13,8 +13,8 @@ interface ConfirmDeleteModalProps {
   onClose: () => void;
   employeeId: string | null;
   employeeName: string;
-  onUpdate: any;
-  showDeleteAlert: any;
+  onUpdate: () => void;
+  showDeleteAlert: (show: boolean) => void;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
@@ -59,7 +59,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
     if (submitting) return;
     try{
       setSubmitting(true);
-      var result = await deleteEmployeeUseCase.execute(makeTokenedRequest(employeeId));
+      const result = await deleteEmployeeUseCase.execute(makeTokenedRequest(employeeId));
       if(result)
       {
       showDeleteAlert(true);

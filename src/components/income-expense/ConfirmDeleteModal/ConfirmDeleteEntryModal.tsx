@@ -12,7 +12,7 @@ interface ConfirmDeleteModalProps {
   entryTitle: string;
   entryType: "income" | "expense";
   deleteUseCase: DeleteIncomeUseCase | DeleteExpenseUseCase;
-  onUpdate: any;
+  onUpdate: () => void;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({

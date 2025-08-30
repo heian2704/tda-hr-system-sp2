@@ -14,8 +14,8 @@ export const useGetAllPayroll = (useCase: GetAllPayrollUseCase) => {
       try {
         const payrolls = await useCase.execute();
         setPayrolls(payrolls);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (error) {
+        setError(error.message);
       } finally {
         setLoading(false);
       }

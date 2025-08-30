@@ -5,17 +5,19 @@ import { UpdateIncomeDto } from "@/domain/models/income-expense/income/update-in
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { EditEntryForm } from "./EditEntryForm"; // <-- import the form
+import { Expense } from "@/domain/models/income-expense/expense/get-expense.dto";
+import { ExpenseIncomePageTranslations } from "@/contexts/LanguageContext";
 
 interface EditEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  translations: any;
+  translations: ExpenseIncomePageTranslations;
   entryId: string;
   entry: UpdateIncomeDto | UpdateExpenseDto | null;
   entryType: "income" | "expense";
   useCase: UpdateIncomeUseCase | UpdateExpenseUseCase;
   showEditAlert: (show: boolean) => void;
-  onUpdated: any;
+  onUpdated: () => void;
 }
 
 export const EditEntryModal = ({
@@ -43,7 +45,7 @@ export const EditEntryModal = ({
 
   if (!isOpen || !entry) return null;
 
-  const t = translations?.expenseIncomePage ?? translations ?? {};
+  const t = translations;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

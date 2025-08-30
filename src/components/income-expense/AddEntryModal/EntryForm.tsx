@@ -1,17 +1,16 @@
 import { CreateExpenseUseCase } from "@/data/usecases/expense.usecase";
 import { CreateIncomeUseCase } from "@/data/usecases/income.usecase";
 import { BearerTokenedRequest } from "@/domain/models/common/header-param";
-import { set } from "date-fns";
-import { on } from "events";
+import type { ExpenseIncomePageTranslations } from "@/contexts/LanguageContext";
 import { useState } from "react";
 
 interface EntryFormProps {
   onClose: () => void;
-  translations: any;
+  translations: ExpenseIncomePageTranslations;
   entryType: 'expense' | 'income';
   createUseCase: CreateExpenseUseCase | CreateIncomeUseCase;
   setShowCreatedAlert: (show: boolean) => void;
-  onUpdate: any;
+  onUpdate: () => void;
 }
 
 export function EntryForm({ onClose, createUseCase, translations, entryType, setShowCreatedAlert, onUpdate }: EntryFormProps) {
@@ -96,13 +95,14 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-600 mb-1">{translations.descriptionColumn} ({translations.optional})</label>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-600 mb-1">{translations.noteColumn}</label>
             <textarea
               id="description"
               placeholder={translations.notePlaceholder}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 resize-y min-h-[80px]"
+              required
             />
           </div>
 
