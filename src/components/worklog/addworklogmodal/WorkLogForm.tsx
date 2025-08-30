@@ -1,7 +1,10 @@
+import { EmpStatus } from '@/constants/employee-status.enum';
+import { WorkLogPageTranslations } from '@/contexts/LanguageContext';
 import { CreateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { BearerTokenedRequest } from '@/domain/models/common/header-param';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
+import { set } from 'date-fns';
 import { on } from 'events';
 import { ChevronDown } from 'lucide-react';
 import { use, useState } from 'react';
@@ -10,15 +13,16 @@ import toast from 'react-hot-toast';
 interface WorkLogFormProps {
   employees: Employee[];
   products: Product[];
-  translations: any;
+  translations: WorkLogPageTranslations;
   onClose: () => void;
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert?: React.Dispatch<React.SetStateAction<boolean>>;
-  onUpdate: any;
+  setInActiveStatusAlert?: React.Dispatch<React.SetStateAction<boolean>>;
+  onUpdate: () => void;
 }
 
-export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert, onUpdate }: WorkLogFormProps) {
-  const translation = translations.workLogPage;
+export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert, onUpdate, setInActiveStatusAlert }: WorkLogFormProps) {
+  const translation = translations;
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -27,7 +31,13 @@ export function WorkLogForm({ employees, products, translations, onClose, create
   const useTokenRequest = { token } as BearerTokenedRequest;
 
   const handleEmployeeSelect = (employeeId: string) => {
-    setSelectedEmployeeId(employeeId);
+    const employee = employees.find(emp => emp._id === employeeId);
+    if (!employee) {
+      toast.error(translation.selectEmployee || "Please select an employee.");
+      return;
+    }
+    // allow selecting inactive employees; submission will validate
+    setSelectedEmployeeId(employee._id);
   };
 
   const handleProductSelect = (productId: string) => {
@@ -40,7 +50,14 @@ export function WorkLogForm({ employees, products, translations, onClose, create
     
     // Validation
     if (!selectedEmployeeId) {
-      toast.error("Please select an employee.");
+      toast.error(translation.selectEmployee || "Please select an employee.");
+      return;
+    }
+    // If selected employee is inactive, show alert and don't submit
+    const selectedEmployee = employees.find(emp => emp._id === selectedEmployeeId);
+    if (selectedEmployee && selectedEmployee.status !== EmpStatus.ACTIVE) {
+      setInActiveStatusAlert(true);
+      setTimeout(() => {setInActiveStatusAlert(false);}, 3000);
       return;
     }
     if (!selectedProductId) {

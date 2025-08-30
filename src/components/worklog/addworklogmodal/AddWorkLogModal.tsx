@@ -13,7 +13,7 @@ interface AddWorkLogModalProps {
   products: Product[];
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert: React.Dispatch<React.SetStateAction<boolean>>;
-  onUpdate: any;
+  onUpdate: () => void;
 }
 
 export const AddWorkLogModal = ({
@@ -27,9 +27,9 @@ export const AddWorkLogModal = ({
 }: AddWorkLogModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { translations } = useLanguage();
-  const t = translations.workLogPage;
+  const worklogTranslation = translations.workLogPage;
   const [loading, setLoading] = useState(false);
-  
+  const [inActiveStatusAlert, setInActiveStatusAlert] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,6 +49,11 @@ export const AddWorkLogModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {inActiveStatusAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+          {worklogTranslation.inActiveStatus || 'Selected employee is not active.'}
+        </div>
+      )}
       <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
         <button
           onClick={() => !loading && onClose()}
@@ -60,16 +65,17 @@ export const AddWorkLogModal = ({
         </button>
 
         <h2 className="text-2xl font-bold text-center mb-6">
-          {t.addNewWorkLogTitle}
+          {worklogTranslation.addNewWorkLogTitle}
         </h2>
 
         <WorkLogForm
             employees={employees}
             products={products}
-            translations={translations}
+            translations={worklogTranslation}
             onClose={onClose}
             createWorklogUseCase={createWorklogUseCase}
             setShowCreatedAlert={setShowCreatedAlert}
+            setInActiveStatusAlert={setInActiveStatusAlert}
             onUpdate={onUpdate}
           />
       </div>

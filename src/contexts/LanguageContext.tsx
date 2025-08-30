@@ -58,7 +58,7 @@ export interface EmployeePageTranslations {
 }
 
 // UPDATED: Define specific types for Work Log page translation structure
-interface WorkLogPageTranslations {
+export interface WorkLogPageTranslations {
   [x: string]: string;
   createdSuccessfully: string;
   updatedSuccessfully: string;
@@ -107,6 +107,7 @@ interface WorkLogPageTranslations {
   optional: string;
   datePlaceholder: string;
   // Status options translations
+  inActiveStatus: string;
   statusOnGoing: string;
   statusCompleted: string;
   statusRejected: string;
@@ -382,6 +383,7 @@ const allAppTranslations: AllTranslationsCollection = {
       optional: "Optional",
       datePlaceholder: "YYYY-MM-DD",
       // Status options translations
+      inActiveStatus: "Selected Employee Is Not Active",
       statusOnGoing: "On Going",
       statusCompleted: "Completed",
       statusRejected: "Rejected",
@@ -617,6 +619,7 @@ const allAppTranslations: AllTranslationsCollection = {
       optional: "ရွေးချယ်နိုင်သည်",
       datePlaceholder: "YYYY-MM-DD (ဥပမာ: 2025-06-22)",
       // Status options translations
+      inActiveStatus: "ဝန်ထမ်းရုံးမလာပါ",
       statusOnGoing: "ဆောင်ရွက်ဆဲ",
       statusCompleted: "ပြီးစီး",
       statusRejected: "ငြင်းပယ်",
