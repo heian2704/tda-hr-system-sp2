@@ -32,6 +32,12 @@ const updateIncomeUseCase = new UpdateIncomeUseCase(incomeInterface);
 const deleteExpenseUseCase = new DeleteExpenseUseCase(expenseInterface);
 const deleteIncomeUseCase = new DeleteIncomeUseCase(incomeInterface);
 
+// Helper function to safely parse date strings
+const parseDateStringToDate = (dateString: string): Date | null => {
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 // --- Main ExpenseIncome Component ---
 const ExpenseIncome = () => {
   
@@ -56,8 +62,7 @@ const ExpenseIncome = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-  
-
+  // Fetch initial data on component mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -77,15 +82,16 @@ const ExpenseIncome = () => {
     loadData();
   }, []);
 
-  // Calculate totals based on date-filtered entries (before search query)
-  const totalIncome = incomes.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalExpense = expenses.reduce((sum, entry) => sum + entry.amount, 0);
+  // Calculate totals from the full, unfiltered data
+  const totalIncome = useMemo(() => incomes.reduce((sum, entry) => sum + entry.amount, 0), [incomes]);
+  const totalExpense = useMemo(() => expenses.reduce((sum, entry) => sum + entry.amount, 0), [expenses]);
   const totalNet = totalIncome - totalExpense;
 
   // Filter and paginate data based on active tab, search query, and date range
   const combinedFilteredEntries = useMemo(() => {
-    let currentTabEntries = activeTab === 'income' ? incomes : expenses;
+    let currentTabEntries = activeTab === 'income' ? [...incomes] : [...expenses];
 
+    // Filter by search query
     if (searchQuery) {
       const lowerCaseQuery = searchQuery.toLowerCase();
       currentTabEntries = currentTabEntries.filter(entry =>
@@ -96,37 +102,32 @@ const ExpenseIncome = () => {
       );
     }
 
+    // Filter by selected month
     if (selectedMonth) {
       const [selYearStr, selMonthStr] = selectedMonth.split('-');
       const selYear = Number(selYearStr);
-      const selMonth = Number(selMonthStr); // 1..12
+      // The month from a month input is 1-indexed (1-12)
+      const selMonth = Number(selMonthStr) - 1; // Convert to 0-indexed (0-11) for Date object
+      
       if (!Number.isNaN(selYear) && !Number.isNaN(selMonth)) {
         currentTabEntries = currentTabEntries.filter(entry => {
-          const d = new Date(entry.date);
-          if (isNaN(d.getTime())) return false;
-          return d.getFullYear() === selYear && (d.getMonth() + 1) === selMonth;
+          const entryDate = parseDateStringToDate(entry.date);
+          if (!entryDate) return false;
+          return entryDate.getFullYear() === selYear && entryDate.getMonth() === selMonth;
         });
       }
     }
     return currentTabEntries;
-  }, [activeTab, incomes, expenses, searchQuery]);
+  }, [activeTab, incomes, expenses, searchQuery, selectedMonth]);
 
   // Paginated entries for display
   const displayedEntries = useMemo(() => {
     return combinedFilteredEntries.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-  }, [combinedFilteredEntries, currentPage, ITEMS_PER_PAGE]);
+  }, [combinedFilteredEntries, currentPage]);
 
   // Total count of entries after all filters
-  const totalFilteredEntries = useMemo(() => {
-    return combinedFilteredEntries.length;
-  }, [combinedFilteredEntries]);
-
+  const totalFilteredEntries = combinedFilteredEntries.length;
   const totalPages = Math.ceil(totalFilteredEntries / ITEMS_PER_PAGE);
-
-  // Reset page when tab, search query, or period changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, searchQuery]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -162,6 +163,12 @@ const ExpenseIncome = () => {
   const handleConfirmDeleteClick = (entry: Income | Expense) => {
     setEntryToDeleteDetails({ id: entry._id, name: entry.title, type: activeTab });
     setIsDeleteConfirmModalOpen(true);
+  };
+
+  // Handler for month input change
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedMonth(e.target.value);
+    setCurrentPage(1); // Reset to the first page when the filter changes
   };
 
   return (
@@ -225,7 +232,11 @@ const ExpenseIncome = () => {
             {/* Tabs */}
             <div className="flex bg-gray-100 rounded-lg p-1 space-x-2 w-full sm:w-auto">
               <button
-                onClick={() => setActiveTab('income')}
+                onClick={() => {
+                  setActiveTab('income');
+                  setCurrentPage(1); // Reset page on tab change
+                  setSelectedMonth(''); // Clear month filter on tab change
+                }}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                   ${activeTab === 'income' ? 'bg-[#EB5757] text-white shadow' : 'text-gray-700 hover:bg-gray-200'}
                 `}
@@ -233,7 +244,11 @@ const ExpenseIncome = () => {
                 {pageTranslations.incomeTab}
               </button>
               <button
-                onClick={() => setActiveTab('expense')}
+                onClick={() => {
+                  setActiveTab('expense');
+                  setCurrentPage(1); // Reset page on tab change
+                  setSelectedMonth(''); // Clear month filter on tab change
+                }}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                   ${activeTab === 'expense' ? 'bg-[#EB5757] text-white shadow' : 'text-gray-700 hover:bg-gray-200'}
                 `}
@@ -247,7 +262,7 @@ const ExpenseIncome = () => {
               <input
                 type="month"
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={handleMonthChange}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 title="Filter by month"
               />
@@ -276,7 +291,7 @@ const ExpenseIncome = () => {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={activeTab === 'expense' ? 6 : 5} className="py-8 text-center text-gray-500">
+                    <td colSpan={5} className="py-8 text-center text-gray-500">
                       Loading...
                     </td>
                   </tr>
@@ -311,7 +326,7 @@ const ExpenseIncome = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={activeTab === 'expense' ? 6 : 5} className="py-8 text-center text-gray-500">
+                    <td colSpan={5} className="py-8 text-center text-gray-500">
                       {pageTranslations.noEntriesFound}
                     </td>
                   </tr>
@@ -346,7 +361,7 @@ const ExpenseIncome = () => {
               ))}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalFilteredEntries === 0}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
