@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ClipboardList, 
   Plus, 
@@ -66,6 +66,13 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditAlert, setShowEditAlert] = useState(false);
 
+  // New state for sorting and dropdown - Consistent with Employee page
+  const [sortField, setSortField] = useState<'date' | 'quantity' | 'fullname'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+
   const { translations } = useLanguage();
   const workLogPageTranslations = translations.workLogPage;
 
@@ -118,7 +125,6 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         if (loading || error) {
           return;
         }
-        console.log('worklogs: ', worklogs);
 
         if (worklogs.length === 0) {
           setWorkLogs([]); // Set empty array if no worklogs
@@ -155,6 +161,20 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     fetchAllWorklogs();
   }, [worklogs, loading, error]);
 
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [sortDropdownRef]);
+
   // Filter work logs based on search query
   const filteredWorkLogs = workLogs.filter(log => {
     const matchesSearchQuery =
@@ -166,18 +186,42 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     return matchesSearchQuery;
   });
 
-  const totalWorkLogs = filteredWorkLogs.length;
-  const totalQuantityProduced = filteredWorkLogs.reduce((sum, log) => sum + log.quantity, 0);
-  const totalCompletedWorklogs = filteredWorkLogs.length;
+  // Sort filtered worklogs based on sortOption
+  const sortedWorkLogs = [...filteredWorkLogs].sort((a, b) => {
+    let aValue: number | string;
+    let bValue: number | string;
+
+    switch (sortField) {
+      case 'date':
+        aValue = new Date(a.updatedAt).getTime();
+        bValue = new Date(b.updatedAt).getTime();
+        break;
+      case 'quantity':
+        aValue = a.quantity;
+        bValue = b.quantity;
+        break;
+      case 'fullname':
+        aValue = a.fullname.toLowerCase();
+        bValue = b.fullname.toLowerCase();
+        break;
+    }
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const totalWorkLogs = sortedWorkLogs.length;
+  const totalQuantityProduced = sortedWorkLogs.reduce((sum, log) => sum + log.quantity, 0);
+  const totalCompletedWorklogs = sortedWorkLogs.length;
 
   const totalPages = Math.ceil(totalWorkLogs / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentWorkLogs = filteredWorkLogs.slice(startIndex, endIndex);
+  const currentWorkLogs = sortedWorkLogs.slice(startIndex, endIndex);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, sortField, sortDirection]); // Reset page when search or sort changes
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -202,6 +246,23 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     setDeleteWorklogId({ id: workLog._id });
     setIsDeleteConfirmModalOpen(true);
   };
+
+  // New handler for sort option change
+  const handleSortChange = (field: 'date' | 'quantity' | 'fullname') => {
+    if (field === sortField) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setIsSortDropdownOpen(false); // Close dropdown after selection
+  };
+
+  const displaySortValue = {
+    'date': workLogPageTranslations.date,
+    'quantity': workLogPageTranslations.quantityColumn,
+    'fullname': workLogPageTranslations.fullNameColumn,
+  }[sortField];
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
@@ -258,12 +319,45 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
             <div>
               <h2 className="text-xl font-bold">{workLogPageTranslations.workLogsTitle}</h2>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <div className="flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm cursor-pointer w-full sm:w-auto">
-                <span className="font-medium text-gray-700">{workLogPageTranslations.sortBy}</span>
-                <span className="font-semibold text-gray-900">{workLogPageTranslations.date}</span>
-                <ChevronDown className="w-4 h-4" />
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
+              {/* Sort By Dropdown - Consistent with Employee page */}
+              <div className="relative" ref={sortDropdownRef}>
+                <button
+                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                  className="flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm cursor-pointer w-full sm:w-auto"
+                >
+                  <span className="font-medium text-gray-700">{workLogPageTranslations.sortBy}</span>
+                  <span className="font-semibold text-gray-900 ml-2">
+                    {sortField === 'date' && workLogPageTranslations.date}
+                    {sortField === 'quantity' && workLogPageTranslations.quantityColumn}
+                    {sortField === 'fullname' && workLogPageTranslations.fullNameColumn}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-500 ml-2" />
+                </button>
+                {isSortDropdownOpen && (
+                  <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                    <button
+                      onClick={() => handleSortChange('date')}
+                      className={`block w-full text-left px-4 py-2 text-sm ${sortField === 'date' ? 'font-bold bg-gray-100' : ''} hover:bg-gray-100`}
+                    >
+                      {workLogPageTranslations.date} {sortField === 'date' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    </button>
+                    <button
+                      onClick={() => handleSortChange('quantity')}
+                      className={`block w-full text-left px-4 py-2 text-sm ${sortField === 'quantity' ? 'font-bold bg-gray-100' : ''} hover:bg-gray-100`}
+                    >
+                      {workLogPageTranslations.quantityColumn} {sortField === 'quantity' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    </button>
+                    <button
+                      onClick={() => handleSortChange('fullname')}
+                      className={`block w-full text-left px-4 py-2 text-sm ${sortField === 'fullname' ? 'font-bold bg-gray-100' : ''} hover:bg-gray-100`}
+                    >
+                      {workLogPageTranslations.fullNameColumn} {sortField === 'fullname' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    </button>
+                  </div>
+                )}
               </div>
+              
               <button
                 onClick={handleOpenAddModal}
                 className="flex items-center justify-center gap-2 px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors w-full sm:w-auto"
@@ -292,12 +386,6 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
                         <td className="py-3 px-4 text-gray-700">{log.position}</td>
                         <td className="py-3 px-4 text-gray-700">{log.productName}</td>
                         <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
-                        {/* <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
-                        <td className="py-3 px-4 text-gray-700">{new Date(log.updatedAt).toLocaleDateString()}</td> */}
-                        {/* NEW: Dropdown for Status in each table row */}
-                        {/* <td className="py-3 px-4 text-left">
-                          
-                        </td> */}
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -325,7 +413,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              {workLogPageTranslations.showing} {startIndex + 1} {workLogPageTranslations.of} {Math.min(endIndex, totalWorkLogs)} {workLogPageTranslations.of} {totalWorkLogs} {workLogPageTranslations.workLogs}
+              {workLogPageTranslations.showing} {startIndex + 1} of {Math.min(endIndex, totalWorkLogs)} of {workLogs.length} {workLogPageTranslations.workLogs}
             </p>
             <div className="flex justify-center items-center gap-2">
               <button

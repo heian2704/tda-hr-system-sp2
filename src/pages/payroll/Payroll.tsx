@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Search // Import the Search icon
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
@@ -46,7 +47,8 @@ const Payroll = () => {
   const { translations } = useLanguage();
   const payrollPageTranslations = translations.payrollPage;
 
-  const [searchParams] = useSearchParams();
+  // Use both searchParams and setSearchParams for full control
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
 
   // Fetch payroll and employee data
@@ -113,6 +115,21 @@ const Payroll = () => {
   }, [payrolls, loading, error, payrollPageTranslations]);
 
   const filteredPayrollEntries = useMemo(() => {
+    // Start with the base payroll entries
+    let tempEntries = payrollEntries;
+    
+    // First, apply the search query filter
+    if (searchQuery) {
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        tempEntries = tempEntries.filter(p =>
+            p.fullName.toLowerCase().includes(lowerCaseQuery) ||
+            p.position.toLowerCase().includes(lowerCaseQuery) ||
+            p.totalQuantity.toString().includes(lowerCaseQuery) ||
+            p.totalSalary.toString().includes(lowerCaseQuery)
+        );
+    }
+
+    // Then, apply the date/period filter
     let start: Date | null = null;
     let end: Date | null = null;
 
@@ -138,27 +155,71 @@ const Payroll = () => {
     if (start && end) {
       const s = start.getTime();
       const e = end.getTime();
-      return payrollEntries.filter(p => {
+      return tempEntries.filter(p => {
         const t = new Date(p.period).getTime();
         return t >= s && t <= e;
       });
     }
-    return payrollEntries;
-  }, [payrollEntries, periodType, selectedMonth, selectedWeek, selectedDay]);
 
-  // NEW: reset to first page when filter changes
-  useEffect(() => { setCurrentPage(1); }, [periodType, selectedMonth, selectedWeek, selectedDay]);
+    return tempEntries;
+  }, [payrollEntries, searchQuery, periodType, selectedMonth, selectedWeek, selectedDay]);
+
+  // NEW: reset to first page when filter or search changes
+  useEffect(() => { 
+    setCurrentPage(1); 
+  }, [searchQuery, periodType, selectedMonth, selectedWeek, selectedDay]);
+
 
   // Pagination
   const totalEntries = filteredPayrollEntries.length;
-  const totalPages = Math.ceil(totalEntries / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  // This is the line to update
+  const itemsPerPage = 12; 
+  const totalPages = Math.ceil(totalEntries / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const currentPayrollEntries = filteredPayrollEntries.slice(startIndex, endIndex);
-
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+  
+  // New export function
+  const exportToCsv = (data) => {
+    const headers = [
+      payrollPageTranslations.fullNameColumn,
+      payrollPageTranslations.roleColumn,
+      payrollPageTranslations.totalQuantityColumn,
+      payrollPageTranslations.totalSalaryColumn,
+      payrollPageTranslations.periodColumn,
+    ];
+    const headerRow = headers.join(',') + '\n';
+  
+    const csvRows = data.map(entry => {
+      const values = [
+        entry.fullName,
+        entry.position,
+        entry.totalQuantity,
+        entry.totalSalary,
+        `"${entry.period.toLocaleDateString()}"`
+      ];
+      return values.join(',');
+    });
+  
+    const csvString = headerRow + csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+  
+    if ((navigator as any).msSaveBlob) { // IE 10+
+      (navigator as any).msSaveBlob(blob, 'payroll.csv');
+    } else {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'payroll.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
@@ -218,7 +279,7 @@ const Payroll = () => {
               )}
 
               <button
-                onClick={() => alert("Export functionality not implemented.")}
+                onClick={() => exportToCsv(filteredPayrollEntries)}
                 className="flex items-center justify-center gap-2 px-5 py-2 bg-[#4CAF50] text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors w-full sm:w-auto"
               >
                 <FileText className="w-4 h-4" />
