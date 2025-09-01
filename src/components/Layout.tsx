@@ -139,7 +139,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
         </div>
 
         {/* Search + Language */}
-        <div className={`flex items-center gap-4 ${isMobile ? "w-full mt-2" : ""}`}>
+        <div className={`flex items-center gap-2 sm:gap-4 ${isMobile ? "w-full mt-2" : "flex-shrink-0"}`}>
           <div className="flex items-center w-full max-w-xs flex-grow px-4 py-2 rounded-[10px] outline outline-1 outline-[#FF676733]">
             <Search size={20} className="text-[#FF6767] mr-2" />
             <input
@@ -153,13 +153,13 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
 
           <div
             ref={dropdownRef}
-            className="flex items-center justify-center h-[38px] px-3 rounded-[10px] outline outline-1 outline-[#FF676733] gap-2 relative cursor-pointer select-none"
+            className="flex items-center justify-center h-[38px] px-2 sm:px-3 rounded-[10px] outline outline-1 outline-[#FF676733] gap-1 sm:gap-2 relative cursor-pointer select-none flex-shrink-0"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            <span className="text-[#16151C] text-[14px] font-light">{language}</span>
+            <span className="text-[#16151C] text-[12px] sm:text-[14px] font-light whitespace-nowrap">{language}</span>
             <ChevronDown size={18} className="text-[#16151C]" />
             {dropdownOpen && (
-              <div className="absolute top-full mt-1 right-0 bg-white border border-gray-300 rounded shadow-md w-[120px] z-50">
+              <div className="absolute top-full mt-1 right-0 bg-white border border-gray-300 rounded shadow-md min-w-[120px] z-50">
                 <div
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-[14px]"
                   onClick={() => handleSelectLanguage("English")}
@@ -177,9 +177,9 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
           </div>
 
           {!isMobile && (
-            <div className="text-right">
-              <div className="text-[15px] text-black font-medium font-inter">{displayDay}</div>
-              <div className="text-[14px] text-[#3ABEFF] font-medium font-inter">{displayDate}</div>
+            <div className="text-right flex-shrink-0 min-w-0">
+              <div className="text-[13px] sm:text-[15px] text-black font-medium font-inter truncate" title={displayDay}>{displayDay}</div>
+              <div className="text-[12px] sm:text-[14px] text-[#3ABEFF] font-medium font-inter truncate" title={displayDate}>{displayDate}</div>
             </div>
           )}
         </div>
