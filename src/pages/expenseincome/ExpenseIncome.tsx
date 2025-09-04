@@ -17,6 +17,7 @@ import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import ConfirmDeleteModal from '@/components/income-expense/ConfirmDeleteModal/ConfirmDeleteEntryModal';
 import AddEntryModal from '@/components/income-expense/AddEntryModal/AddEntryModal';
 import { EditEntryModal } from '@/components/income-expense/EditEntryModal/EditEntryModal';
+import { error } from 'console';
 
 const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
 const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
@@ -171,6 +172,8 @@ const ExpenseIncome = () => {
     setCurrentPage(1); // Reset to the first page when the filter changes
   };
 
+  if(isLoading || displayedEntries.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+
   return (
     <div className="font-sans antialiased text-gray-800">
       {showCreatedAlert && (
@@ -289,14 +292,7 @@ const ExpenseIncome = () => {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      Loading...
-                    </td>
-                  </tr>
-                ) : displayedEntries.length > 0 ? (
-                  displayedEntries.map(entry => (
+                {displayedEntries.map(entry => (
                     <tr key={entry._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.title}</td>
                       <td className="py-3 px-4 text-gray-700">Ks. {entry.amount.toLocaleString()}</td>
@@ -323,14 +319,7 @@ const ExpenseIncome = () => {
                         </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      {pageTranslations.noEntriesFound}
-                    </td>
-                  </tr>
-                )}
+                  ))}
               </tbody>
             </table>
           </div>

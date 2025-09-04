@@ -144,7 +144,7 @@ const Employee = ({
 
   const currentEmployeesSorted = sortedEmployees.slice(startIndex, endIndex);
 
-  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (loading || currentEmployeesSorted.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (

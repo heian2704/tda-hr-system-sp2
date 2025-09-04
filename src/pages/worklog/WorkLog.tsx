@@ -264,7 +264,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     'fullname': workLogPageTranslations.fullNameColumn,
   }[sortField];
 
-  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (loading || currentWorkLogs.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
