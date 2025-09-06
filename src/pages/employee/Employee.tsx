@@ -51,7 +51,6 @@ const Employee = ({
     setAllEmployees(employees.reverse());
   }, [employees]);
 
-  console.log("LAST EMPLOYEE :", allEmployees[allEmployees.length - 1]);
   const filteredEmployees = allEmployees.filter(emp =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
