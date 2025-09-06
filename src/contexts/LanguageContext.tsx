@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode } from 'react';
+import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
 
 // Define specific types for translation structure for better type safety
 interface SidebarItem {
@@ -772,7 +772,15 @@ const allAppTranslations: AllTranslationsCollection = {
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<"English" | "Burmese">("English");
+  const getInitialLanguage = (): "English" | "Burmese" => {
+    const stored = localStorage.getItem("language");
+    return stored === "Burmese" ? "Burmese" : "English";
+  };
+  const [language, setLanguage] = useState<"English" | "Burmese">(getInitialLanguage());
+
+  useEffect(() => {
+    localStorage.setItem("language", language);
+  }, [language]);
 
   const translations = allAppTranslations[language];
 
