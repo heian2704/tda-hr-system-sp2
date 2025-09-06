@@ -51,7 +51,7 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
       (async () => {
           try {
               setSubmitting(true);
-              var result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
+              const result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
               if(result)
               {
                 setShowEditAlert(true);

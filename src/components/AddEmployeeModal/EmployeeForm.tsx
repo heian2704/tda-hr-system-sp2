@@ -1,18 +1,12 @@
 // EmployeeForm.tsx
-import React, { useState } from 'react';
-import { useEmployeeForm } from './useEmployeeForm';
-import { employeeService } from '@/services/employeeService';
-import { EmployeeDto } from '@/dtos/employee/EmployeeDto';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
-import { CreateEmployeeUseCase } from '@/data/usecases/employee.usecase';
-import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
-import { EmpStatus } from '@/constants/employee-status.enum';
-import { BearerTokenedRequest } from '@/domain/models/common/header-param';
-import { set } from 'date-fns';
+import React, { useState } from "react";
+import { useEmployeeForm } from "./useEmployeeForm";
+import { CreateEmployeeUseCase } from "@/data/usecases/employee.usecase";
+import { CreateEmployeeDto } from "@/domain/models/employee/create-employee.dto";
+import { EmpStatus } from "@/constants/employee-status.enum";
 
 interface Props {
   addEmployeeDto?: CreateEmployeeDto;
-  //onSave: (employee: EmployeeDto) => void;
   onClose: () => void;
   translations: any;
   showCreateAlert: any;
@@ -20,64 +14,74 @@ interface Props {
   createEmployeeUseCase: CreateEmployeeUseCase;
 }
 
-
-const EmployeeForm: React.FC<Props> = ({ addEmployeeDto, onClose, translations, createEmployeeUseCase, onUpdate, showCreateAlert }) => {
+const EmployeeForm: React.FC<Props> = ({
+  addEmployeeDto,
+  onClose,
+  translations,
+  createEmployeeUseCase,
+  onUpdate,
+  showCreateAlert,
+}) => {
   const {
-    fullName, setFullName,
-    phoneNumber, setPhoneNumber,
-    role, setRole,
-    joinDate, setJoinDate,
-    address, setAddress,
-    status, setStatus
+    fullName,
+    setFullName,
+    phoneNumber,
+    setPhoneNumber,
+    role,
+    setRole,
+    joinDate,
+    setJoinDate,
+    address,
+    setAddress,
+    status,
+    setStatus,
   } = useEmployeeForm(addEmployeeDto);
-const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-// Get the current token from localStorage
-const token = localStorage.getItem('token');
-if (!token) {
-  throw new Error('ID Token is required for authentication');
-}
-
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (submitting) return;
-  try {
-    
-    const submittedEmployeeData: CreateEmployeeDto = {
-      name: fullName,
-      phoneNumber: phoneNumber,
-      address: address,
-      position: role,
-      status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
-      joinedDate: joinDate,
-    };
-
-    setSubmitting(true);
-    const result = await createEmployeeUseCase?.execute({ token: token }, submittedEmployeeData);
-    if(result)
-    {
-      showCreateAlert(true);
-      setTimeout(() => showCreateAlert(false), 3000);
-    }
-    onUpdate();
-    onClose();
-    
-  } catch (error) {
-    console.error('Error creating employee:', error);
-  } finally {
-    setSubmitting(false);
+  // Get the current token from localStorage
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("ID Token is required for authentication");
   }
-};
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    try {
+      const submittedEmployeeData: CreateEmployeeDto = {
+        name: fullName,
+        phoneNumber: phoneNumber,
+        address: address,
+        position: role,
+        status: EmpStatus[status.toUpperCase() as keyof typeof EmpStatus],
+        joinedDate: joinDate,
+      };
 
+      setSubmitting(true);
+      const result = await createEmployeeUseCase?.execute(
+        { token: token },
+        submittedEmployeeData
+      );
+      if (result) {
+        showCreateAlert(true);
+        setTimeout(() => showCreateAlert(false), 3000);
+      }
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error("Error creating employee:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <form 
-    // onSubmit={handleSubmit}  
-    className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="fullName" className="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          htmlFor="fullName"
+          className="block text-sm font-medium text-gray-600 mb-1"
+        >
           {translations.fullNameColumn}
         </label>
         <input
@@ -92,7 +96,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
 
       <div>
-        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          htmlFor="phoneNumber"
+          className="block text-sm font-medium text-gray-600 mb-1"
+        >
           {translations.phoneNumberColumn}
         </label>
         <input
@@ -107,7 +114,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
 
       <div>
-        <label htmlFor="address" className="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          htmlFor="address"
+          className="block text-sm font-medium text-gray-600 mb-1"
+        >
           {translations.addressColumn}
         </label>
         <input
@@ -122,7 +132,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
 
       <div>
-        <label htmlFor="role" className="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          htmlFor="role"
+          className="block text-sm font-medium text-gray-600 mb-1"
+        >
           {translations.roleColumn}
         </label>
         <input
@@ -137,7 +150,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
 
       <div>
-        <label htmlFor="joinDate" className="block text-sm font-medium text-gray-600 mb-1">
+        <label
+          htmlFor="joinDate"
+          className="block text-sm font-medium text-gray-600 mb-1"
+        >
           {translations.joinDateColumn}
         </label>
         <input
@@ -151,7 +167,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
 
       <div>
-        <p className="block text-sm font-medium text-gray-600 mb-1">{translations.selectTypeLabel}</p>
+        <p className="block text-sm font-medium text-gray-600 mb-1">
+          {translations.selectTypeLabel}
+        </p>
         <div className="flex gap-6 mt-2">
           <label className="inline-flex items-center">
             <input
@@ -162,18 +180,22 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={() => setStatus(EmpStatus.ACTIVE)}
               className="form-radio h-5 w-5 text-red-500 border-gray-300 focus:ring-red-400"
             />
-            <span className="ml-2 text-sm text-gray-700">{translations.activeStatus}</span>
+            <span className="ml-2 text-sm text-gray-700">
+              {translations.activeStatus}
+            </span>
           </label>
           <label className="inline-flex items-center">
             <input
               type="radio"
               name="status"
               value="on_leave"
-              checked={status === 'on_leave'}
-              onChange={() => setStatus('on_leave')}
+              checked={status === "on_leave"}
+              onChange={() => setStatus("on_leave")}
               className="form-radio h-5 w-5 text-red-500 border-gray-300 focus:ring-red-400"
             />
-            <span className="ml-2 text-sm text-gray-700">{translations.onLeaveStatus}</span>
+            <span className="ml-2 text-sm text-gray-700">
+              {translations.onLeaveStatus}
+            </span>
           </label>
         </div>
       </div>
@@ -191,7 +213,6 @@ const handleSubmit = async (e: React.FormEvent) => {
           type="submit"
           disabled={submitting}
           className="px-6 py-2 bg-[#FF6767] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-          onClick={handleSubmit}
         >
           {submitting ? translations.saving : translations.addButton}
         </button>

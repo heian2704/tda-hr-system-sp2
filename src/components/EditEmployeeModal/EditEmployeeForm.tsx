@@ -60,7 +60,7 @@ const EditEmployeeForm: React.FC<Props> = ({ employeeId, editEmployeeDto, onClos
     (async () => {
         try {
             setSubmitting(true);
-            var result = await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
+            const result = await updateEmployeeUseCase.execute(makeTokenedRequest(employeeId), submittedEmployeeData);
             if(result)
             {
                 showEditedAlert(true);
