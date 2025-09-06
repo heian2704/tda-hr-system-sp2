@@ -5,8 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { SignInResponse } from '@/dtos/signIn/SignInResponse';
 
 interface LoginFormProps {
-  // This prop allows LoginForm to update the global authentication state
-  // managed in `App.tsx` (via `LoginPage`).
   setIsLoggedIn: (value: boolean) => void;
 }
 
@@ -14,64 +12,50 @@ const LoginForm: React.FC<LoginFormProps> = ({ setIsLoggedIn }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // Controls the "Log in" button loading state
-  const [redirecting, setRedirecting] = useState(false); // Controls the full-screen "Logging you in..." message
-  const [error, setError] = useState<string | null>(null); // For displaying API errors
+  const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [signInResponse, setSignInResponse] = useState<SignInResponse>();
-  // Password strength criteria for validation feedback
-  const passwordCriteria = [
-    { text: 'Use 8 or more characters', met: password.length >= 8 },
-    { text: 'One Uppercase character', met: /[A-Z]/.test(password) },
-    { text: 'One lowercase character', met: /[a-z]/.test(password) },
-    { text: 'One special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
-    { text: 'One number', met: /\d/.test(password) },
-  ];
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission behavior
-    setLoading(true); // Activate loading state on the button
-    setError(null); // Clear any previous error messages
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     try {
-      // Make the API call to your backend authentication endpoint
       const response = await fetch('https://tda-backend-khaki.vercel.app/_api/auth/signIn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json(); // Parse the JSON response
+      const data = await response.json();
 
       if (!response.ok) {
-        // If the HTTP response status is not OK (e.g., 400, 401, 500), throw an error
         throw new Error(data.message || 'Login failed');
       }
 
       console.log('Login successful:', data);
-      setRedirecting(true); // Show the full-screen "Logging you in..." message
-      setIsLoggedIn(true); // 🎉 Crucial: Update the global authentication state in App.tsx!
+      setRedirecting(true);
+      setIsLoggedIn(true);
 
       setSignInResponse(data);
 
-      localStorage.setItem('token', data.accessToken); // Store the token in localStorage for future requests
-      localStorage.setItem('user', JSON.stringify(data.username)); // Store user data in localStorage
-      
-      // Optionally, you can also set the token in a global state or context if neede
-      setTimeout(() => {
-        navigate('/dashboard'); // Navigate to the dashboard after successful login
-      }, 1); // Redirect to the dashboard after a short delay
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.username));
 
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1);
     } catch (err: any) {
-      // Catch any errors during the fetch operation or from the API response
       setError(err.message || 'Something went wrong');
-      setRedirecting(false); // If login fails, ensure the redirecting screen is not shown
+      setRedirecting(false);
     } finally {
-      setLoading(false); // Deactivate loading state on the button, regardless of success or failure
+      setLoading(false);
     }
   };
 
-  // Conditional rendering for the "Logging you in..." screen
   if (redirecting) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -122,7 +106,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ setIsLoggedIn }) => {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
             required
-            disabled={loading} // Disable input while loading
+            disabled={loading}
           />
         </div>
 
@@ -135,8 +119,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ setIsLoggedIn }) => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-              tabIndex={-1} // Prevents button from being focused by tab key, improving accessibility for password input
-              disabled={loading} // Disable button while loading
+              tabIndex={-1}
+              disabled={loading}
             >
               {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
               {showPassword ? 'Hide' : 'Show'}
@@ -149,37 +133,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ setIsLoggedIn }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
             required
-            disabled={loading} // Disable input while loading
+            disabled={loading}
           />
         </div>
-
-        {password && ( // Only show password criteria if password input has a value
-          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs text-gray-500 mt-3">
-            {passwordCriteria.map((criterion, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    criterion.met ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                />
-                <span className={criterion.met ? 'text-green-600' : 'text-gray-500'}>
-                  {criterion.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {error && <p className="text-red-500 text-center mt-2 text-sm">{error}</p>}
 
         <button
           type="submit"
-          disabled={loading} // Disable button while loading
+          disabled={loading}
           className={`w-full bg-red-400 hover:bg-red-500 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200 mt-8 ${
-            loading ? 'opacity-70 cursor-not-allowed' : '' // Apply dimming and no-cursor style when loading
+            loading ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
-          {loading ? 'Logging in...' : 'Log in'} {/* Button text changes based on loading state */}
+          {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
     </div>

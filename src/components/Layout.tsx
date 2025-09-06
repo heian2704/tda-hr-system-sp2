@@ -3,10 +3,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, LogOut, ChevronDown, Menu, X } from "lucide-react";
-import { useIsMobile } from "../hooks/use-mobile"; // Assuming this hook correctly detects mobile
+import { useIsMobile } from "../hooks/use-mobile";
 import { LanguageProvider, useLanguage } from "../contexts/LanguageContext";
 
-// Manual Burmese translations and number converter (as previously defined)
+// Manual Burmese translations and number converter
 const burmeseWeekdays = [
   "တနင်္ဂနွေနေ့", "တနင်္လာနေ့", "အင်္ဂါနေ့", "ဗုဒ္ဓဟူးနေ့",
   "ကြာသပတေးနေ့", "သောကြာနေ့", "စနေနေ့",
@@ -22,7 +22,6 @@ const convertToBurmeseNumerals = (num: number): string => {
   return String(num).split('').map(digit => burmeseDigits[parseInt(digit, 10)]).join('');
 };
 
-
 interface LayoutProps {
   children: React.ReactNode;
   setIsLoggedIn: (value: boolean) => void;
@@ -35,12 +34,14 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   const isMobile = useIsMobile();
   const sidebarItems = translations.sidebar;
-  const [headerHeight, setHeaderHeight] = useState(80); // Default height, will be updated
+  const [headerHeight, setHeaderHeight] = useState(80);
 
   const today = new Date();
   let displayDay: string;
@@ -58,12 +59,10 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
     displayDate = `${convertToBurmeseNumerals(dateNum)} ${burmeseMonths[month]} ${convertToBurmeseNumerals(yearNum)}`;
   }
 
-  // Get current search query from URL
   const currentSearchQuery = searchParams.get('q') || '';
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    navigate("/");
+    setShowLogoutModal(true);
   };
 
   useEffect(() => {
@@ -76,24 +75,22 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Effect to dynamically set header height for content padding
   useEffect(() => {
     const updateHeaderHeight = () => {
       if (headerRef.current) {
         setHeaderHeight(headerRef.current.offsetHeight);
       }
     };
-    updateHeaderHeight(); // Initial call
+    updateHeaderHeight();
     window.addEventListener("resize", updateHeaderHeight);
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Effect to close sidebar when navigating on mobile
   useEffect(() => {
     if (isMobile && sidebarOpen) {
       setSidebarOpen(false);
     }
-  }, [location.pathname, isMobile]); // Only re-run when path or mobile status changes. No need for sidebarOpen in dependency for closing it *because* path changed.
+  }, [location.pathname, isMobile]);
 
   const handleBurgerClick = () => {
     setSidebarOpen((prev) => !prev);
@@ -111,7 +108,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
     } else {
       setSearchParams({});
     }
-  }, [setSearchParams]); // setSearchParams should be in the dependency array for useCallback
+  }, [setSearchParams]);
 
   return (
     <div className="flex flex-col min-h-screen font-poppins bg-white overflow-hidden">
@@ -128,10 +125,8 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
           {isMobile && (
             <button
               onClick={handleBurgerClick}
-              className="md:hidden text-[#FF6767] p-2 relative z-50" // Added z-50 for clickability
+              className="md:hidden text-[#FF6767] p-2 relative z-50"
               aria-label="Toggle menu"
-              tabIndex={0} // Added for accessibility
-              role="button" // Added for accessibility
             >
               {sidebarOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -197,9 +192,8 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
               : "hidden sm:flex flex-col w-[260px] bg-[#FAFAFA] pt-4 px-4 border-r border-gray-200"
           }`}
         >
-          {/* Close button for mobile sidebar (appears when open) */}
           {isMobile && sidebarOpen && (
-            <div className="flex justify-end pr-2 pt-2 pb-4"> {/* Adjust padding as needed */}
+            <div className="flex justify-end pr-2 pt-2 pb-4">
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="text-gray-600 hover:text-gray-800"
@@ -215,8 +209,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => {
-                  if (isMobile) setSidebarOpen(false); // Close sidebar on nav item click
-                  // Preserve search query if it exists
+                  if (isMobile) setSidebarOpen(false);
                   if (currentSearchQuery) {
                     navigate({ pathname: item.path, search: `?q=${currentSearchQuery}` });
                   } else {
@@ -250,11 +243,10 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
           </div>
         </aside>
 
-        {/* Overlay */}
         {isMobile && sidebarOpen && (
           <div
             className="fixed inset-0 bg-black opacity-30 z-40"
-            onClick={() => setSidebarOpen(false)} // Close sidebar when clicking overlay
+            onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
         )}
@@ -271,6 +263,34 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
           )}
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-80 p-6 text-center">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Confirm Logout</h2>
+            <p className="text-gray-600 mb-6">Are you sure you want to log out?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  setIsLoggedIn(false);
+                  navigate("/");
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
