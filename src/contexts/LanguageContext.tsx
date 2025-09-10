@@ -212,6 +212,12 @@ export interface ExpenseIncomePageTranslations {
 }
 
 interface DashboardTranslations {
+  allEmployees: string;
+  noData: string;
+  noActivities: string;
+  weeklyWorklogTrend: string;
+  bestDay: string;
+  yearlyFinancialOverview: string;
   title: string;
   totalEmployees: string;
   monthlyPayroll: string;
@@ -517,6 +523,12 @@ const allAppTranslations: AllTranslationsCollection = {
       allYears: "All Years",
       month: "Month",
       year: "Year",
+      weeklyWorklogTrend: '',
+      bestDay: '',
+      yearlyFinancialOverview: '',
+      allEmployees: '',
+      noData: '',
+      noActivities: ''
     },
   },
   Burmese: {
@@ -765,6 +777,12 @@ const allAppTranslations: AllTranslationsCollection = {
       allYears: "နှစ်အားလုံး",
       month: "လ",
       year: "နှစ်",
+      weeklyWorklogTrend: '',
+      bestDay: '',
+      yearlyFinancialOverview: '',
+      allEmployees: '',
+      noData: '',
+      noActivities: ''
     },
   },
 };

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -7,23 +7,17 @@ import {
   Wallet,
   ArrowDownCircle,
   ArrowUpCircle,
-  PlusCircle,
+  RefreshCcw,
   Award,
   TrendingUp,
-  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
-import { Employee } from "@/domain/models/employee/get-employee.model";
 import { WorklogInterfaceImpl } from "@/data/interface-implementation/worklog";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
 import { ExpenseInterfaceImpl } from "@/data/interface-implementation/expense";
 import { IncomeInterfaceImpl } from "@/data/interface-implementation/income";
 import { PayrollInterfaceImpl } from "@/data/interface-implementation/payroll";
-import { WorklogInterface } from "@/domain/interfaces/worklog/WorklogInterface";
-import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
-import { PayrollInterface } from "@/domain/interfaces/payroll/PayrollInterface";
-import { ExpenseInterface } from "@/domain/interfaces/income-expense/expense/ExpenseInterface";
-import { IncomeInterface } from "@/domain/interfaces/income-expense/income/IncomeInterface";
 import { GetAllWorklogUseCase } from "@/data/usecases/worklog.usecase";
 import { GetAllEmployeeUseCase } from "@/data/usecases/employee.usecase";
 import { GetAllPayrollUseCase } from "@/data/usecases/payroll.usecase";
@@ -36,15 +30,22 @@ import { useGetAllIncome } from "@/hooks/income-expense/income/get-all-income.ho
 import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const formatMMK = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
-const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// --- Utility Functions (moved here from a separate utils file) ---
+const formatMMK = (n) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
 
-const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
-const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
-const payrollInterface: PayrollInterface = new PayrollInterfaceImpl();
-const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
-const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
+const parseToDate = (v) => {
+  if (!v && v !== 0) return null;
+  if (v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
+// -----------------------------------------------------------------
+
+const worklogInterface = new WorklogInterfaceImpl();
+const employeeInterface = new EmployeeInterfaceImpl();
+const payrollInterface = new PayrollInterfaceImpl();
+const expenseInterface = new ExpenseInterfaceImpl();
+const incomeInterface = new IncomeInterfaceImpl();
 
 const getAllWorklogUseCase = new GetAllWorklogUseCase(worklogInterface);
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
@@ -52,28 +53,23 @@ const getAllPayrollUseCase = new GetAllPayrollUseCase(payrollInterface);
 const getAllExpenseUseCase = new GetAllExpenseUseCase(expenseInterface);
 const getAllIncomeUseCase = new GetAllIncomesUseCase(incomeInterface);
 
-const Dashboard = () => {
-  const { worklogs } = useGetAllWorklogs(getAllWorklogUseCase);
-  const { employees } = useGetAllEmployees(getAllEmployeeUseCase);
-  const { expenses } = useGetAllExpense(getAllExpenseUseCase);
-  const { incomes } = useGetAllIncome(getAllIncomeUseCase);
-  const { payrolls } = useGetAllPayroll(getAllPayrollUseCase);
+// Memoized Card components for better performance
+const MemoizedCard = memo(Card);
+const MemoizedCardHeader = memo(CardHeader);
+const MemoizedCardContent = memo(CardContent);
+const MemoizedCardTitle = memo(CardTitle);
 
+// Custom hook to handle data fetching and processing
+const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
+  const { worklogs, loading: worklogsLoading } = useGetAllWorklogs(getAllWorklogUseCase);
+  const { employees, loading: employeesLoading } = useGetAllEmployees(getAllEmployeeUseCase);
+  const { expenses, loading: expensesLoading } = useGetAllExpense(getAllExpenseUseCase);
+  const { incomes, loading: incomesLoading } = useGetAllIncome(getAllIncomeUseCase);
+  const { payrolls, loading: payrollsLoading } = useGetAllPayroll(getAllPayrollUseCase);
   const { translations, language } = useLanguage();
   const dashboardTranslations = translations.dashboard;
 
-  const today = new Date();
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(today.getMonth());
-  const [selectedYear, setSelectedYear] = useState<number | null>(today.getFullYear());
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-
-  const parseToDate = (v: any): Date | null => {
-    if (!v && v !== 0) return null;
-    if (v instanceof Date) return v;
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? null : d;
-  };
+  const isLoading = worklogsLoading || employeesLoading || expensesLoading || incomesLoading || payrollsLoading;
 
   const worklogsWithDates = useMemo(
     () => (Array.isArray(worklogs) ? worklogs.map(w => ({ ...w, updatedAt: parseToDate(w.updatedAt) })) : []),
@@ -95,13 +91,13 @@ const Dashboard = () => {
   const { monthIncome, monthExpenses } = useMemo(() => {
     let inc = 0, exp = 0;
     incomesWithDates.forEach(i => {
-      const d = i.date as Date | null;
+      const d = i.date;
       if (d && (selectedMonth === null || d.getMonth() === selectedMonth) && (selectedYear === null || d.getFullYear() === selectedYear)) {
         inc += i.amount;
       }
     });
     expensesWithDates.forEach(e => {
-      const d = e.date as Date | null;
+      const d = e.date;
       if (d && (selectedMonth === null || d.getMonth() === selectedMonth) && (selectedYear === null || d.getFullYear() === selectedYear)) {
         exp += e.amount;
       }
@@ -110,52 +106,31 @@ const Dashboard = () => {
   }, [incomesWithDates, expensesWithDates, selectedMonth, selectedYear]);
 
   const monthPayroll = useMemo(() => payrollsWithDates.reduce((s, p) => {
-    const d = p.period as Date | null;
+    const d = p.period;
     if (!d) return s;
     const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
     const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
     return s + (monthMatch && yearMatch ? p.totalSalary : 0);
   }, 0), [payrollsWithDates, selectedMonth, selectedYear]);
 
-  const monthProfit = useMemo(() => monthIncome - monthExpenses - monthPayroll, [monthIncome, monthExpenses, monthPayroll]);
-
   const employeeMap = useMemo(() => {
-    const map = new Map<string, Employee>();
+    const map = new Map();
     employees.forEach(emp => map.set(emp._id, emp));
     return map;
   }, [employees]);
 
   const filteredWorklogs = useMemo(() => {
-    return worklogsWithDates
-      .filter(w => {
-        const d = w.updatedAt as Date | null;
-        if (!d) return false;
-        const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
-        const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
-        return monthMatch && yearMatch;
-      })
-      .filter(w => !selectedEmployeeId || w.employeeId === selectedEmployeeId);
+    return worklogsWithDates.filter(w => {
+      const d = w.updatedAt;
+      if (!d) return false;
+      const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
+      const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
+      return monthMatch && yearMatch && (!selectedEmployeeId || w.employeeId === selectedEmployeeId);
+    });
   }, [worklogsWithDates, selectedMonth, selectedYear, selectedEmployeeId]);
 
-  const activityItems = useMemo(() => {
-    return filteredWorklogs
-      .sort((a, b) => (b.updatedAt as Date).getTime() - (a.updatedAt as Date).getTime())
-      .map(w => {
-        const employeeName = employeeMap.get(w.employeeId)?.name || 'Unknown Employee';
-        const d = w.updatedAt as Date;
-        const time = d ? d.toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
-        const text = `${employeeName}: ${dashboardTranslations.total}: ${w.quantity} • ${formatMMK(w.totalPrice)}`;
-        return { id: w._id, time, text, employeeName, quantity: w.quantity, totalPrice: w.totalPrice };
-      })
-      .filter(item => {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        return item.employeeName.toLowerCase().includes(lowerCaseSearchTerm) ||
-          item.text.toLowerCase().includes(lowerCaseSearchTerm);
-      });
-  }, [filteredWorklogs, dashboardTranslations, employeeMap, searchTerm]);
-
   const employeeWorklogSummary = useMemo(() => {
-    const summary: { name: string; quantity: number; totalPrice: number; payroll: number; avgValuePerWorklog: number; avgQuantityPerWorklog: number } = {
+    const summary = {
       name: 'All Employees',
       quantity: 0,
       totalPrice: 0,
@@ -181,7 +156,7 @@ const Dashboard = () => {
     summary.avgQuantityPerWorklog = worklogCount > 0 ? summary.quantity / worklogCount : 0;
 
     const employeePayroll = payrollsWithDates.find(p => {
-      const d = p.period as Date | null;
+      const d = p.period;
       if (!d) return false;
       const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
       const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
@@ -198,21 +173,91 @@ const Dashboard = () => {
   }, [filteredWorklogs, employeeMap, payrollsWithDates, selectedEmployeeId, selectedMonth, selectedYear, monthPayroll]);
 
   const payrollTrendData = useMemo(() => {
-    const currentDayLabels = language === 'Burmese'
+    const dayLabels = language === 'Burmese'
       ? [translations.common.sunday, translations.common.monday, translations.common.tuesday, translations.common.wednesday, translations.common.thursday, translations.common.friday, translations.common.saturday]
-      : dayLabels;
-      
-    const totals: Record<string, number> = {};
-    currentDayLabels.forEach(label => totals[label] = 0);
+      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const totals = {};
+    dayLabels.forEach(label => totals[label] = 0);
     
     filteredWorklogs.forEach(w => {
-      const d = w.updatedAt as Date;
-      const k = currentDayLabels[d.getDay()];
-      totals[k] += w.totalPrice;
+      const d = w.updatedAt;
+      if (d) {
+        const k = dayLabels[d.getDay()];
+        totals[k] += w.totalPrice;
+      }
     });
 
-    return currentDayLabels.map(k => ({ name: k, amount: totals[k] }));
+    return dayLabels.map(k => ({ name: k, amount: totals[k] }));
   }, [filteredWorklogs, language, translations]);
+
+  const incomeExpenseMonthly = useMemo(() => {
+    const inc = Array(12).fill(0);
+    const exp = Array(12).fill(0);
+    const pay = Array(12).fill(0);
+    
+    incomesWithDates.forEach(i => {
+      const d = i.date;
+      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) inc[d.getMonth()] += i.amount;
+    });
+    
+    expensesWithDates.forEach(e => {
+      const d = e.date;
+      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) exp[d.getMonth()] += e.amount;
+    });
+
+    payrollsWithDates.forEach(p => {
+      const d = p.period;
+      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) pay[d.getMonth()] += p.totalSalary;
+    });
+    
+    const monthLabels = language === 'Burmese'
+      ? ['ဇန်', 'ဖေဖော်', 'မတ်', 'ဧပြီ', 'မေ', 'ဇွန်', 'ဇူလိုင်', 'ဩဂုတ်', 'စက်တင်', 'အောက်', 'နိုဝင်', 'ဒီဇင်']
+      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      
+    return Array.from({ length: 12 }).map((_, m) => ({ 
+      name: monthLabels[m], 
+      income: inc[m], 
+      expenses: exp[m],
+      payroll: pay[m],
+    }));
+  }, [incomesWithDates, expensesWithDates, payrollsWithDates, language, selectedYear]);
+
+  return {
+    isLoading,
+    dashboardTranslations,
+    employees,
+    monthIncome,
+    monthExpenses,
+    monthPayroll,
+    filteredWorklogs,
+    employeeMap,
+    employeeWorklogSummary,
+    payrollTrendData,
+    incomeExpenseMonthly,
+    language
+  };
+};
+
+const Dashboard = () => {
+  const today = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+
+  const {
+    isLoading,
+    dashboardTranslations,
+    employees,
+    monthIncome,
+    monthExpenses,
+    monthPayroll,
+    filteredWorklogs,
+    employeeMap,
+    employeeWorklogSummary,
+    payrollTrendData,
+    incomeExpenseMonthly,
+    language
+  } = useDashboardData(selectedMonth, selectedYear, selectedEmployeeId);
 
   const bestDay = useMemo(() => {
     const trendData = payrollTrendData;
@@ -220,38 +265,8 @@ const Dashboard = () => {
     const best = trendData.reduce((prev, current) => (prev.amount > current.amount ? prev : current));
     return best.amount > 0 ? best.name : null;
   }, [payrollTrendData]);
-  
-  const incomeExpenseMonthly = useMemo(() => {
-    const inc = Array(12).fill(0);
-    const exp = Array(12).fill(0);
-    const pay = Array(12).fill(0);
-    
-    incomesWithDates.forEach(i => {
-      const d = i.date as Date | null;
-      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) inc[d.getMonth()] += i.amount;
-    });
-    
-    expensesWithDates.forEach(e => {
-      const d = e.date as Date | null;
-      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) exp[d.getMonth()] += e.amount;
-    });
 
-    payrollsWithDates.forEach(p => {
-      const d = p.period as Date | null;
-      if (d && (selectedYear === null || d.getFullYear() === selectedYear)) pay[d.getMonth()] += p.totalSalary;
-    });
-    
-    const currentMonthLabels = language === 'Burmese'
-      ? ['ဇန်', 'ဖေဖော်', 'မတ်', 'ဧပြီ', 'မေ', 'ဇွန်', 'ဇူလိုင်', 'ဩဂုတ်', 'စက်တင်', 'အောက်', 'နိုဝင်', 'ဒီဇင်']
-      : monthLabels;
-      
-    return Array.from({ length: 12 }).map((_, m) => ({ 
-      name: currentMonthLabels[m], 
-      income: inc[m], 
-      expenses: exp[m],
-      payroll: pay[m],
-    }));
-  }, [incomesWithDates, expensesWithDates, payrollsWithDates, language, selectedYear]);
+  const monthProfit = monthIncome - monthExpenses - monthPayroll;
 
   const monthOptions = useMemo(() => {
     const monthNames = language === 'Burmese'
@@ -260,10 +275,7 @@ const Dashboard = () => {
     
     return [
       { value: null, label: dashboardTranslations.allMonths || 'All Months' },
-      ...monthNames.map((name, index) => ({
-        value: index,
-        label: name,
-      })),
+      ...monthNames.map((name, index) => ({ value: index, label: name })),
     ];
   }, [language, dashboardTranslations]);
 
@@ -279,17 +291,41 @@ const Dashboard = () => {
     ];
   }, [dashboardTranslations]);
 
+  const activityItems = useMemo(() => {
+    if (!filteredWorklogs || filteredWorklogs.length === 0) return [];
+    
+    return filteredWorklogs
+      .sort((a, b) => (b.updatedAt).getTime() - (a.updatedAt).getTime())
+      .slice(0, 2)
+      .map(w => {
+        const employeeName = employeeMap.get(w.employeeId)?.name || 'Unknown Employee';
+        const d = w.updatedAt;
+        const time = d ? d.toLocaleString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const date = d ? d.toLocaleDateString() : '';
+        const text = `${employeeName}: ${dashboardTranslations.total}: ${w.quantity} • ${formatMMK(w.totalPrice)}`;
+        return { id: w._id, time, date, text, employeeName };
+      });
+  }, [filteredWorklogs, employeeMap, dashboardTranslations]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <Loader2 className="h-10 w-10 animate-spin text-gray-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background p-4 sm:p-6">
       {/* Top Bar - Unified Search, Language, Date */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-extrabold text-gray-900">{dashboardTranslations.title || "Dashboard Overview"}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <h1 className="text-2xl font-extrabold text-foreground">{dashboardTranslations.title || "Dashboard Overview"}</h1>
+        <div className="flex items-center gap-2">
           <Select
             onValueChange={(value) => setSelectedMonth(value === "null" ? null : Number(value))}
             value={selectedMonth === null ? "null" : String(selectedMonth)}
           >
-            <SelectTrigger className="w-[120px] bg-white border-gray-300 rounded-xl">
+            <SelectTrigger className="w-[120px] bg-card border-border rounded-xl">
               <SelectValue placeholder={dashboardTranslations.month || "Month"} />
             </SelectTrigger>
             <SelectContent>
@@ -304,7 +340,7 @@ const Dashboard = () => {
             onValueChange={(value) => setSelectedYear(value === "null" ? null : Number(value))}
             value={selectedYear === null ? "null" : String(selectedYear)}
           >
-            <SelectTrigger className="w-[100px] bg-white border-gray-300 rounded-xl">
+            <SelectTrigger className="w-[100px] bg-card border-border rounded-xl">
               <SelectValue placeholder={dashboardTranslations.year || "Year"} />
             </SelectTrigger>
             <SelectContent>
@@ -317,234 +353,187 @@ const Dashboard = () => {
           </Select>
         </div>
       </div>
-
-      <div className="p-6 flex-1 overflow-auto">
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col gap-4">
         {/* KPIs Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card className="rounded-2xl border-gray-200 shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">{dashboardTranslations.totalEmployees || "Total Employees"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.totalEmployees || "Total Employees"}</CardTitle>
               <Users className="w-5 h-5 text-indigo-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{employees.length}</div>
+              <div className="text-2xl font-bold text-foreground">{employees.length}</div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-gray-200 shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-white">
+          <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">{dashboardTranslations.monthlyPayroll || "Monthly Payroll"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.monthlyPayroll || "Monthly Payroll"}</CardTitle>
               <Wallet className="w-5 h-5 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatMMK(monthPayroll)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatMMK(monthPayroll)}</div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-gray-200 shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-white">
+          <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">{dashboardTranslations.monthlyIncome || "Monthly Income"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.monthlyIncome || "Monthly Income"}</CardTitle>
               <ArrowUpCircle className="w-5 h-5 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatMMK(monthIncome)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatMMK(monthIncome)}</div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-gray-200 shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-white">
+          <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">{dashboardTranslations.monthlyExpenses || "Monthly Expenses"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.monthlyExpenses || "Monthly Expenses"}</CardTitle>
               <ArrowDownCircle className="w-5 h-5 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatMMK(monthExpenses)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatMMK(monthExpenses)}</div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-gray-200 shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-white">
+          <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">{dashboardTranslations.monthlyProfit || "Monthly Profit"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.monthlyProfit || "Monthly Profit"}</CardTitle>
               <TrendingUp className="w-5 h-5 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatMMK(monthProfit)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatMMK(monthProfit)}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="rounded-2xl border-gray-200 shadow-sm lg:col-span-2">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="rounded-2xl border-border shadow-sm lg:col-span-2 flex flex-col">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">{dashboardTranslations.employeePerformanceOverview || "Employee Performance Overview"}</CardTitle>
-                <div className="flex gap-2">
-                  <Select
-                    onValueChange={(value) => setSelectedEmployeeId(value === "all" ? null : value)}
-                    value={selectedEmployeeId || "all"}
-                  >
-                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
-                      <SelectValue placeholder="Select an Employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Employees</SelectItem>
-                      {employees.map(employee => (
-                        <SelectItem key={employee._id} value={employee._id}>
-                          {employee.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.employeePerformanceOverview || "Employee Performance Overview"}</CardTitle>
+                <Select
+                  onValueChange={(value) => setSelectedEmployeeId(value === "all" ? null : value)}
+                  value={selectedEmployeeId || "all"}
+                >
+                  <SelectTrigger className="w-[180px] bg-card border-border">
+                    <SelectValue placeholder="Select an Employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{dashboardTranslations.allEmployees || "All Employees"}</SelectItem>
+                    {employees.map(employee => (
+                      <SelectItem key={employee._id} value={employee._id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col flex-1">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col items-start">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">{dashboardTranslations.worklogQuantity || "Worklog Quantity"}</h3>
-                  <p className="text-xl font-semibold text-gray-900">{employeeWorklogSummary.quantity}</p>
+                <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.worklogQuantity || "Worklog Quantity"}</h3>
+                  <p className="text-xl font-semibold text-foreground">{employeeWorklogSummary.quantity}</p>
                 </div>
-                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col items-start">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">{dashboardTranslations.totalValue || "Total Value"}</h3>
-                  <p className="text-xl font-semibold text-gray-900">{formatMMK(employeeWorklogSummary.totalPrice)}</p>
+                <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.totalValue || "Total Value"}</h3>
+                  <p className="text-xl font-semibold text-foreground">{formatMMK(employeeWorklogSummary.totalPrice)}</p>
                 </div>
-                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col items-start">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">{dashboardTranslations.monthlyPayrollTitle || "Monthly Payroll"}</h3>
-                  <p className="text-xl font-semibold text-gray-900">{formatMMK(employeeWorklogSummary.payroll)}</p>
+                <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.monthlyPayrollTitle || "Monthly Payroll"}</h3>
+                  <p className="text-xl font-semibold text-foreground">{formatMMK(employeeWorklogSummary.payroll)}</p>
                 </div>
-                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col items-start">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">{dashboardTranslations.avgWorklogQuantity || "Avg. Worklog Quantity"}</h3>
-                  <p className="text-xl font-semibold text-gray-900">{employeeWorklogSummary.avgQuantityPerWorklog.toFixed(2)}</p>
+                <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.avgWorklogQuantity || "Avg. Worklog Quantity"}</h3>
+                  <p className="text-xl font-semibold text-foreground">{employeeWorklogSummary.avgQuantityPerWorklog.toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row gap-4">
-                {bestDay && selectedEmployeeId && (
-                  <div className="flex-1 flex items-center justify-center p-3 rounded-xl bg-purple-50 text-purple-800">
-                    <Award className="w-5 h-5 mr-2" />
-                    <p className="text-sm font-medium">{dashboardTranslations.bestPerformanceDay || "Best Performance Day"}: <span className="font-semibold">{bestDay}</span></p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="rounded-2xl border-gray-200 shadow-sm">
-            <CardHeader className="pb-0">
-              <div className="flex justify-between items-center mb-2">
-                <CardTitle className="text-lg font-bold text-gray-800">{dashboardTranslations.activityLog || "Activity Log"}</CardTitle>
-                <Button size="icon" variant="ghost" className="text-gray-500 hover:text-gray-800">
-                  <PlusCircle className="w-5 h-5" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                <ul className="space-y-4">
-                  {activityItems.length > 0 ? (
-                    activityItems.map((item, index) => (
-                      <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-100 rounded-xl">
-                        <div className="flex-1 text-sm text-gray-800 leading-tight">
-                          <span className="font-semibold">{item.employeeName}:</span> {item.text}
-                        </div>
-                        <div className="mt-1 sm:mt-0 sm:ml-4 text-xs font-mono text-gray-500 flex-shrink-0">
-                          {item.time}
-                        </div>
-                      </li>
-                    ))
-                  ) : (
-                    <p className="text-center text-gray-500 py-10">{dashboardTranslations.noActivityFound || "No recent activity."}</p>
+              <Card className="rounded-2xl border-border shadow-sm flex-1">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.weeklyWorklogTrend || "Weekly Worklog Trend"}</CardTitle>
+                  {bestDay && (
+                    <div className="flex items-center text-sm font-medium text-green-600">
+                      <Award size={16} className="mr-1" />
+                      {dashboardTranslations.bestDay || 'Best day'}: {bestDay}
+                    </div>
                   )}
-                </ul>
-              </div>
+                </CardHeader>
+                <CardContent className="h-[250px]">
+                  {payrollTrendData.every(d => d.amount === 0) ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      {dashboardTranslations.noData || "No data available for this period."}
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={payrollTrendData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                        <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value / 1000}K`} />
+                        <Tooltip formatter={(value) => formatMMK(value)} />
+                        <Line type="monotone" dataKey="amount" stroke="#FF6767" strokeWidth={3} dot={{ stroke: '#FF6767', strokeWidth: 2 }} activeDot={{ r: 8 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <Card className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-            <CardHeader className="p-0">
-              <CardTitle className="text-lg font-bold text-gray-800 mb-4">
-                {selectedEmployeeId ? `${employeeMap.get(selectedEmployeeId)?.name}'s ${dashboardTranslations.payrollTrend || "Weekly Worklog Trend"}` : (dashboardTranslations.payrollTrend || "Weekly Worklog Trend")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={payrollTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-                  <XAxis dataKey="name" tick={{ fill: '#4B5563', fontSize: 12 }} />
-                  <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}K`} tick={{ fill: '#4B5563', fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatMMK(v)} />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    name={dashboardTranslations.total || "Total"}
-                    stroke="#FF6767"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          
-          <Card className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-            <CardHeader className="p-0">
-              <CardTitle className="text-lg font-bold text-gray-800 mb-4">
-                {dashboardTranslations.incomeVsExpenses || "Yearly Financial Overview"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={incomeExpenseMonthly}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-                  <XAxis dataKey="name" tick={{ fill: '#4B5563', fontSize: 12 }} />
-                  <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}K`} tick={{ fill: '#4B5563', fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatMMK(Number(v))} />
-                  <Legend iconType="circle" />
-                  <Line
-                    type="monotone"
-                    dataKey="income"
-                    name={dashboardTranslations.monthlyIncome || "Monthly Income"}
-                    stroke="#4CAF50"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="expenses"
-                    name={dashboardTranslations.monthlyExpenses || "Monthly Expenses"}
-                    stroke="#FF5722"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="payroll"
-                    name={dashboardTranslations.monthlyPayroll || "Monthly Payroll"}
-                    stroke="#2196F3"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-4">
+            <Card className="rounded-2xl border-border shadow-sm flex-1 flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.activityLog || "Activity Log"}</CardTitle>
+                <Button variant="ghost" className="p-0 h-auto text-muted-foreground" aria-label="Refresh activity log">
+                  <RefreshCcw size={18} />
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4 flex-1 overflow-y-auto">
+                {activityItems.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    {dashboardTranslations.noActivities || "No recent activities found."}
+                  </div>
+                ) : (
+                  activityItems.map((item) => (
+                    <div key={item.id} className="border border-border rounded-xl p-3 bg-muted">
+                      <p className="text-sm text-foreground font-medium">{item.text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.date} {item.time}</p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border-border shadow-sm flex-1 flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.yearlyFinancialOverview || "Yearly Financial Overview"}</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[250px]">
+                {incomeExpenseMonthly.every(d => d.income === 0 && d.expenses === 0 && d.payroll === 0) ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    {dashboardTranslations.noData || "No data available for this period."}
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={incomeExpenseMonthly}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value / 1000}K`} />
+                      <Tooltip formatter={(value, name) => [
+                        formatMMK(value),
+                        name === 'income' ? dashboardTranslations.monthlyIncome : name === 'expenses' ? dashboardTranslations.monthlyExpenses : dashboardTranslations.monthlyPayrollTitle
+                      ]} />
+                      <Legend />
+                      <Line type="monotone" dataKey="income" stroke="#3ABEFF" strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="expenses" stroke="#FF6767" strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="payroll" stroke="#32cd32" strokeWidth={3} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
-      `}</style>
     </div>
   );
 };

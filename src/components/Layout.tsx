@@ -1,5 +1,3 @@
-// src/components/Layout.tsx
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, LogOut, ChevronDown, Menu, X } from "lucide-react";
@@ -115,7 +113,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
       {/* Header */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 w-full z-40 sm:z-30 flex flex-col sm:flex-row sm:h-[80px] items-center justify-between px-4 md:px-8 border-b border-[#E5E5E5] bg-[#F8F8F8] py-3"
+        className="fixed top-0 left-0 w-full z-40 sm:z-30 flex flex-col sm:flex-row sm:h-[80px] items-center justify-between px-4 md:px-6 border-b border-[#E5E5E5] bg-[#F8F8F8] py-3"
       >
         <div className="flex justify-between items-center w-full sm:w-auto">
           <div className="flex items-center text-[28px] font-semibold font-inter">
@@ -134,13 +132,13 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
         </div>
 
         {/* Search + Language */}
-        <div className={`flex items-center gap-2 sm:gap-4 ${isMobile ? "w-full mt-2" : "flex-shrink-0"}`}>
-          <div className="flex items-center w-full max-w-xs flex-grow px-4 py-2 rounded-[10px] outline outline-1 outline-[#FF676733]">
-            <Search size={20} className="text-[#FF6767] mr-2" />
+        <div className={`flex items-center gap-2 sm:gap-3 ${isMobile ? "w-full mt-2" : "flex-shrink-0"}`}>
+          <div className="flex items-center w-full max-w-[280px] flex-grow px-4 py-2 rounded-[10px] outline outline-1 outline-[#E5E7EB]">
+            <Search size={20} className="text-[#9CA3AF] mr-2" />
             <input
               type="text"
               placeholder={translations.searchPlaceholder}
-              className="bg-transparent placeholder-[#16151C33] text-[16px] font-light leading-[24px] focus:outline-none w-full"
+              className="bg-transparent placeholder-[#9CA3AF] text-[16px] font-light leading-[24px] focus:outline-none w-full"
               value={currentSearchQuery}
               onChange={handleSearchInputChange}
             />
@@ -148,7 +146,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
 
           <div
             ref={dropdownRef}
-            className="flex items-center justify-center h-[38px] px-2 sm:px-3 rounded-[10px] outline outline-1 outline-[#FF676733] gap-1 sm:gap-2 relative cursor-pointer select-none flex-shrink-0"
+            className="flex items-center justify-center h-[38px] px-2 rounded-[10px] outline outline-1 outline-[#E5E7EB] gap-1 sm:gap-2 relative cursor-pointer select-none flex-shrink-0"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
             <span className="text-[#16151C] text-[12px] sm:text-[14px] font-light whitespace-nowrap">{language}</span>
@@ -252,7 +250,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
         )}
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto bg-gray-50">
+        <main className="flex-1 p-4 overflow-y-auto bg-gray-50">
           {React.Children.map(children, (child) =>
             React.isValidElement(child)
               ? React.cloneElement(child as React.ReactElement<any>, {
