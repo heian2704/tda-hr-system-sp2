@@ -13,7 +13,7 @@ import Employee from "@/pages/employee/Employee";
 import WorkLog from "@/pages/worklog/WorkLog";
 import Payroll from "@/pages/payroll/Payroll";
 import ExpenseIncome from "@/pages/expenseincome/ExpenseIncome";
-import Reports from "@/pages/reports/Reports";
+import Attendance from "@/pages/attendance/Attendance";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +44,7 @@ const App = () => {
   // ProtectedElement is an inline helper component.
   // It conditionally renders its children (the protected content)
   // or redirects to the login page if the user is not authenticated.
-  const ProtectedElement: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const ProtectedElement = ({ children }) => {
     if (!isLoggedIn) {
       return <Navigate to="/" replace />;
     }
@@ -98,6 +98,16 @@ const App = () => {
                 </ProtectedElement>
               }
             />
+              <Route
+              path="/attendance"
+              element={
+                <ProtectedElement>
+                  <Layout setIsLoggedIn={setIsLoggedIn}>
+                    <Attendance />
+                  </Layout>
+                </ProtectedElement>
+              }
+            />
             <Route
               path="/worklog"
               element={
@@ -108,6 +118,7 @@ const App = () => {
                 </ProtectedElement>
               }
             />
+            
             <Route
               path="/payroll"
               element={
@@ -128,6 +139,7 @@ const App = () => {
                 </ProtectedElement>
               }
             />
+        
 
             {/*
               Not Found Route:

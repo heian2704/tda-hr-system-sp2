@@ -164,7 +164,7 @@ const Employee = ({
         </div>
       )}
       <div className="space-y-4">
-        {/* Stats Section */}
+        {/* Stats Section
         <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
           <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
             <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -195,7 +195,7 @@ const Employee = ({
               <p className="text-3xl font-bold mt-1">{onLeaveEmployees}</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Table Header/Actions */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
