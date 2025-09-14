@@ -14,7 +14,7 @@ export const useCreateEmployee = (useCase: CreateEmployeeUseCase) => {
     try {
       const res = await useCase.execute(token, data);
       setCreatedEmployee(res);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);

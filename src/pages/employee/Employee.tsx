@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef, use } from 'react';
 import { Users, Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X, Edit, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { EmployeeResponse } from '@/dtos/employee/EmployeeResponse';
-import { employeeService } from '@/services/employeeService';
-import AddEmployeeModal from '@/components/AddEmployeeModal/AddEmployeeModal';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal/ConfirmDeleteModal';
-import EditEmployeeModal from "@/components/EditEmployeeModal/EditEmployeeModal.tsx";
+import AddEmployeeModal from '@/components/employee/create_employee/AddEmployeeModal';
+import ConfirmDeleteModal from '@/components/employee/delete_employee/ConfirmDeleteModal';
+import EditEmployeeModal from "@/components/employee/update_employee/EditEmployeeModal";
 import { EmpStatus } from '@/constants/employee-status.enum';
 import { CreateEmployeeDto } from '@/domain/models/employee/create-employee.dto';
-import StatusChanger from '@/components/StatusChangerModal/StatusChangerModal';
+import StatusChanger from '@/components/employee/update_employee_status/StatusChangerModal'
 import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
 import { useGetAllEmployees } from '@/hooks/employee/get-all-employee.hook';
 import type { Employee } from '@/domain/models/employee/get-employee.model';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
-import { set } from 'date-fns';
+import { ITEMS_PER_PAGE } from '@/constants/page-utils';
+import { Employees } from '@/domain/models/employee/get-employees.model';
 
 interface EmployeeProps {
   currentPath?: string;
@@ -25,12 +24,10 @@ const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 
 const Employee = ({ 
-   currentPath,
    searchQuery = ""}: EmployeeProps) => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Changed from 6 to 8
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
@@ -47,21 +44,20 @@ const Employee = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(undefined);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    setAllEmployees(employees.reverse());
-  }, [employees]);
 
-  const filteredEmployees = allEmployees.filter(emp =>
+  const employeeList = employees?.data as Employee[] ?? [];
+  console.log("All Employees:", employees);
+
+  const filteredEmployees = employeeList.filter(emp =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.phoneNumber.includes(searchQuery)
   );
 
+  console.log("Filtered Employees:", employeeList);
   const totalEmployees = filteredEmployees.length;
-  const activeEmployees = filteredEmployees.filter(emp => emp.status === EmpStatus.ACTIVE).length;
-  const onLeaveEmployees = filteredEmployees.filter(emp => emp.status === 'on_leave').length;
-  const totalPages = Math.max(1, Math.ceil(totalEmployees / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(totalEmployees / ITEMS_PER_PAGE));
 
   useEffect(() => {
     setCurrentPage(1);
@@ -75,14 +71,15 @@ const Employee = ({
     }
   }, [totalPages, currentPage]);
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalEmployees);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalEmployees);
   const currentEmployees = filteredEmployees.slice(startIndex, endIndex);
 
   const refetchEmployees = async () => {
     try{
-      const refetchedEmps = await getAllEmployeeUseCase.execute();
-      setAllEmployees(refetchedEmps.reverse());
+      const refetchedEmps = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, currentPage);
+      const empList = refetchedEmps.data || [];
+      setAllEmployees(empList.reverse());
     } catch (error) {
       console.error('Error refetching employees:', error);
     }
@@ -143,7 +140,8 @@ const Employee = ({
 
   const currentEmployeesSorted = sortedEmployees.slice(startIndex, endIndex);
 
-  if (loading || currentEmployeesSorted.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (!loading && currentEmployeesSorted.length === 0) return <div className="text-center py-8">{employeePageTranslations.employees || 'No employees found.'}</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (

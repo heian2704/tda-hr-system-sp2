@@ -13,7 +13,8 @@ export const useDeleteEmployee = (useCase: DeleteEmployeeUseCase) => {
     try {
       const res = await useCase.execute(idToken);
       setDeletedEmployee(res);
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);

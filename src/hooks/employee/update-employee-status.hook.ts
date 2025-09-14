@@ -15,7 +15,7 @@ export const useUpdateEmployeeStatus = (useCase: UpdateEmployeeStatusUseCase) =>
     try {
       const res = await useCase.execute(idToken, status);
       setEmployee(res);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);

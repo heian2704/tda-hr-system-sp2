@@ -14,12 +14,8 @@ const headerBuilder = (token?: string): HeadersInit => ({
 });
 
 const apiCaller = async <T>({ endpoint, options }: ApiRequestEssentials<T>): Promise<T> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    return responseHandler<T>(response);
-  } catch (error) {
-    throw error;
-  }
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+  return responseHandler<T>(response);
 };
 
 export const apiGetRequestsHandler = async <T>({

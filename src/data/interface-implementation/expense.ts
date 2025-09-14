@@ -3,7 +3,7 @@ import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/hea
 import { CreateExpenseDto } from "@/domain/models/income-expense/expense/create-expense.dto";
 import { Expense } from "@/domain/models/income-expense/expense/get-expense.dto";
 import { UpdateExpenseDto } from "@/domain/models/income-expense/expense/update-expense.dto";
-import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/services/network/api";
+import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 import { create } from "domain";
 
 export class ExpenseInterfaceImpl implements ExpenseInterface {

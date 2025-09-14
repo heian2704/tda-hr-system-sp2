@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { EditEmployeeModalProps } from "@/components/EditEmployeeModal/types.ts";
-import EditEmployeeForm from "@/components/EditEmployeeModal/EditEmployeeForm.tsx";
+import { EditEmployeeModalProps } from "@/components/employee/update_employee/types";
+import EditEmployeeForm from "@/components/employee/update_employee/EditEmployeeForm.tsx";
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
 import { UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';

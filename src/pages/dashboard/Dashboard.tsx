@@ -29,6 +29,7 @@ import { useGetAllExpense } from "@/hooks/income-expense/expense/get-all-expense
 import { useGetAllIncome } from "@/hooks/income-expense/income/get-all-income.hook";
 import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 
 // --- Utility Functions (moved here from a separate utils file) ---
 const formatMMK = (n) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
@@ -115,7 +116,8 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
 
   const employeeMap = useMemo(() => {
     const map = new Map();
-    employees.forEach(emp => map.set(emp._id, emp));
+    const list = employees?.data ?? [];
+    list.forEach(emp => map.set(emp._id, emp));
     return map;
   }, [employees]);
 
@@ -364,7 +366,7 @@ const Dashboard = () => {
               <Users className="w-5 h-5 text-indigo-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{employees.length}</div>
+                <div className="text-2xl font-bold text-foreground">{(employees?.data ?? []).length}</div>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
@@ -420,7 +422,7 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{dashboardTranslations.allEmployees || "All Employees"}</SelectItem>
-                    {employees.map(employee => (
+                    {(employees?.data ?? []).map(employee => (
                       <SelectItem key={employee._id} value={employee._id}>
                         {employee.name}
                       </SelectItem>

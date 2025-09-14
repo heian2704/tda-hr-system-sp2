@@ -1,4 +1,4 @@
-export const ITEMS_PER_PAGE = 8;
+export const ITEMS_PER_PAGE = 10;
 export const formatYYYYMM = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 export const formatISOWeek = (d: Date) => {
   // ISO week year/week

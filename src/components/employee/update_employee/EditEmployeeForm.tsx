@@ -1,7 +1,6 @@
 // EmployeeForm.tsx
 import React, { useState } from 'react';
 import { useEditEmployeeForm } from './useEditEmployeeForm';
-import {EmployeeUpdateDto} from "@/dtos/employee/EmployeeUpdateDto.ts";
 import { TokenedRequest } from '@/domain/models/common/header-param';
 import { UpdateEmployeeDto } from '@/domain/models/employee/update-employee.dto';
 import { EmpStatus } from '@/constants/employee-status.enum';
@@ -9,7 +8,7 @@ import { UpdateEmployeeUseCase } from '@/data/usecases/employee.usecase';
 
 interface Props {
     employeeId?: string;
-    editEmployeeDto?: EmployeeUpdateDto;
+    editEmployeeDto?: UpdateEmployeeDto;
     onClose: () => void;
     translations: any;
     updateEmployeeUseCase: UpdateEmployeeUseCase;

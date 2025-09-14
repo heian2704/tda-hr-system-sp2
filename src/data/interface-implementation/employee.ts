@@ -1,15 +1,15 @@
-import { EmpStatus } from "@/constants/employee-status.enum";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/header-param";
 import { CreateEmployeeDto } from "@/domain/models/employee/create-employee.dto";
 import { Employee } from "@/domain/models/employee/get-employee.model";
+import { Employees } from "@/domain/models/employee/get-employees.model";
 import { UpdateEmployeeDto, UpdateEmpStatus } from "@/domain/models/employee/update-employee.dto";
-import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/services/network/api";
+import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class EmployeeInterfaceImpl implements EmployeeInterface {
-    getAllEmployee(): Promise<Employee[]> {
-        return apiGetRequestsHandler<Employee[]> ({
-            endpoint: '/employee',
+    getAllEmployee(limit: number, page: number): Promise<Employees> {
+        return apiGetRequestsHandler<Employees> ({
+            endpoint: '/employee?limit=' + limit + '&page=' + page
         });
     }
 

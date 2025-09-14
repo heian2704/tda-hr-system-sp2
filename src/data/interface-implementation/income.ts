@@ -11,7 +11,7 @@ import {
     apiGetRequestsHandler, 
     apiPatchRequestsHandler, 
     apiPostRequestsHandler 
-} from "@/services/network/api";
+} from "@/network/api";
 
 export class IncomeInterfaceImpl implements IncomeInterface {
     getAllIncomes(): Promise<Income[]> {

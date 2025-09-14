@@ -3,7 +3,7 @@ import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/hea
 import { CreateWorklogDto } from "@/domain/models/worklog/create-worklog.dto";
 import { Worklog } from "@/domain/models/worklog/get-worklog.dto";
 import { UpdateWorklogDto } from "@/domain/models/worklog/update-worklog.dto";
-import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/services/network/api";
+import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class WorklogInterfaceImpl implements WorklogInterface {
     async getAllWorklogs(): Promise<Worklog[]> {

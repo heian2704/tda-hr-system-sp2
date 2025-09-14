@@ -1,6 +1,6 @@
 import { PayrollInterface } from "@/domain/interfaces/payroll/PayrollInterface";
 import { Payroll } from "@/domain/models/payroll/get-payroll.dto";
-import { apiGetRequestsHandler } from "@/services/network/api";
+import { apiGetRequestsHandler } from "@/network/api";
 
 export class PayrollInterfaceImpl implements PayrollInterface {
     async getAllPayrolls(query?: string): Promise<Payroll[]> {

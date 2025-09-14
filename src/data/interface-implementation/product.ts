@@ -3,7 +3,7 @@ import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/hea
 import { CreateProductDto } from "@/domain/models/product/create-product.dto";
 import { Product } from "@/domain/models/product/get-product.dto";
 import { UpdateProductDto } from "@/domain/models/product/update-product.dto";
-import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/services/network/api";
+import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class ProductInterfaceImpl implements ProductInterface {
     getAllProducts(): Promise<Product[]> {
