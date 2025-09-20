@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, use } from 'react';
-import { Users, Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Plus, ChevronLeft, ChevronRight, ChevronDown, Check, X, Edit, Trash2, Search } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AddEmployeeModal from '@/components/employee/create_employee/AddEmployeeModal';
 import ConfirmDeleteModal from '@/components/employee/delete_employee/ConfirmDeleteModal';
@@ -14,51 +14,46 @@ import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterfac
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import { Employees } from '@/domain/models/employee/get-employees.model';
-
-interface EmployeeProps {
-  currentPath?: string;
-  searchQuery?: string;
-}
+import { employeeFilter } from '@/lib/filters';
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 
-const Employee = ({ 
-   searchQuery = ""}: EmployeeProps) => {
+const Employee = () => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [employeeList, setEmployeeList] = useState<Employee[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [employeeToDeleteDetails, setEmployeeToDeleteDetails] = useState<{ id: string, name: string } | null>(null);
   const [selectedEmployeeForAdd, setSelectedEmployeeForAdd] = useState<CreateEmployeeDto | undefined>(undefined);
   const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<Employee | undefined>(undefined);
-  const { language, translations } = useLanguage();
+  const { translations } = useLanguage();
   const employeePageTranslations = translations.employeePage;
   const [showEditedAlert, setShowEditedAlert] = useState(false);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<'joinedDate' | 'name' | 'status'>(undefined);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(undefined);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-  const employeeList = employees?.data as Employee[] ?? [];
-  console.log("All Employees:", employees);
+  const filteredEmployees = employeeFilter(employeeList, searchQuery);
 
-  const filteredEmployees = employeeList.filter(emp =>
-    emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.phoneNumber.includes(searchQuery)
-  );
-
-  console.log("Filtered Employees:", employeeList);
+  console.log("Filtered Employees:", filteredEmployees);
   const totalEmployees = filteredEmployees.length;
-  const totalPages = Math.max(1, Math.ceil(totalEmployees / ITEMS_PER_PAGE));
 
+  // Update list and total pages when API data changes
+  useEffect(() => {
+    setEmployeeList(employees?.data ?? []);
+    setTotalPages(employees?.totalPages ?? 0);
+  }, [employees]);
+
+  // Reset to first page when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -71,15 +66,12 @@ const Employee = ({
     }
   }, [totalPages, currentPage]);
 
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalEmployees);
-  const currentEmployees = filteredEmployees.slice(startIndex, endIndex);
-
-  const refetchEmployees = async () => {
+  const refetchEmployees = async (page: number) => {
     try{
-      const refetchedEmps = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, currentPage);
+      const refetchedEmps = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, page);
       const empList = refetchedEmps.data || [];
-      setAllEmployees(empList.reverse());
+      setEmployeeList(empList);
+      setTotalPages(refetchedEmps.totalPages || 0);
     } catch (error) {
       console.error('Error refetching employees:', error);
     }
@@ -88,6 +80,8 @@ const Employee = ({
   const handlePageChange = (page: number) => {
     const clampedPage = Math.max(1, Math.min(page, totalPages));
     setCurrentPage(clampedPage);
+    // fetch the selected page
+    refetchEmployees(clampedPage);
   };
 
   const handleOpenAddModal = () => {
@@ -138,10 +132,8 @@ const Employee = ({
     return 0;
   });
 
-  const currentEmployeesSorted = sortedEmployees.slice(startIndex, endIndex);
-
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
-  if (!loading && currentEmployeesSorted.length === 0) return <div className="text-center py-8">{employeePageTranslations.employees || 'No employees found.'}</div>;
+  if (!loading && filteredEmployees.length === 0) return <div className="text-center py-8">{'No employees found.'}</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
@@ -162,39 +154,6 @@ const Employee = ({
         </div>
       )}
       <div className="space-y-4">
-        {/* Stats Section
-        <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Users className="text-red-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{employeePageTranslations.totalEmployee}</p>
-              <p className="text-3xl font-bold mt-1">{totalEmployees}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Check className="text-green-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{employeePageTranslations.active}</p>
-              <p className="text-3xl font-bold mt-1">{activeEmployees}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <X className="text-red-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{employeePageTranslations.onLeave}</p>
-              <p className="text-3xl font-bold mt-1">{onLeaveEmployees}</p>
-            </div>
-          </div>
-        </div> */}
-
         {/* Table Header/Actions */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
@@ -202,6 +161,17 @@ const Employee = ({
               <h2 className="text-xl font-bold">{employeePageTranslations.employees}</h2>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                {/* Search box */}
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search employees..."
+                    className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                  />
+                </div>
               <div className="relative" ref={sortDropdownRef}>
                 <button
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
@@ -228,13 +198,13 @@ const Employee = ({
                       onClick={() => { handleSortChange('name'); setIsSortDropdownOpen(false); }}
                       className={`block w-full text-left px-4 py-2 text-sm ${sortField === 'name' ? 'font-bold bg-gray-100' : ''} hover:bg-gray-100`}
                     >
-                      Name {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                      {employeePageTranslations.name} {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                     </button>
                     <button
                       onClick={() => { handleSortChange('status'); setIsSortDropdownOpen(false); }}
                       className={`block w-full text-left px-4 py-2 text-sm ${sortField === 'status' ? 'font-bold bg-gray-100' : ''} hover:bg-gray-100`}
                     >
-                      Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                      {employeePageTranslations.status} {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                     </button>
                   </div>
                 )}
@@ -258,12 +228,11 @@ const Employee = ({
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.address}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.roleColumn}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.joinDateColumn}</th>
-                  <th className="py-3 px-4 font-semibold text-center">{employeePageTranslations.statusColumn}</th>
                   <th className="py-3 px-4 font-semibold text-center">{employeePageTranslations.actionColumn}</th>
                 </tr>
               </thead>
               <tbody>
-                {currentEmployeesSorted.map(emp => (
+                {filteredEmployees.map(emp => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">{emp.name}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.phoneNumber}</td>
@@ -272,7 +241,7 @@ const Employee = ({
                     <td className="py-3 px-4 text-gray-700">
                       {emp.joinedDate?.split("T", 1)[0] || 'N/A'}
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    {/* <td className="py-3 px-4 text-center">
                       <StatusChanger
                         employeeId={emp._id}
                         employeeName={emp.name}
@@ -284,7 +253,7 @@ const Employee = ({
                         }}
                         onUpdate={refetchEmployees}
                       />
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
@@ -312,7 +281,7 @@ const Employee = ({
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              {employeePageTranslations.showing} {totalEmployees > 0 ? startIndex + 1 : 0} {employeePageTranslations.of} {Math.min(endIndex, totalEmployees)} {employeePageTranslations.of} {totalEmployees} {employeePageTranslations.employees}
+              {employeePageTranslations.showing} {totalEmployees} {employeePageTranslations.employees}
             </p>
             <div className="flex justify-center items-center gap-2">
               <button
@@ -353,7 +322,7 @@ const Employee = ({
           selectedEmployeeForAdd  
         }
         showCreateAlert={setShowCreatedAlert}
-        onUpdate={refetchEmployees}
+        onUpdate={() => { void refetchEmployees(currentPage); }}
       />
 
       {/* Edit Employee Modal */}
@@ -362,7 +331,7 @@ const Employee = ({
         editEmployeeDto={selectedEmployeeForEdit}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onUpdate={refetchEmployees}
+        onUpdate={() => { void refetchEmployees(currentPage); }}
         showEditedAlert={setShowEditedAlert}
       />
 
@@ -373,7 +342,7 @@ const Employee = ({
         onClose={() => setIsDeleteConfirmModalOpen(false)}
         employeeId={employeeToDeleteDetails?.id || null}
         employeeName={employeeToDeleteDetails?.name || ''}
-        onUpdate={refetchEmployees}
+        onUpdate={() => { void refetchEmployees(currentPage); }}
         showDeleteAlert={setShowDeletedAlert}
       />
     </div>
