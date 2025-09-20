@@ -220,6 +220,7 @@ interface DashboardTranslations {
   yearlyFinancialOverview: string;
   title: string;
   totalEmployees: string;
+  onBoardEmployeesByMonth: string;
   monthlyPayroll: string;
   monthlyIncome: string;
   monthlyExpenses: string;
@@ -273,11 +274,6 @@ export interface AttendancePageTranslations {
 
 // Extend the main AppTranslations to include the new Attendance page
 interface AppTranslations {
-  clockInPlaceholder: any;
-  clockOutPlaceholder: any;
-  bulkClockIn: any;
-  bulkClockOut: any;
-  employees: any;
   totalEmployees: ReactNode;
   present: ReactNode;
   absent: ReactNode;
@@ -292,10 +288,6 @@ interface AppTranslations {
   selectTime: ReactNode;
   cancel: ReactNode;
   confirm: ReactNode;
-  employee: any;
-  worklog: any;
-  payroll: any;
-  expenseIncome: any;
   attendancePage: AttendancePageTranslations; // Added this line
   dashboard: DashboardTranslations;
   sidebar: SidebarItem[];
@@ -587,6 +579,7 @@ const allAppTranslations: AllTranslationsCollection = {
       yearlyFinancialOverview: "Yearly Financial Overview",
       title: "Dashboard",
       totalEmployees: "Total Employees",
+      onBoardEmployeesByMonth: "Onboard Employees",
       monthlyPayroll: "Monthly Payroll",
       monthlyIncome: "Monthly Income",
       monthlyExpenses: "Monthly Expenses",
@@ -608,15 +601,6 @@ const allAppTranslations: AllTranslationsCollection = {
       month: "Month",
       year: "Year",
     },
-    employee: undefined,
-    worklog: undefined,
-    payroll: undefined,
-    expenseIncome: undefined,
-    clockInPlaceholder: undefined,
-    clockOutPlaceholder: undefined,
-    bulkClockIn: undefined,
-    bulkClockOut: undefined,
-    employees: undefined,
     totalEmployees: '',
     present: '',
     absent: '',
@@ -888,6 +872,7 @@ const allAppTranslations: AllTranslationsCollection = {
       yearlyFinancialOverview: "နှစ်အလိုက်ဘဏ္ဍာရေးအကျဉ်းချုပ်",
       title: "ဒက်ရှ်ဘုတ်",
       totalEmployees: "စုစုပေါင်းဝန်ထမ်း",
+      onBoardEmployeesByMonth: "လစဥ် ဝန်ထမ်းအသစ်ဝင်ရောက်မှု",
       monthlyPayroll: "လစဉ်လစာ",
       monthlyIncome: "လစဉ်ဝင်ငွေ",
       monthlyExpenses: "လစဉ်အသုံးစရိတ်",
@@ -909,15 +894,6 @@ const allAppTranslations: AllTranslationsCollection = {
       month: "လ",
       year: "နှစ်",
     },
-    employee: undefined,
-    worklog: undefined,
-    payroll: undefined,
-    expenseIncome: undefined,
-    clockInPlaceholder: undefined,
-    clockOutPlaceholder: undefined,
-    bulkClockIn: undefined,
-    bulkClockOut: undefined,
-    employees: undefined,
     totalEmployees: '',
     present: '',
     absent: '',
@@ -973,7 +949,7 @@ export const useLanguage = () => {
 // React's useMemo is imported from 'react', so you don't need to implement it yourself.
 // Remove this function. If you want a custom implementation for learning purposes, here is a simple (non-reactive) version:
 
-function useMemo<T>(factory: () => T, deps: any[]): T {
+function useMemo<T>(factory: () => T, deps: unknown[]): T {
   // This is a naive implementation for demonstration only.
   // It does not provide memoization across renders.
   return factory();

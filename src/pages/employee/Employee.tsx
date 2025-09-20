@@ -14,7 +14,7 @@ import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterfac
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import { Employees } from '@/domain/models/employee/get-employees.model';
-import { employeeFilter } from '@/lib/filters';
+import { employeeFilter } from '@/lib/search';
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);

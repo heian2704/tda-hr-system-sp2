@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, memo } from "react";
+import React, { useMemo, useState, useCallback, memo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { useGetAllIncome } from "@/hooks/income-expense/income/get-all-income.ho
 import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ITEMS_PER_PAGE } from "@/constants/page-utils";
+import { get } from "http";
+import Employee from "../employee/Employee";
 
 // --- Utility Functions (moved here from a separate utils file) ---
 const formatMMK = (n) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
@@ -67,8 +69,27 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
   const { expenses, loading: expensesLoading } = useGetAllExpense(getAllExpenseUseCase);
   const { incomes, loading: incomesLoading } = useGetAllIncome(getAllIncomeUseCase);
   const { payrolls, loading: payrollsLoading } = useGetAllPayroll(getAllPayrollUseCase);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const { translations, language } = useLanguage();
   const dashboardTranslations = translations.dashboard;
+
+  useEffect(() => {
+    const fetchAllEmployees = async () => {
+      try {
+        setAllEmployees([]);
+        const pages = employees?.totalPages ?? 0;
+        for (let page = 1; page <= pages; page++) {
+          const response = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, page);
+          if (response && response.data) {
+            setAllEmployees(prev => [...prev, ...response.data]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching all employees:", error);
+      }
+    };
+    fetchAllEmployees();
+  }, [employees]);
 
   const isLoading = worklogsLoading || employeesLoading || expensesLoading || incomesLoading || payrollsLoading;
 
@@ -114,12 +135,23 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     return s + (monthMatch && yearMatch ? p.totalSalary : 0);
   }, 0), [payrollsWithDates, selectedMonth, selectedYear]);
 
+  const filteredEmployees = useMemo(() => {
+    if (!Array.isArray(allEmployees) || allEmployees.length === 0) return [];
+    return allEmployees.filter((e) => {
+      const d = parseToDate(e.joinedDate);
+      if (!d) return false;
+      const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
+      const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
+      return monthMatch && yearMatch;
+    });
+  }, [allEmployees, selectedMonth, selectedYear]);
+
   const employeeMap = useMemo(() => {
     const map = new Map();
-    const list = employees?.data ?? [];
+    const list = filteredEmployees;
     list.forEach(emp => map.set(emp._id, emp));
     return map;
-  }, [employees]);
+  }, [filteredEmployees]);
 
   const filteredWorklogs = useMemo(() => {
     return worklogsWithDates.filter(w => {
@@ -228,6 +260,7 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     isLoading,
     dashboardTranslations,
     employees,
+    filteredEmployees,
     monthIncome,
     monthExpenses,
     monthPayroll,
@@ -250,6 +283,7 @@ const Dashboard = () => {
     isLoading,
     dashboardTranslations,
     employees,
+    filteredEmployees,
     monthIncome,
     monthExpenses,
     monthPayroll,
@@ -362,11 +396,11 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.totalEmployees || "Total Employees"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.onBoardEmployeesByMonth || "On Board Employees"}</CardTitle>
               <Users className="w-5 h-5 text-indigo-500" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold text-foreground">{(employees?.data ?? []).length}</div>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">{filteredEmployees.length}</div>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
@@ -422,7 +456,7 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{dashboardTranslations.allEmployees || "All Employees"}</SelectItem>
-                    {(employees?.data ?? []).map(employee => (
+                    {filteredEmployees.map(employee => (
                       <SelectItem key={employee._id} value={employee._id}>
                         {employee.name}
                       </SelectItem>
