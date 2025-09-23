@@ -7,8 +7,8 @@ import {
   Search // Import the Search icon
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { useSearchParams } from "react-router-dom";
-import { PayrollData } from "@/dtos/payroll/PayrollData";
+import { Navigator, useSearchParams } from "react-router-dom";
+import { PayrollDto } from "@/dtos/payrolls/payrolls.dto";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
 import { PayrollInterfaceImpl } from "@/data/interface-implementation/payroll";
@@ -37,7 +37,7 @@ const Payroll = () => {
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
-  const [payrollEntries, setPayrollEntries] = useState<PayrollData[]>([]);
+  const [payrollEntries, setPayrollEntries] = useState<PayrollDto[]>([]);
   const token = localStorage.getItem("token");
   const idToken = (id: string): TokenedRequest => ({
     id: id,
@@ -61,16 +61,16 @@ const Payroll = () => {
         setPayrollEntries([]);
         return;
       }
-      if (!payrolls || payrolls.length === 0) {
+
+      const payroll = payrolls.data;
+      if (!payroll || payroll.length === 0) {
         setPayrollEntries([]);
         return;
       }
 
-      payrolls.reverse();
-
       try {
         const uniqueIds = Array.from(
-          new Set(payrolls.map((p) => p.employeeId))
+          new Set(payroll.map((p) => p.employeeId))
         );
         const empMap = new Map<string, Employee>();
 
@@ -85,7 +85,7 @@ const Payroll = () => {
           })
         );
 
-        const payrollData: PayrollData[] = payrolls
+        const payrollData: PayrollDto[] = payroll
           .map((p) => {
             const emp = empMap.get(p.employeeId);
             if (!emp) return null; // skip if employee missing
@@ -100,9 +100,9 @@ const Payroll = () => {
               period: isNaN(new Date(p.period).getTime())
                 ? new Date()
                 : new Date(p.period),
-            } as PayrollData;
+            } as PayrollDto;
           })
-          .filter((x): x is PayrollData => x !== null);
+          .filter((x): x is PayrollDto => x !== null);
 
         console.log("Payroll data processed:", payrollData);
         setPayrollEntries(payrollData);
@@ -222,7 +222,7 @@ const Payroll = () => {
     }
   };
 
-  if (loading || currentPayrollEntries.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
@@ -237,6 +237,22 @@ const Payroll = () => {
               </h2>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Search box */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    const sp = new URLSearchParams(searchParams);
+                    if (q) sp.set('q', q); else sp.delete('q');
+                    setSearchParams(sp);
+                  }}
+                  placeholder={'Search payroll...'}
+                  className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                />
+              </div>
               {/* Period Type Dropdown */}
               <div className="relative w-full sm:w-40">
                 <select
@@ -310,28 +326,26 @@ const Payroll = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentPayrollEntries.map((entry) => (
+                {currentPayrollEntries.length > 0 ? (
+                  currentPayrollEntries.map((entry) => (
                     <tr
                       key={entry._id}
                       className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
                     >
-                      <td className="py-3 px-4 font-medium text-gray-900">
-                        {entry.fullName}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {entry.position}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {entry.totalQuantity.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        Ks. {entry.totalSalary.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {entry.period.toLocaleDateString()}
-                      </td>
+                      <td className="py-3 px-4 font-medium text-gray-900">{entry.fullName}</td>
+                      <td className="py-3 px-4 text-gray-700">{entry.position}</td>
+                      <td className="py-3 px-4 text-gray-700">{entry.totalQuantity.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-gray-700">Ks. {entry.totalSalary.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-gray-700">{entry.period.toLocaleDateString()}</td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-6 px-4 text-center text-gray-500">
+                      {'No payroll entries found.'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -339,10 +353,7 @@ const Payroll = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              {payrollPageTranslations.showing} {startIndex + 1}{" "}
-              {payrollPageTranslations.of} {Math.min(endIndex, totalEntries)}{" "}
-              {payrollPageTranslations.of} {totalEntries}{" "}
-              {payrollPageTranslations.payrollEntries}
+              {payrollPageTranslations.showing} {totalEntries > 0 ? startIndex + 1 : 0} {payrollPageTranslations.of} {totalEntries > 0 ? Math.min(endIndex, totalEntries) : 0} {payrollPageTranslations.of} {totalEntries} {payrollPageTranslations.payrollEntries}
             </p>
             <div className="flex justify-center items-center gap-2">
               <button
@@ -369,7 +380,7 @@ const Payroll = () => {
               )}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalEntries === 0}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />

@@ -1,7 +1,7 @@
-import { BearerTokenedRequest } from "@/domain/models/common/header-param";
 import { Payroll } from "@/domain/models/payroll/get-payroll.dto";
+import { Payrolls } from "@/domain/models/payroll/get-payrolls.dto";
 
 export interface PayrollInterface {
-    getAllPayrolls(query?: string): Promise<Payroll[]>;
+    getAllPayrolls(limit: number, page: number, query?: string): Promise<Payrolls>;
     getPayrollByEmployeeId(employeeId: string): Promise<Payroll>;
 }
