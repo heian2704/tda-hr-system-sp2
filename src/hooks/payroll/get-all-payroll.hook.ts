@@ -10,20 +10,23 @@ export const useGetAllPayroll = (useCase: GetAllPayrollUseCase) => {
   const [error, setError] = useState<string | null>(null);
   const [payrolls, setPayrolls] = useState<Payrolls | null>(null);
   
-  useEffect(() => {
-    const fetchPayrolls = async (limit: number, page: number) => {
+  const fetchPayrolls = async (limit: number, page: number) => {
       setLoading(true);
       try {
         const payrolls = await useCase.execute(limit, page);
         setPayrolls(payrolls);
+        return payrolls;
       } catch (error) {
         setError(error.message);
+        return null;
       } finally {
         setLoading(false);
       }
     };
+
+  useEffect(() => {
     fetchPayrolls(ITEMS_PER_PAGE, 1);
-  }, [useCase]);
+  }, []);
 
   return { loading, error, payrolls };
 };

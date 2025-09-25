@@ -1,3 +1,4 @@
+import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 import { GetAllEmployeeUseCase } from "@/data/usecases/employee.usecase";
 import { Employees } from "@/domain/models/employee/get-employees.model";
 import { useEffect, useState } from "react";
@@ -23,7 +24,7 @@ export const useGetAllEmployees = (useCase: GetAllEmployeeUseCase) => {
   }
 
   useEffect(() => {
-    getEmployees(10, 1);
+    getEmployees(ITEMS_PER_PAGE, 1);
   }, []);
 
   return { employees, loading, error };

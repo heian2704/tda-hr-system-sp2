@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { worklogData } from '@/dtos/worklog/worklogData';
+import { WorklogDto } from '@/dtos/worklogs/worklogs.dto';
 import { AddWorkLogModal } from '@/components/worklog/addworklogmodal/AddWorkLogModal';
 import { ConfirmDeleteModal } from '@/components/worklog/delete-worklog/DeleteWorklogModal';
 import { WorklogInterface } from '@/domain/interfaces/worklog/WorklogInterface';
@@ -27,13 +27,16 @@ import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee'
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
 import { ProductInterface } from '@/domain/interfaces/product/ProductInterface';
 import { ProductInterfaceImpl } from '@/data/interface-implementation/product';
-import { GetAllEmployeeUseCase } from '@/data/usecases/employee.usecase';
+import { GetAllEmployeeUseCase, GetEmployeeByIdUseCase } from '@/data/usecases/employee.usecase';
 import { GetAllProductsUseCase } from '@/data/usecases/product.usecase';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
+import type { Employees } from '@/domain/models/employee/get-employees.model';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
+import { TokenedRequest } from '@/domain/models/common/header-param';
+import { Worklog } from '@/domain/models/worklog/get-worklog.dto';
 
 // use get all worklogs hook
 const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
@@ -42,6 +45,7 @@ const productInterface: ProductInterface = new ProductInterfaceImpl();
 
 const getAllWorklogUseCase = new GetAllWorklogUseCase(worklogInterface);
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
 const getAllProductsUseCase = new GetAllProductsUseCase(productInterface);
 const createWorklogUseCase = new CreateWorklogUseCase(worklogInterface);
 const updateWorklogUseCase = new UpdateWorklogUseCase(worklogInterface);
@@ -53,6 +57,7 @@ interface WorkLogProps {
 
 const WorkLog = ({ currentPath }: WorkLogProps) => {
   const { worklogs, error, loading } = useGetAllWorklogs(getAllWorklogUseCase);
+  const [initworklogs, setInitWorklogs] = useState<Worklog[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -60,7 +65,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [deleteWorklogId, setDeleteWorklogId] = useState<{ id: string } | null>(null);
   const [worklogId, setWorklogId] = useState<string | null>(null);
   const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<UpdateWorklogDto | undefined>(undefined);
-  const [workLogs, setWorkLogs] = useState<worklogData[]>([]);
+  const [workLogs, setWorkLogs] = useState<WorklogDto[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [products, setProducts] = useState<Product[]>([]); 
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
@@ -78,26 +83,36 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
 
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+    console.log('Worklogs from hook:', worklogs);
+
+  useEffect(() => {
+    setInitWorklogs(worklogs.data || []);
+  }, [worklogs]);
 
   const refetchWorklogs = async () => {
     try {
       // fetch latest worklogs
-      const freshWorklogs = await getAllWorklogUseCase.execute();
+      const freshWorklogsPage = await getAllWorklogUseCase.execute(ITEMS_PER_PAGE, currentPage);
+      const freshWorklogs = freshWorklogsPage?.data ?? [];
       if (!Array.isArray(freshWorklogs) || freshWorklogs.length === 0) {
         setWorkLogs([]);
         return;
       }
 
+      const token = localStorage.getItem('token');
+      const makeTokenedRequest = (id: string): TokenedRequest => ({
+            id,
+            token: token,
+      });
+
       // ensure we have employees & products
-      const [employeesResp, productsResp] = await Promise.all([
-        getAllEmployeeUseCase.execute(),
-        getAllProductsUseCase.execute()
-      ]);
-
-      const fullWorklogInfoList = (freshWorklogs || []).map(log => {
-        const employee = Array.isArray(employeesResp) ? employeesResp.find((emp: Employee) => emp._id === log.employeeId) : undefined;
-        const product = Array.isArray(productsResp) ? productsResp.find((prod: Product) => prod._id === log.productId) : undefined;
-
+      const productsResp = await getAllProductsUseCase.execute();
+      
+      const employeesResp = [] as Employee[];
+      const fullWorklogInfoList = await Promise.all(freshWorklogs.map(async log => {
+        const employee = await getEmployeeByIdUseCase.execute(makeTokenedRequest(log.employeeId));
+        const product = productsResp.find((prod: Product) => prod._id === log.productId);
+        employeesResp.push(employee);
         return {
           _id: log._id,
           employeeId: log.employeeId,
@@ -108,11 +123,11 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           quantity: log.quantity,
           totalPrice: log.totalPrice,
           updatedAt: log.updatedAt,
-        } as worklogData;
-      });
+        } as WorklogDto;
+      }));
 
-      setEmployees(Array.isArray(employeesResp) ? employeesResp : []);
-      setProducts(Array.isArray(productsResp) ? productsResp : []);
+      setEmployees(employeesResp);
+      setProducts(productsResp);
       setWorkLogs(fullWorklogInfoList);
     } catch (err) {
       console.error('Refetch worklogs failed:', err);
@@ -126,15 +141,17 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           return;
         }
 
-        if (worklogs.length === 0) {
+        if (!Array.isArray(initworklogs) || initworklogs.length === 0) {
           setWorkLogs([]); // Set empty array if no worklogs
           return;
         }
-        const employees = await getAllEmployeeUseCase.execute();
+        const employees = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, currentPage);
+        const employeesData = employees.data || [];
+
         const products = await getAllProductsUseCase.execute();
 
-        const fullWorklogInfoList = worklogs.map(log => {
-          const employee = employees.find(emp => emp._id === log.employeeId);
+        const fullWorklogInfoList = initworklogs.map(log => {
+          const employee = employeesData.find(emp => emp._id === log.employeeId);
           const product = products.find(prod => prod._id === log.productId);
 
           return {
@@ -147,10 +164,10 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
             quantity: log.quantity,
             totalPrice: log.totalPrice,
             updatedAt: log.updatedAt,
-          } as worklogData;
+          } as WorklogDto;
         });
 
-        setEmployees(employees);
+        setEmployees(employeesData);
         setProducts(products);
         setWorkLogs(fullWorklogInfoList);
       } catch (error) {
@@ -159,7 +176,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     };
 
     fetchAllWorklogs();
-  }, [worklogs, loading, error]);
+  }, [initworklogs, loading, error, currentPage]);
 
   // Handle clicks outside the dropdown to close it
   useEffect(() => {
@@ -231,7 +248,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     setIsAddModalOpen(true);
   };
 
-  const handleOpenEditModal = (workLog: worklogData) => {
+  const handleOpenEditModal = (workLog: WorklogDto) => {
     const workLogToEdit: UpdateWorklogDto = {
       employeeId: workLog.employeeId,
       productId: workLog.productId,
@@ -242,7 +259,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     setIsEditModalOpen(true);
   };
 
-  const handleConfirmDeleteClick = (workLog: worklogData) => {
+  const handleConfirmDeleteClick = (workLog: WorklogDto) => {
     setDeleteWorklogId({ id: workLog._id });
     setIsDeleteConfirmModalOpen(true);
   };
@@ -264,7 +281,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     'fullname': workLogPageTranslations.fullNameColumn,
   }[sortField];
 
-  if (loading || currentWorkLogs.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
@@ -280,39 +297,6 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
         </div>
       )}
       <div className="space-y-4">
-        {/* Stats Section */}
-        <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <ClipboardList className="text-red-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{workLogPageTranslations.totalWorkLogs}</p>
-              <p className="text-3xl font-bold mt-1">{totalWorkLogs}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <ClipboardList className="text-green-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{workLogPageTranslations.totalCompletedWorklogs}</p>
-              <p className="text-3xl font-bold mt-1">{totalCompletedWorklogs}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Box className="text-blue-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{workLogPageTranslations.totalQuantityProduced}</p>
-              <p className="text-3xl font-bold mt-1">{totalQuantityProduced.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Table Section */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
@@ -380,7 +364,14 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
                 </tr>
               </thead>
               <tbody>
-                {currentWorkLogs.map(log => (
+                {currentWorkLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-gray-500">
+                      {'Loading...'}
+                    </td>
+                  </tr>
+                ) : (
+                currentWorkLogs.map(log => (
                       <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                         <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
                         <td className="py-3 px-4 text-gray-700">{log.position}</td>
@@ -405,7 +396,8 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ))
+                )}
               </tbody>
             </table>
           </div>
@@ -413,7 +405,11 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              {workLogPageTranslations.showing} {startIndex + 1} of {Math.min(endIndex, totalWorkLogs)} of {workLogs.length} {workLogPageTranslations.workLogs}
+              {(() => {
+                const showingStart = totalWorkLogs === 0 ? 0 : startIndex + 1;
+                const showingEnd = totalWorkLogs === 0 ? 0 : Math.min(endIndex, totalWorkLogs);
+                return `${workLogPageTranslations.showing} ${showingStart} of ${showingEnd} of ${workLogs.length} ${workLogPageTranslations.workLogs}`;
+              })()}
             </p>
             <div className="flex justify-center items-center gap-2">
               <button
@@ -436,7 +432,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
               ))}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalPages === 0}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />

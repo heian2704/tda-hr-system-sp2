@@ -2,13 +2,14 @@ import { WorklogInterface } from "@/domain/interfaces/worklog/WorklogInterface";
 import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/header-param";
 import { CreateWorklogDto } from "@/domain/models/worklog/create-worklog.dto";
 import { Worklog } from "@/domain/models/worklog/get-worklog.dto";
+import { Worklogs } from "@/domain/models/worklog/get-worklogs.dto";
 import { UpdateWorklogDto } from "@/domain/models/worklog/update-worklog.dto";
 import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class WorklogInterfaceImpl implements WorklogInterface {
-    async getAllWorklogs(): Promise<Worklog[]> {
-        return apiGetRequestsHandler<Worklog[]>({
-            endpoint: "/employee-product",
+    async getAllWorklogs(limit: number, page: number): Promise<Worklogs> {
+        return apiGetRequestsHandler<Worklogs>({
+            endpoint: "/employee-product?limit=" + limit + "&page=" + page,
         });
     }
 

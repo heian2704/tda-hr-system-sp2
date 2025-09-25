@@ -192,42 +192,6 @@ const ExpenseIncome = () => {
         </div>
       )}
       <div className="space-y-4">
-        {/* Stats Section */}
-        <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
-          {/* Stat Item 1: Total Net */}
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <BarChart className="text-purple-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{pageTranslations.totalNetIncomeExpense}</p>
-              <p className="text-3xl font-bold mt-1">Ks. {totalNet.toLocaleString()}</p>
-            </div>
-          </div>
-
-          {/* Stat Item 2: Total Income */}
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="text-green-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{pageTranslations.totalIncome}</p>
-              <p className="text-3xl font-bold mt-1">Ks. {totalIncome.toLocaleString()}</p>
-            </div>
-          </div>
-
-          {/* Stat Item 3: Total Expense */}
-          <div className="flex items-center gap-4 flex-grow md:flex-grow-0 md:w-auto w-full">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <TrendingDown className="text-red-500 w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{pageTranslations.totalExpense}</p>
-              <p className="text-3xl font-bold mt-1">Ks. {totalExpense.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Main Content Area: Tabs, Controls, Table */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           {/* Tabs and Controls */}

@@ -1,114 +1,24 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Check, X, Clock, ChevronLeft, ChevronRight, AlertCircle, Users, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import Employee from "../employee/Employee";
+import { GetAllEmployeeUseCase } from "@/data/usecases/employee.usecase";
+import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
+import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
+import { useGetAllEmployees } from "@/hooks/employee/get-all-employee.hook";
+import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 
-// The `useLanguage` hook and translations are mocked here for UI purposes
-const useLanguage = () => {
-  const translations = {
-    English: {
-      attendanceTitle: "Employee Attendance",
-      totalEmployees: "Total Employees",
-      present: "Present",
-      absent: "Absent",
-      clockInPlaceholder: "Clock In",
-      clockOutPlaceholder: "Clock Out",
-      durationPlaceholder: "Duration",
-      actions: "Actions",
-      clockIn: "Clock In",
-      clockOut: "Clock Out",
-      markAsPresent: "Mark as Present",
-      markAsAbsent: "Mark as Absent",
-      bulkActions: "Bulk Actions",
-      selectAll: "Select All",
-      showing: "Showing",
-      of: "of",
-      employees: "employees",
-      noData: "No attendance data found for this date. Click Clock In to get started.",
-      selectTime: "Select Time",
-      confirm: "Confirm",
-      cancel: "Cancel",
-      bulkClockIn: "Bulk Clock In",
-      bulkClockOut: "Bulk Clock Out",
-      loading: "Loading employees...",
-    },
-    Burmese: {
-      attendanceTitle: "ဝန်ထမ်း တက်ရောက်မှု",
-      totalEmployees: "စုစုပေါင်း ဝန်ထမ်း",
-      present: "ပစ္စုပ္ပန်",
-      absent: "မရှိ",
-      clockInPlaceholder: "နာရီ စတင်ဝင်ရောက်",
-      clockOutPlaceholder: "နာရီ ထွက်ခွာ",
-      durationPlaceholder: "ကြာချိန်",
-      actions: "လုပ်ဆောင်မှုများ",
-      clockIn: "နာရီ စတင်ဝင်ရောက်",
-      clockOut: "နာရီ ထွက်ခွာ",
-      markAsPresent: "ပစ္စုပ္ပန်အဖြစ် မှတ်သားပါ",
-      markAsAbsent: "မရှိအဖြစ် မှတ်သားပါ",
-      bulkActions: "အစုလိုက် လုပ်ဆောင်ချက်များ",
-      selectAll: "အားလုံးရွေးပါ",
-      showing: "ပြသနေသည်",
-      of: "၏",
-      employees: "ဝန်ထမ်းများ",
-      noData: "ဤရက်စွဲအတွက် တက်ရောက်မှုဒေတာမတွေ့ပါ။ နာရီစတင်ဝင်ရောက်ရန် ကလစ်နှိပ်ပါ။",
-      selectTime: "အချိန်ရွေးပါ",
-      confirm: "အတည်ပြုပါ",
-      cancel: "ပယ်ဖျက်ပါ",
-      bulkClockIn: "အစုလိုက် နာရီစတင်ဝင်ရောက်",
-      bulkClockOut: "အစုလိုက် နာရီထွက်ခွာ",
-      loading: "ဝန်ထမ်းများကို တင်နေသည်...",
-    },
-  };
-  const [language, setLanguage] = useState("English");
-  const t = translations[language];
-  return { language, setLanguage, translations: t };
-};
-
-// This hook is now self-contained within this file.
-const useEmployeeData = () => {
-  const [employees, setEmployees] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAllEmployees = async () => {
-      setIsLoading(true);
-      // Simulating a data fetch from an API or shared context
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockEmployees = [
-        { _id: "1", name: "Zaw Myo", isActive: true },
-        { _id: "2", name: "Aung Aung", isActive: true },
-        { _id: "3", name: "Su Su", isActive: true },
-        { _id: "4", name: "Myo Min", isActive: true },
-        { _id: "5", name: "Hla Hla", isActive: true },
-        { _id: "6", name: "Ko Ko", isActive: false },
-        { _id: "7", name: "Thin Thin", isActive: true },
-        { _id: "8", name: "Moe Moe", isActive: true },
-        { _id: "9", name: "Kyaw Kyaw", isActive: false },
-        { _id: "10", name: "Nyein Nyein", isActive: true },
-        { _id: "11", name: "Lwin Lwin", isActive: true },
-        { _id: "12", name: "Soe Soe", isActive: true },
-        { _id: "13", name: "Win Win", isActive: true },
-        { _id: "14", name: "Chit Chit", isActive: true },
-        { _id: "15", name: "Pyae Pyae", isActive: false },
-        { _id: "16", name: "San San", isActive: true },
-        { _id: "17", name: "Hnin Hnin", isActive: true },
-        { _id: "18", name: "Zin Zin", isActive: true },
-        { _id: "19", name: "Lay Lay", isActive: true },
-        { _id: "20", name: "Tin Tin", isActive: true },
-      ];
-      setEmployees(mockEmployees);
-      setIsLoading(false);
-    };
-    fetchAllEmployees();
-  }, []);
-
-  return { employees, isLoading };
-};
+const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
+const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 
 const Attendance = () => {
   const { translations } = useLanguage();
-  const { employees, isLoading: isDataLoading } = useEmployeeData();
+  const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
+  const [employeeList, setEmployeeList] = useState<Employee[]>([]);
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [employeesData, setEmployeesData] = useState([]);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEmployees, setSelectedEmployees] = useState(new Set());
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
@@ -116,9 +26,8 @@ const Attendance = () => {
   const [modalAction, setModalAction] = useState(null);
   const [employeeToActOn, setEmployeeToActOn] = useState(null);
   const [message, setMessage] = useState(null);
-
-  const itemsPerPage = 10;
   
+  const attendancePage = translations.attendancePage;
   // Filter for only active employees from the prop
   const activeEmployees = useMemo(() => {
     // We check if employees is an array before filtering
@@ -127,6 +36,7 @@ const Attendance = () => {
   }, [employees]);
 
   useEffect(() => {
+    setTotalEmployees(employees.total || 0);
     // This simulates fetching attendance data for the selected date
     const getAttendanceForDate = (dateString, allEmployees) => {
       const today = new Date().toISOString().slice(0, 10);
@@ -160,14 +70,9 @@ const Attendance = () => {
     }
   }, [date, activeEmployees]);
   
-  const totalEmployees = employeesData.length;
-  const totalPresent = employeesData.filter(emp => emp.status === "present").length;
-  const totalAbsent = totalEmployees - totalPresent;
-  const totalPages = Math.max(1, Math.ceil(totalEmployees / itemsPerPage));
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalEmployees);
-  const currentEmployees = employeesData.slice(startIndex, endIndex);
+  // const totalPresent = employeesData.filter(emp => emp.status === "present").length;
+  // const totalAbsent = totalEmployees - totalPresent;
+  const totalPages = employees.totalPages || 1;
 
   // --- Handlers ---
   const showMessage = (msg) => {
@@ -263,7 +168,7 @@ const Attendance = () => {
             <Users className="text-red-500 w-7 h-7" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">{translations.totalEmployees}</p>
+            <p className="text-sm text-gray-500 font-medium">{attendancePage.totalEmployees}</p>
             <p className="text-3xl font-bold mt-1">{totalEmployees}</p>
           </div>
         </div>
@@ -272,7 +177,7 @@ const Attendance = () => {
             <Check className="text-green-500 w-7 h-7" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">{translations.present}</p>
+            <p className="text-sm text-gray-500 font-medium">{attendancePage.present}</p>
             <p className="text-3xl font-bold mt-1">{totalPresent}</p>
           </div>
         </div>
@@ -281,7 +186,7 @@ const Attendance = () => {
             <X className="text-gray-500 w-7 h-7" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">{translations.absent}</p>
+            <p className="text-sm text-gray-500 font-medium">{attendancePage.absent}</p>
             <p className="text-3xl font-bold mt-1">{totalAbsent}</p>
           </div>
         </div>
@@ -291,7 +196,7 @@ const Attendance = () => {
       <div className="bg-white rounded-2xl p-4 shadow-sm mt-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{translations.attendanceTitle}</h2>
+            <h2 className="text-xl font-bold">{attendancePage.attendanceTitle}</h2>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="flex items-center space-x-2">
@@ -329,7 +234,7 @@ const Attendance = () => {
               }`}
             >
               <Clock className="w-4 h-4" />
-              {translations.bulkClockIn} ({selectedEmployees.size})
+              {attendancePage.bulkClockIn} ({selectedEmployees.size})
             </button>
             <button
               onClick={() => handleTimeModalOpen('clockOut', null, true)}
@@ -339,15 +244,15 @@ const Attendance = () => {
               }`}
             >
               <Clock className="w-4 h-4" />
-              {translations.bulkClockOut} ({selectedEmployees.size})
+              {attendancePage.bulkClockOut} ({selectedEmployees.size})
             </button>
           </div>
         </div>
         
-        {isDataLoading ? (
+        {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                 <Loader2 className="animate-spin mr-2" />
-                <span>{translations.loading}</span>
+                <span>{attendancePage.loading}</span>
             </div>
         ) : (
         <div className="overflow-x-auto">
@@ -363,15 +268,15 @@ const Attendance = () => {
                   />
                 </th>
                 <th className="py-3 px-4 font-semibold">Employee Name</th>
-                <th className="py-3 px-4 font-semibold text-center">{translations.clockInPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{translations.clockOutPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{translations.durationPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{translations.actions}</th>
+                <th className="py-3 px-4 font-semibold text-center">{attendancePage.clockInPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{attendancePage.clockOutPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{attendancePage.durationPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{attendancePage.actions}</th>
               </tr>
             </thead>
             <tbody>
-              {currentEmployees.length > 0 ? (
-                currentEmployees.map((emp) => (
+              {employeeList.length > 0 ? (
+                employeeList.map((emp) => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <input
@@ -390,14 +295,14 @@ const Attendance = () => {
                         <button
                           onClick={() => handleTimeModalOpen('clockIn', emp)}
                           className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                          title={translations.clockIn}
+                          title={attendancePage.clockIn}
                         >
                           <Clock size={16} />
                         </button>
                         <button
                           onClick={() => handleTimeModalOpen('clockOut', emp)}
                           className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
-                          title={translations.clockOut}
+                          title={attendancePage.clockOut}
                         >
                           <Clock size={16} />
                         </button>
@@ -410,7 +315,7 @@ const Attendance = () => {
                   <td colSpan={6} className="text-center py-8 text-gray-500">
                     <div className="flex flex-col items-center">
                       <AlertCircle size={24} className="mb-2" />
-                      {translations.noData}
+                      {attendancePage.noData}
                     </div>
                   </td>
                 </tr>
@@ -423,7 +328,7 @@ const Attendance = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-gray-600">
-            {translations.showing} {totalEmployees > 0 ? startIndex + 1 : 0} - {Math.min(endIndex, totalEmployees)} {translations.of} {totalEmployees} {translations.employees}
+            {attendancePage.showing} {totalEmployees > 0 ? startIndex + 1 : 0} - {Math.min(endIndex, totalEmployees)} {attendancePage.of} {totalEmployees} {attendancePage.employees}
           </p>
           <div className="flex justify-center items-center gap-2">
             <button
@@ -459,7 +364,7 @@ const Attendance = () => {
       {isTimeModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-11/12 md:w-1/3">
-            <div className="text-lg font-bold mb-4">{translations.selectTime}</div>
+            <div className="text-lg font-bold mb-4">{attendancePage.selectTime}</div>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
                 {modalType === 'single' ? `Selecting time for ${employeeToActOn.name}` : `Selecting time for ${selectedEmployees.size} employees`}

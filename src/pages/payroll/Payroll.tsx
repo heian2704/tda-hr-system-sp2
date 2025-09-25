@@ -7,7 +7,7 @@ import {
   Search // Import the Search icon
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { Navigator, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { PayrollDto } from "@/dtos/payrolls/payrolls.dto";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
@@ -22,6 +22,8 @@ import {
   getISOWeekStartEnd,
   ITEMS_PER_PAGE,
 } from "@/constants/page-utils";
+import { exportToCsv } from "@/lib/utils";
+import { Payrolls } from "@/domain/models/payroll/get-payrolls.dto";
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const payrollInterface: PayrollInterface = new PayrollInterfaceImpl();
@@ -30,7 +32,6 @@ const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
 const getAllPayrollUseCase = new GetAllPayrollUseCase(payrollInterface);
 // --- Main Payroll Component ---
 const Payroll = () => {
-  const { loading, error, payrolls } = useGetAllPayroll(getAllPayrollUseCase);
   const [periodType, setPeriodType] = useState<"month" | "week" | "day">("month");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedWeek, setSelectedWeek] = useState<string>("");
@@ -48,20 +49,18 @@ const Payroll = () => {
   const payrollPageTranslations = translations.payrollPage;
 
   // Use both searchParams and setSearchParams for full control
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPayrolls, setTotalPayrolls] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
 
-  // Fetch payroll and employee data
-  useEffect(() => {
-    const fetchPayrollData = async () => {
-      if (loading) return;
+  const fetchPayrollData = async () => {
       setPageLoading(true);
-      if (error) {
-        console.error("Payroll load error:", error);
+      const payrolls = await getAllPayrollUseCase.execute(ITEMS_PER_PAGE, currentPage);
+      if (payrolls === null) {
         setPayrollEntries([]);
         return;
       }
-
       const payroll = payrolls.data;
       if (!payroll || payroll.length === 0) {
         setPayrollEntries([]);
@@ -85,7 +84,7 @@ const Payroll = () => {
           })
         );
 
-        const payrollData: PayrollDto[] = payroll
+        const payrollData: PayrollDto[] = payrolls.data
           .map((p) => {
             const emp = empMap.get(p.employeeId);
             if (!emp) return null; // skip if employee missing
@@ -104,15 +103,21 @@ const Payroll = () => {
           })
           .filter((x): x is PayrollDto => x !== null);
 
-        console.log("Payroll data processed:", payrollData);
         setPayrollEntries(payrollData);
+        setTotalPayrolls(payrolls.total);
+        setTotalPages(payrolls.totalPages);
+        setPageLoading(false);
       } catch (error) {
         console.error("Failed to fetch payroll data:", error);
       }
     };
-
+  // Fetch payroll and employee data
+  useEffect(() => {
+    setPageLoading(true);
+    
     fetchPayrollData();
-  }, [payrolls, loading, error, payrollPageTranslations]);
+    setPageLoading(false);
+  }, [payrollPageTranslations, currentPage]);
 
   const filteredPayrollEntries = useMemo(() => {
     // Start with the base payroll entries
@@ -170,60 +175,20 @@ const Payroll = () => {
   }, [searchQuery, periodType, selectedMonth, selectedWeek, selectedDay]);
 
 
-  // Pagination
-  const totalEntries = filteredPayrollEntries.length;
-  // This is the line to update
-  const itemsPerPage = 12; 
-  const totalPages = Math.ceil(totalEntries / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPayrollEntries = filteredPayrollEntries.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
+  const handlePageChange = async (page: number) => {
     setCurrentPage(page);
+    await fetchPayrollData();
   };
+    console.log("Payroll Data:", payrollEntries);
   
   // New export function
-  const exportToCsv = (data) => {
-    const headers = [
-      payrollPageTranslations.fullNameColumn,
-      payrollPageTranslations.roleColumn,
-      payrollPageTranslations.totalQuantityColumn,
-      payrollPageTranslations.totalSalaryColumn,
-      payrollPageTranslations.periodColumn,
-    ];
-    const headerRow = headers.join(',') + '\n';
-  
-    const csvRows = data.map(entry => {
-      const values = [
-        entry.fullName,
-        entry.position,
-        entry.totalQuantity,
-        entry.totalSalary,
-        `"${entry.period.toLocaleDateString()}"`
-      ];
-      return values.join(',');
-    });
-  
-    const csvString = headerRow + csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-  
-    if ((navigator as any).msSaveBlob) { // IE 10+
-      (navigator as any).msSaveBlob(blob, 'payroll.csv');
-    } else {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'payroll.csv');
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+  const handleExport = () => {
+    exportToCsv(filteredPayrollEntries, payrollPageTranslations);
   };
 
-  if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
-  if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
+  if (pageLoading && payrollEntries.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  //if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
+  console.log("Payroll Data:", payrollEntries);
 
   return (
     <div className="font-sans antialiased text-gray-800">
@@ -246,19 +211,22 @@ const Payroll = () => {
                   onChange={(e) => {
                     const q = e.target.value;
                     const sp = new URLSearchParams(searchParams);
-                    if (q) sp.set('q', q); else sp.delete('q');
+                    if (q) sp.set("q", q);
+                    else sp.delete("q");
                     setSearchParams(sp);
                   }}
-                  placeholder={'Search payroll...'}
-                  className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                  placeholder={"Search payroll..."}
+                  className="h-10 pl-9 pr-3 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                 />
               </div>
               {/* Period Type Dropdown */}
               <div className="relative w-full sm:w-40">
                 <select
                   value={periodType}
-                  onChange={(e) => setPeriodType(e.target.value as "month" | "week" | "day")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm appearance-none focus:outline-none"
+                  onChange={(e) =>
+                    setPeriodType(e.target.value as "month" | "week" | "day")
+                  }
+                  className="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm appearance-none focus:outline-none"
                 >
                   <option value="month">Month</option>
                   <option value="week">Week</option>
@@ -272,7 +240,7 @@ const Payroll = () => {
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none"
+                  className="h-10 w-40 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none"
                 />
               )}
 
@@ -281,7 +249,7 @@ const Payroll = () => {
                   type="week"
                   value={selectedWeek}
                   onChange={(e) => setSelectedWeek(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none"
+                  className="h-10 w-40 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none"
                 />
               )}
 
@@ -290,13 +258,13 @@ const Payroll = () => {
                   type="date"
                   value={selectedDay}
                   onChange={(e) => setSelectedDay(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none"
+                  className="h-10 w-40 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none"
                 />
               )}
 
               <button
-                onClick={() => exportToCsv(filteredPayrollEntries)}
-                className="flex items-center justify-center gap-2 px-5 py-2 bg-[#4CAF50] text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors w-full sm:w-auto"
+                onClick={() => handleExport()}
+                className="h-10 flex items-center justify-center gap-2 px-4 bg-[#4CAF50] text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors w-full sm:w-auto"
               >
                 <FileText className="w-4 h-4" />
                 {payrollPageTranslations.exportButton}
@@ -326,23 +294,36 @@ const Payroll = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentPayrollEntries.length > 0 ? (
-                  currentPayrollEntries.map((entry) => (
+                {payrollEntries.length > 0 && payrollEntries[0] ? (
+                  payrollEntries.map((entry) => (
                     <tr
                       key={entry._id}
                       className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
                     >
-                      <td className="py-3 px-4 font-medium text-gray-900">{entry.fullName}</td>
-                      <td className="py-3 px-4 text-gray-700">{entry.position}</td>
-                      <td className="py-3 px-4 text-gray-700">{entry.totalQuantity.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-gray-700">Ks. {entry.totalSalary.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-gray-700">{entry.period.toLocaleDateString()}</td>
+                      <td className="py-3 px-4 font-medium text-gray-900">
+                        {entry.fullName}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.position}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.totalQuantity.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        Ks. {entry.totalSalary.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {entry.period.toLocaleDateString()}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-6 px-4 text-center text-gray-500">
-                      {'No payroll entries found.'}
+                    <td
+                      colSpan={5}
+                      className="py-6 px-4 text-center text-gray-500"
+                    >
+                      {"Loading..."}
                     </td>
                   </tr>
                 )}
@@ -353,7 +334,8 @@ const Payroll = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              {payrollPageTranslations.showing} {totalEntries > 0 ? startIndex + 1 : 0} {payrollPageTranslations.of} {totalEntries > 0 ? Math.min(endIndex, totalEntries) : 0} {payrollPageTranslations.of} {totalEntries} {payrollPageTranslations.payrollEntries}
+              {payrollPageTranslations.showing} {totalPayrolls}{" "}
+              {payrollPageTranslations.of}
             </p>
             <div className="flex justify-center items-center gap-2">
               <button
@@ -363,24 +345,25 @@ const Payroll = () => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
-                      page === currentPage
-                        ? "bg-[#EB5757] text-white"
-                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {totalPages > 0 &&
+                Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
+                        page === currentPage
+                          ? "bg-[#EB5757] text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || totalEntries === 0}
+                disabled={currentPage === totalPages}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
