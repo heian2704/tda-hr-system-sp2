@@ -64,6 +64,7 @@ export interface WorkLogPageTranslations {
   totalCompletedWorklogs: string;
   totalQuantityProduced: string;
   workLogsTitle: string;
+  searchPlaceholder: string;
   sortBy: string;
   date: string;
   addNewWorkLog: string;
@@ -426,6 +427,7 @@ const allAppTranslations: AllTranslationsCollection = {
       totalCompletedWorklogs: "Total Completed Worklogs",
       totalQuantityProduced: "Total Quantity Produced",
       workLogsTitle: "Work Logs",
+      searchPlaceholder: "Type employee name to search...",
       sortBy: "Sort by:",
       date: "Date",
       addNewWorkLog: "Add New Work Log",
@@ -717,6 +719,7 @@ const allAppTranslations: AllTranslationsCollection = {
       deleteSuccessfully: "အလုပ်မှတ်တမ်းဖျက်သိမ်းမှု အောင်မြင်သည်။",
       totalWorkLogs: "စုစုပေါင်းအလုပ်မှတ်တမ်းများ",
       totalCompletedWorklogs: "ပြီးစီးသောအလုပ်မှတ်တမ်းများ",
+      searchPlaceholder: "ဝန်ထမ်းအမည်ရိုက်ထည့်၍ ရှာဖွေပါ...",
       totalQuantityProduced: "စုစုပေါင်းထုတ်လုပ်သောအရေအတွက်",
       workLogsTitle: "အလုပ်မှတ်တမ်းများ",
       sortBy: "စီစဥ်ရန်",

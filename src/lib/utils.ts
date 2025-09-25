@@ -42,3 +42,8 @@ export const exportToCsv = (data, payrollPageTranslations) => {
       document.body.removeChild(link);
     }
   };
+
+
+  export function yearMonthToQueryParam(year: number, month: number): string{
+    return `month=${month}&year=${year}`;
+  }

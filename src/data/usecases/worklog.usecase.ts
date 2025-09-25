@@ -21,6 +21,14 @@ export class GetWorklogByIdUseCase {
     }
 }
 
+export class GetWorklogsByEmployeeIdUseCase {
+    constructor(private worklogInterface: WorklogInterface) {}
+
+    execute(employeeId: string): Promise<Worklog[]> {
+        return this.worklogInterface.getWorklogsByEmployeeId(employeeId);
+    }
+}
+
 export class CreateWorklogUseCase {
     constructor(private worklogInterface: WorklogInterface) {}
 

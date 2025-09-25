@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 export const useGetAllPayroll = (useCase: GetAllPayrollUseCase) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [payrolls, setPayrolls] = useState<Payrolls | null>(null);
+  const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   
   const fetchPayrolls = async (limit: number, page: number) => {
       setLoading(true);

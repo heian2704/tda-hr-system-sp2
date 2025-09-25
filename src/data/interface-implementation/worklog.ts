@@ -7,6 +7,11 @@ import { UpdateWorklogDto } from "@/domain/models/worklog/update-worklog.dto";
 import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class WorklogInterfaceImpl implements WorklogInterface {
+    getWorklogsByEmployeeId(employeeId: string): Promise<Worklog[]> {
+        return apiGetRequestsHandler<Worklog[]>({
+            endpoint: `/employee-product/by-employee-id?employeeId=${employeeId}`,
+        });
+    }
     async getAllWorklogs(limit: number, page: number): Promise<Worklogs> {
         return apiGetRequestsHandler<Worklogs>({
             endpoint: "/employee-product?limit=" + limit + "&page=" + page,
