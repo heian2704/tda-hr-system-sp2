@@ -4,15 +4,17 @@ import { Payrolls } from "@/domain/models/payroll/get-payrolls.dto";
 import { apiGetRequestsHandler } from "@/network/api";
 
 export class PayrollInterfaceImpl implements PayrollInterface {
-    async getAllPayrolls(limit: number, page: number, query?: string): Promise<Payrolls> {
+    async getAllPayrolls(limit?: number, page?: number, query?: string): Promise<Payrolls> {
         return apiGetRequestsHandler<Payrolls>({
-            endpoint: `/payroll?${query ? `${query}&` : ''}limit=${limit}&page=${page}`,
+            endpoint: `/payroll?${query ? `${query}` : ''}
+            ${limit ? `&limit=${limit}&` : ''}
+            ${page ? `page=${page}` : ''}`,
         });
     }
 
-    async getPayrollByEmployeeId(employeeId: string): Promise<Payroll> {
-        return apiGetRequestsHandler<Payroll>({
-            endpoint: `/payroll/${employeeId}`
+    async getPayrollByEmployeeId(employeeId: string): Promise<Payroll[]> {
+        return apiGetRequestsHandler<Payroll[]>({
+            endpoint: `/payroll/by-employee-id?employeeId=${employeeId}`,
         });
     }
 }

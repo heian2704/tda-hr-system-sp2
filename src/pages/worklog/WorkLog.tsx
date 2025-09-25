@@ -132,7 +132,6 @@ const WorkLog = () => {
       const products = await getAllProductsUseCase.execute();
       const productsMap = new Map(products.map(p => [p._id, p] as const));
 
-      // Build from the freshly fetched page
       const fullWorklogInfoList = freshWorklogs.map((log) => {
         const employee = employeesMap.get(log.employeeId);
         const product = productsMap.get(log.productId);
@@ -243,7 +242,6 @@ const WorkLog = () => {
     return list;
   }, [workLogs, searchQuery]);
 
-  // Apply sorting on top of the filtered list
   const sortedWorkLogs = useMemo(() => {
     const arr = [...filteredWorkLogs];
     arr.sort((a, b) => {

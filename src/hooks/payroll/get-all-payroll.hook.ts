@@ -1,6 +1,5 @@
 import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 import { GetAllPayrollUseCase } from "@/data/usecases/payroll.usecase";
-import { Payroll } from "@/domain/models/payroll/get-payroll.dto";
 import { Payrolls } from "@/domain/models/payroll/get-payrolls.dto";
 import { set } from "date-fns";
 import { useEffect, useState } from "react";
@@ -8,7 +7,7 @@ import { useEffect, useState } from "react";
 export const useGetAllPayroll = (useCase: GetAllPayrollUseCase) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  const [payrolls, setPayrolls] = useState<Payrolls | null>(null);
   
   const fetchPayrolls = async (limit: number, page: number) => {
       setLoading(true);

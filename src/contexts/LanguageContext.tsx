@@ -114,6 +114,7 @@ interface PayrollPageTranslations {
   allPayrollTitle: string;
   payrollPeriodDisplay: string;
   exportButton: string;
+  searchPlaceholder: string;
   sortBy: string;
   date: string;
   fullNameColumn: string;
@@ -476,6 +477,7 @@ const allAppTranslations: AllTranslationsCollection = {
       allPayrollTitle: "All Payroll",
       payrollPeriodDisplay: "Payroll Period",
       exportButton: "Export",
+      searchPlaceholder: "Type employee name to search...",
       sortBy: "Sort by:",
       date: "Date",
       fullNameColumn: "Full Name",
@@ -769,6 +771,7 @@ const allAppTranslations: AllTranslationsCollection = {
       totalDeduction: "စုစုပေါင်းဖြတ်တောက်မှု",
       allPayrollTitle: "လစာအားလုံး",
       payrollPeriodDisplay: "လစာကာလ",
+      searchPlaceholder: "ဝန်ထမ်းအမည်ရိုက်ထည့်၍ ရှာဖွေပါ...",
       exportButton: "ပို့ရန်",
       sortBy: "စီစဥ်ရန်",
       date: "ရက်စွဲ",

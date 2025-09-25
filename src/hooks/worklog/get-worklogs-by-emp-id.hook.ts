@@ -1,9 +1,9 @@
 import { GetWorklogsByEmployeeIdUseCase } from "@/data/usecases/worklog.usecase";
-import { Worklogs } from "@/domain/models/worklog/get-worklogs.dto";
+import { Worklog } from "@/domain/models/worklog/get-worklog.dto";
 import { useState } from "react";
 
 export const useGetWorklogsByEmployeeId = (useCase: GetWorklogsByEmployeeIdUseCase) => {
-    const [worklogs, setWorklogs] = useState<Worklogs | null>(null);
+    const [worklogs, setWorklogs] = useState<Worklog[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
