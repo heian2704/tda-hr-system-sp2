@@ -30,8 +30,10 @@ import { useGetAllIncome } from "@/hooks/income-expense/income/get-all-income.ho
 import { useGetAllPayroll } from "@/hooks/payroll/get-all-payroll.hook";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ITEMS_PER_PAGE } from "@/constants/page-utils";
-import { get } from "http";
-import Employee from "../employee/Employee";
+import { Employee as EmployeeModel } from "@/domain/models/employee/get-employee.model";
+import { yearMonthToQueryParam } from "@/lib/utils";
+import { Payroll } from "@/domain/models/payroll/get-payroll.dto";
+import { Worklog } from "@/domain/models/worklog/get-worklog.dto";
 
 // --- Utility Functions (moved here from a separate utils file) ---
 const formatMMK = (n) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
@@ -64,13 +66,14 @@ const MemoizedCardTitle = memo(CardTitle);
 
 // Custom hook to handle data fetching and processing
 const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
-  const { worklogs, loading: worklogsLoading } = useGetAllWorklogs(getAllWorklogUseCase);
+  const [allWorklogs, setAllWorklogs] = useState<Worklog[]>([]);
   const { employees, loading: employeesLoading } = useGetAllEmployees(getAllEmployeeUseCase);
   const { expenses, loading: expensesLoading } = useGetAllExpense(getAllExpenseUseCase);
   const { incomes, loading: incomesLoading } = useGetAllIncome(getAllIncomeUseCase);
-  const { payrolls, loading: payrollsLoading } = useGetAllPayroll(getAllPayrollUseCase);
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  const [allEmployees, setAllEmployees] = useState<EmployeeModel[]>([]);
   const { translations, language } = useLanguage();
+  const [loading, setLoading] = useState(false);
   const dashboardTranslations = translations.dashboard;
 
   useEffect(() => {
@@ -88,14 +91,72 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
         console.error("Error fetching all employees:", error);
       }
     };
-    fetchAllEmployees();
-  }, [employees]);
+    const fetchPayrolls = async () => {
+      try {
+        // Build period param only when both month and year are selected
+        const periodParam =
+          selectedMonth === null || selectedYear === null
+            ? ""
+            : yearMonthToQueryParam(selectedYear, (selectedMonth as number) + 1); // API expects 1-based month
 
-  const isLoading = worklogsLoading || employeesLoading || expensesLoading || incomesLoading || payrollsLoading;
+        let all: Payroll[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const resp = await getAllPayrollUseCase.execute(ITEMS_PER_PAGE, page, periodParam);
+          const rows = resp?.data ?? [];
+          all = all.concat(rows);
+          totalPages = resp?.totalPages ?? 1;
+          page++;
+        } while (page <= totalPages);
+
+        setPayrolls(all);
+      } catch (error) {
+        console.error("Error fetching payrolls:", error);
+      }
+    };
+
+    const fetchWorklogs = async () => {
+      try {
+        let allPages: Worklog[] = [];
+        let currentPageNum = 1;
+        let hasMore = true;
+  
+        while (hasMore) {
+          const worklogsPage = await getAllWorklogUseCase.execute(
+            ITEMS_PER_PAGE,
+            currentPageNum
+          );
+          const pageData = worklogsPage?.data ?? [];
+          allPages = [...allPages, ...pageData];
+          
+          if (pageData.length < ITEMS_PER_PAGE || currentPageNum >= (worklogsPage?.totalPages ?? 0)) {
+            hasMore = false;
+          }
+          currentPageNum++;
+        }
+        // Do not filter here; filter later where dates are parsed to Date objects
+        setAllWorklogs(allPages);
+      } catch (error) {
+        console.error("Error fetching worklogs:", error);
+      }
+    };
+
+    (async () => {
+      try {
+        setLoading(true);
+        await Promise.all([fetchAllEmployees(), fetchPayrolls(), fetchWorklogs()]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [employees, selectedYear, selectedMonth]);
+
+  const isLoading = loading || expensesLoading || incomesLoading;
 
   const worklogsWithDates = useMemo(
-    () => (Array.isArray(worklogs) ? worklogs.map(w => ({ ...w, updatedAt: parseToDate(w.updatedAt) })) : []),
-    [worklogs]
+    () => (Array.isArray(allWorklogs) ? allWorklogs.map(w => ({ ...w, updatedAt: parseToDate(w.updatedAt) })) : []),
+    [allWorklogs]
   );
   const payrollsWithDates = useMemo(
     () => (Array.isArray(payrolls) ? payrolls.map(p => ({ ...p, period: parseToDate(p.period) })) : []),
@@ -109,6 +170,9 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     () => (Array.isArray(expenses) ? expenses.map(e => ({ ...e, date: parseToDate(e.date) })) : []),
     [expenses]
   );
+
+  // Build a fast lookup of known employee IDs to skip orphaned references
+  const employeeIdSet = useMemo(() => new Set((allEmployees ?? []).map(e => e._id)), [allEmployees]);
 
   const { monthIncome, monthExpenses } = useMemo(() => {
     let inc = 0, exp = 0;
@@ -130,10 +194,12 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
   const monthPayroll = useMemo(() => payrollsWithDates.reduce((s, p) => {
     const d = p.period;
     if (!d) return s;
+    // Skip payrolls whose employee no longer exists
+    if (!employeeIdSet.has(p.employeeId)) return s;
     const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
     const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
     return s + (monthMatch && yearMatch ? p.totalSalary : 0);
-  }, 0), [payrollsWithDates, selectedMonth, selectedYear]);
+  }, 0), [payrollsWithDates, selectedMonth, selectedYear, employeeIdSet]);
 
   const filteredEmployees = useMemo(() => {
     if (!Array.isArray(allEmployees) || allEmployees.length === 0) return [];
@@ -157,11 +223,13 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     return worklogsWithDates.filter(w => {
       const d = w.updatedAt;
       if (!d) return false;
+      // Skip worklogs whose employee no longer exists
+      if (!employeeIdSet.has(w.employeeId)) return false;
       const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
       const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
       return monthMatch && yearMatch && (!selectedEmployeeId || w.employeeId === selectedEmployeeId);
     });
-  }, [worklogsWithDates, selectedMonth, selectedYear, selectedEmployeeId]);
+  }, [worklogsWithDates, selectedMonth, selectedYear, selectedEmployeeId, employeeIdSet]);
 
   const employeeWorklogSummary = useMemo(() => {
     const summary = {
@@ -409,7 +477,7 @@ const Dashboard = () => {
               <Wallet className="w-5 h-5 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{formatMMK(monthPayroll)}</div>
+              <div className="text-2xl font-bold text-foreground whitespace-normal break-words max-w-full leading-tight">{formatMMK(monthPayroll)}</div>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
@@ -418,7 +486,7 @@ const Dashboard = () => {
               <ArrowUpCircle className="w-5 h-5 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{formatMMK(monthIncome)}</div>
+              <div className="text-2xl font-bold text-foreground whitespace-normal break-words max-w-full leading-tight">{formatMMK(monthIncome)}</div>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
@@ -427,7 +495,7 @@ const Dashboard = () => {
               <ArrowDownCircle className="w-5 h-5 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{formatMMK(monthExpenses)}</div>
+              <div className="text-2xl font-bold text-foreground whitespace-normal break-words max-w-full leading-tight">{formatMMK(monthExpenses)}</div>
             </CardContent>
           </Card>
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
@@ -436,7 +504,7 @@ const Dashboard = () => {
               <TrendingUp className="w-5 h-5 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{formatMMK(monthProfit)}</div>
+              <div className="text-2xl font-bold text-foreground whitespace-normal break-words max-w-full leading-tight">{formatMMK(monthProfit)}</div>
             </CardContent>
           </Card>
         </div>

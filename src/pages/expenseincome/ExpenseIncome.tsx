@@ -172,7 +172,7 @@ const ExpenseIncome = () => {
     setCurrentPage(1); // Reset to the first page when the filter changes
   };
 
-  if(isLoading || displayedEntries.length === 0) return <div className="text-center py-8">{translations.common.loading}...</div>;
+  if (isLoading) return <div className="text-center py-8">{translations.common.loading}...</div>;
 
   return (
     <div className="font-sans antialiased text-gray-800">
@@ -256,7 +256,20 @@ const ExpenseIncome = () => {
                 </tr>
               </thead>
               <tbody>
-                {displayedEntries.map(entry => (
+                {totalFilteredEntries === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 px-4 text-center text-gray-500">
+                      {selectedMonth
+                        ? (activeTab === 'income'
+                            ? 'No income entries found for the selected month.'
+                            : 'No expense entries found for the selected month.')
+                        : (activeTab === 'income'
+                            ? 'No income entries found.'
+                            : 'No expense entries found.')}
+                    </td>
+                  </tr>
+                ) : (
+                  displayedEntries.map(entry => (
                     <tr key={entry._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.title}</td>
                       <td className="py-3 px-4 text-gray-700">Ks. {entry.amount.toLocaleString()}</td>
@@ -283,7 +296,8 @@ const ExpenseIncome = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
