@@ -13,7 +13,7 @@ interface AddWorkLogModalProps {
   products: Product[];
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert: React.Dispatch<React.SetStateAction<boolean>>;
-  onUpdate: () => void;
+  onUpdate: (page: number) => void;
 }
 
 export const AddWorkLogModal = ({

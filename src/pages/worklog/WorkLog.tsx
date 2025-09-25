@@ -37,6 +37,7 @@ import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
 import { TokenedRequest } from '@/domain/models/common/header-param';
 import { Worklog } from '@/domain/models/worklog/get-worklog.dto';
+import { set } from 'date-fns';
 
 // use get all worklogs hook
 const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
@@ -72,6 +73,7 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
   const [showEditAlert, setShowEditAlert] = useState(false);
 
   // New state for sorting and dropdown - Consistent with Employee page
+  const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<'date' | 'quantity' | 'fullname'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -86,31 +88,35 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     console.log('Worklogs from hook:', worklogs);
 
   useEffect(() => {
-    setInitWorklogs(worklogs.data || []);
+    setInitWorklogs(worklogs?.data || []);
+    setCurrentPage(currentPage);
+    setTotalPages(worklogs.totalPages);
   }, [worklogs]);
 
-  const refetchWorklogs = async () => {
+  const refetchWorklogs = async (page: number) => {
     try {
       // fetch latest worklogs
-      const freshWorklogsPage = await getAllWorklogUseCase.execute(ITEMS_PER_PAGE, currentPage);
+      const freshWorklogsPage = await getAllWorklogUseCase.execute(ITEMS_PER_PAGE, page);
       const freshWorklogs = freshWorklogsPage?.data ?? [];
       if (!Array.isArray(freshWorklogs) || freshWorklogs.length === 0) {
         setWorkLogs([]);
         return;
       }
-
+      setInitWorklogs(freshWorklogs);
       const token = localStorage.getItem('token');
       const makeTokenedRequest = (id: string): TokenedRequest => ({
             id,
             token: token,
       });
 
-      // ensure we have employees & products
       const productsResp = await getAllProductsUseCase.execute();
       
       const employeesResp = [] as Employee[];
       const fullWorklogInfoList = await Promise.all(freshWorklogs.map(async log => {
         const employee = await getEmployeeByIdUseCase.execute(makeTokenedRequest(log.employeeId));
+        if(employee.status !== "200") {
+          return null;
+        }
         const product = productsResp.find((prod: Product) => prod._id === log.productId);
         employeesResp.push(employee);
         return {
@@ -145,6 +151,8 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
           setWorkLogs([]); // Set empty array if no worklogs
           return;
         }
+
+
         const employees = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, currentPage);
         const employeesData = employees.data || [];
 
@@ -227,21 +235,13 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
     return 0;
   });
 
-  const totalWorkLogs = sortedWorkLogs.length;
-  const totalQuantityProduced = sortedWorkLogs.reduce((sum, log) => sum + log.quantity, 0);
-  const totalCompletedWorklogs = sortedWorkLogs.length;
-
-  const totalPages = Math.ceil(totalWorkLogs / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentWorkLogs = sortedWorkLogs.slice(startIndex, endIndex);
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortField, sortDirection]); // Reset page when search or sort changes
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    refetchWorklogs(page);
   };
 
   const handleOpenAddModal = () => {
@@ -360,23 +360,25 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.roleColumn}</th>
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.productNameColumn}</th>
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.quantityColumn}</th>
+                  <th className="py-3 px-4 font-semibold">{workLogPageTranslations.totalPriceColumn}</th>
                   <th className="py-3 px-4 font-semibold text-center">{workLogPageTranslations.actionColumn}</th>
                 </tr>
               </thead>
               <tbody>
-                {currentWorkLogs.length === 0 ? (
+                {sortedWorkLogs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-6 text-center text-gray-500">
                       {'Loading...'}
                     </td>
                   </tr>
                 ) : (
-                currentWorkLogs.map(log => (
+                sortedWorkLogs.map(log => (
                       <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                         <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
                         <td className="py-3 px-4 text-gray-700">{log.position}</td>
                         <td className="py-3 px-4 text-gray-700">{log.productName}</td>
                         <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
+                        <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -404,13 +406,6 @@ const WorkLog = ({ currentPath }: WorkLogProps) => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-600">
-              {(() => {
-                const showingStart = totalWorkLogs === 0 ? 0 : startIndex + 1;
-                const showingEnd = totalWorkLogs === 0 ? 0 : Math.min(endIndex, totalWorkLogs);
-                return `${workLogPageTranslations.showing} ${showingStart} of ${showingEnd} of ${workLogs.length} ${workLogPageTranslations.workLogs}`;
-              })()}
-            </p>
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}

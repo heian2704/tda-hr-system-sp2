@@ -18,7 +18,7 @@ interface WorkLogFormProps {
   createWorklogUseCase: CreateWorklogUseCase;
   setShowCreatedAlert?: React.Dispatch<React.SetStateAction<boolean>>;
   setInActiveStatusAlert?: React.Dispatch<React.SetStateAction<boolean>>;
-  onUpdate: () => void;
+  onUpdate: (page: number) => void;
 }
 
 export function WorkLogForm({ employees, products, translations, onClose, createWorklogUseCase, setShowCreatedAlert, onUpdate, setInActiveStatusAlert }: WorkLogFormProps) {
@@ -86,7 +86,8 @@ export function WorkLogForm({ employees, products, translations, onClose, create
     } finally {
       setSubmitting(false);
     }
-    onUpdate();
+    const page = 1;
+    onUpdate(page);
     onClose();
   };
 
