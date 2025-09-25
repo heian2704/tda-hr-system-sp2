@@ -5,7 +5,7 @@ import { Employees } from "@/domain/models/employee/get-employees.model";
 import { UpdateEmployeeDto, UpdateEmpStatus } from "@/domain/models/employee/update-employee.dto";
 
 export interface EmployeeInterface {
-    getAllEmployee(limit: number, page: number): Promise<Employees>;
+    getAllEmployee(limit: number, page: number, empName?: string): Promise<Employees>;
     getEmployeeById(id: string): Promise<Employee>;
     createEmployee(token: BearerTokenedRequest, createEmployeeDto: CreateEmployeeDto): Promise<Employee>
     updateEmployee(idToken: TokenedRequest, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee>

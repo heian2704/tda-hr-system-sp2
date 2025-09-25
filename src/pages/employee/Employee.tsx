@@ -22,6 +22,7 @@ const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 const Employee = () => {
   const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
   const [employeeList, setEmployeeList] = useState<Employee[]>([]);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
@@ -41,11 +42,6 @@ const Employee = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(undefined);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-
-  const filteredEmployees = employeeFilter(employeeList, searchQuery);
-
-  console.log("Filtered Employees:", filteredEmployees);
-  const totalEmployees = filteredEmployees.length;
 
   // Update list and total pages when API data changes
   useEffect(() => {
@@ -99,6 +95,16 @@ const Employee = () => {
     setIsDeleteConfirmModalOpen(true);
   };
 
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    const lowercase = query.toLowerCase();
+    const employees = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, 1, lowercase);
+    const employeeList = employees?.data ?? [];
+    setEmployeeList(employeeList);
+    setTotalPages(employees?.totalPages ?? 0);
+    setCurrentPage(1);
+  };
+
   const handleSortChange = (field: 'joinedDate' | 'name' | 'status') => {
     if (field === sortField) {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
@@ -108,7 +114,9 @@ const Employee = () => {
     }
   };
 
-  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+  const sortedEmployees = [...employeeList].sort((a, b) => {
+
+    if (!sortField || !sortDirection) return 0;
     let aValue: number | string;
     let bValue: number | string;
     const order = { active: 1, on_leave: 2 };
@@ -133,7 +141,7 @@ const Employee = () => {
   });
 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
-  if (!loading && filteredEmployees.length === 0) return <div className="text-center py-8">{'No employees found.'}</div>;
+  if (!loading && sortedEmployees.length === 0) return <div className="text-center py-8">{'No employees found.'}</div>;
   if (error) return <div className="text-center py-8 text-red-600">{translations.common.error}: {error}</div>;
 
   return (
@@ -167,7 +175,7 @@ const Employee = () => {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value)}
                     placeholder="Search employees..."
                     className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                   />
@@ -232,7 +240,7 @@ const Employee = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map(emp => (
+                {sortedEmployees.map(emp => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">{emp.name}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.phoneNumber}</td>

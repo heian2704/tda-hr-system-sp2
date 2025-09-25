@@ -7,9 +7,9 @@ import { UpdateEmployeeDto, UpdateEmpStatus } from "@/domain/models/employee/upd
 import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class EmployeeInterfaceImpl implements EmployeeInterface {
-    getAllEmployee(limit: number, page: number): Promise<Employees> {
+    getAllEmployee(limit: number, page: number, empName?: string): Promise<Employees> {
         return apiGetRequestsHandler<Employees> ({
-            endpoint: '/employee?limit=' + limit + '&page=' + page
+            endpoint: '/employee?limit=' + limit + '&page=' + page + `${empName ? `&empName=${empName}` : ''}`
         });
     }
 

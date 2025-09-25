@@ -8,8 +8,8 @@ import { UpdateEmployeeDto, UpdateEmpStatus } from "@/domain/models/employee/upd
 export class GetAllEmployeeUseCase {
     constructor(private employeeInterface: EmployeeInterface){}
 
-    execute(limit: number, page: number): Promise<Employees> {
-        return this.employeeInterface.getAllEmployee(limit, page);
+    execute(limit: number, page: number, empName?: string): Promise<Employees> {
+        return this.employeeInterface.getAllEmployee(limit, page, empName);
     }
 }
 
