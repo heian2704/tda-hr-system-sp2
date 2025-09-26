@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  Plus, 
-  ChevronDown, 
-  Edit, 
+import {
+  Plus,
+  ChevronDown,
+  Edit,
   Trash2,
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  Calendar,
+  X
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
@@ -15,13 +17,13 @@ import { AddWorkLogModal } from '@/components/worklog/addworklogmodal/AddWorkLog
 import { ConfirmDeleteModal } from '@/components/worklog/delete-worklog/DeleteWorklogModal';
 import { WorklogInterface } from '@/domain/interfaces/worklog/WorklogInterface';
 import { WorklogInterfaceImpl } from '@/data/interface-implementation/worklog';
-import { 
-  CreateWorklogUseCase, 
-  DeleteWorklogUseCase, 
-  GetAllWorklogUseCase, 
-  GetWorklogByIdUseCase, 
-  GetWorklogsByEmployeeIdUseCase, 
-  UpdateWorklogUseCase 
+import {
+  CreateWorklogUseCase,
+  DeleteWorklogUseCase,
+  GetAllWorklogUseCase,
+  GetWorklogByIdUseCase,
+  GetWorklogsByEmployeeIdUseCase,
+  UpdateWorklogUseCase
 } from '@/data/usecases/worklog.usecase';
 import { EmployeeInterfaceImpl } from '@/data/interface-implementation/employee';
 import { EmployeeInterface } from '@/domain/interfaces/employee/EmployeeInterface';
@@ -34,17 +36,14 @@ import { Product } from '@/domain/models/product/get-product.dto';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
 import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
-// TokenedRequest type is inferred inline when calling the use case
 import { Worklog } from '@/domain/models/worklog/get-worklog.dto';
-import { get } from 'http';
-import { set } from 'date-fns';
-// (no date-fns imports)
-
-// use get all worklogs hook
+import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+ 
+// Use case instances
 const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const productInterface: ProductInterface = new ProductInterfaceImpl();
-
+ 
 const getAllWorklogUseCase = new GetAllWorklogUseCase(worklogInterface);
 const getWorklogByEmployeeIdUseCase = new GetWorklogsByEmployeeIdUseCase(worklogInterface);
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
@@ -53,9 +52,9 @@ const getAllProductsUseCase = new GetAllProductsUseCase(productInterface);
 const createWorklogUseCase = new CreateWorklogUseCase(worklogInterface);
 const updateWorklogUseCase = new UpdateWorklogUseCase(worklogInterface);
 const deleteWorklogUseCase = new DeleteWorklogUseCase(worklogInterface);
-
+ 
 const WorkLog = () => {
-  const [initworklogs, setInitWorklogs] = useState<Worklog[]>([]);
+  const [allWorklogs, setAllWorklogs] = useState<Worklog[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -66,53 +65,65 @@ const WorkLog = () => {
   const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<UpdateWorklogDto | undefined>(undefined);
   const [workLogs, setWorkLogs] = useState<WorklogDto[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [products, setProducts] = useState<Product[]>([]); 
+  const [products, setProducts] = useState<Product[]>([]);
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditAlert, setShowEditAlert] = useState(false);
-
-  // New state for sorting and dropdown - Consistent with Employee page
+ 
+  // State for sorting and dropdown
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState<'date' | 'quantity' | 'fullname'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-
+ 
+  // Search and Date Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
+ 
   const { translations } = useLanguage();
   const workLogPageTranslations = translations.workLogPage;
-
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const fetchAllWorklogs = async (page: number) => {
+ 
+  // Hybrid data fetch - loads all data initially for filtering, but uses pagination for display
+  const fetchAllWorklogs = async (page: number = 1) => {
     setLoading(true);
     try {
-      const freshWorklogsPage = await getAllWorklogUseCase.execute(
-        ITEMS_PER_PAGE,
-        page
-      );
-      const freshWorklogs = freshWorklogsPage?.data ?? [];
-      console.log("Fetched worklogs:", freshWorklogs);
-      if (!Array.isArray(freshWorklogs) || freshWorklogs.length === 0) {
-        setWorkLogs([]); // Set empty array if no worklogs
-        setTotalPages(freshWorklogsPage?.totalPages ?? 0);
-        setCurrentPage(page);
-        return;
+      // First, get all worklogs to enable proper filtering
+      let allPages: Worklog[] = [];
+      let currentPageNum = 1;
+      let hasMore = true;
+ 
+      while (hasMore) {
+        const worklogsPage = await getAllWorklogUseCase.execute(
+          ITEMS_PER_PAGE,
+          currentPageNum
+        );
+        const pageData = worklogsPage?.data ?? [];
+        allPages = [...allPages, ...pageData];
+        
+        if (pageData.length < ITEMS_PER_PAGE || currentPageNum >= (worklogsPage?.totalPages ?? 0)) {
+          hasMore = false;
+        }
+        currentPageNum++;
       }
-
-      setInitWorklogs(freshWorklogs);
-
-      // Start with current page of employees
-      const employeesPage = await getAllEmployeeUseCase.execute(
-        ITEMS_PER_PAGE,
-        page
-      );
-      const employeesData = employeesPage.data || [];
+ 
+      setAllWorklogs(allPages);
+ 
+      // Fetch employees and products
+      const employeesResult = await getAllEmployeeUseCase.execute(1000, 1); // Get enough employees
+      const employeesData = employeesResult.data || [];
       const employeesMap = new Map(employeesData.map(e => [e._id, e] as const));
-
-      // Fetch any employees not present on the page by ID so names show up
-      const uniqueEmployeeIds = Array.from(new Set(freshWorklogs.map(w => w.employeeId)));
+ 
+      // Fetch missing employees by ID
+      const uniqueEmployeeIds = Array.from(new Set(allPages.map(w => w.employeeId)));
       const missingIds = uniqueEmployeeIds.filter(id => !employeesMap.has(id));
       const token = localStorage.getItem('token') || '';
       const fetchedMissing: Employee[] = [];
+      
       if (missingIds.length > 0) {
         await Promise.all(
           missingIds.map(async (id) => {
@@ -128,11 +139,15 @@ const WorkLog = () => {
           })
         );
       }
-
+ 
       const products = await getAllProductsUseCase.execute();
       const productsMap = new Map(products.map(p => [p._id, p] as const));
-
-      const fullWorklogInfoList = freshWorklogs.map((log) => {
+ 
+      setEmployees([...employeesData, ...fetchedMissing]);
+      setProducts(products);
+ 
+      // Convert all worklogs to DTOs for processing
+      const fullWorklogInfoList = allPages.map((log) => {
         const employee = employeesMap.get(log.employeeId);
         const product = productsMap.get(log.productId);
         return {
@@ -147,11 +162,8 @@ const WorkLog = () => {
           updatedAt: log.updatedAt,
         } as WorklogDto;
       });
-
-      setEmployees([...employeesData, ...fetchedMissing]);
-      setProducts(products);
+ 
       setWorkLogs(fullWorklogInfoList);
-      setTotalPages(freshWorklogsPage.totalPages);
       setCurrentPage(page);
     } catch (error) {
       console.error("Error fetching work logs:", error);
@@ -159,75 +171,103 @@ const WorkLog = () => {
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => {
-      fetchAllWorklogs(currentPage);
-  }, [currentPage]);
-
+    fetchAllWorklogs(currentPage);
+  }, []);
+ 
+  // Handle search by employee name
   const handleSearch = async (query: string) => {
     const trimmedQuery = query.toLowerCase();
-    if(!trimmedQuery) return null;
-
-    const employees = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, 1, trimmedQuery);
-    const employeeData = employees.data || [];
-    const employeeId = employeeData[0]?._id;
-    const worklogs = await getWorklogByEmployeeIdUseCase.execute(employeeId);
-    const worklogsData = worklogs || [];
-    const filteredWorklogs = worklogsData.map(log => {
-        const employee = employeeData.find(e => e._id === log.employeeId);
-        const product = products.find(p => p._id === log.productId);
-        return {
-          _id: log._id,
-          employeeId: log.employeeId,
-          productId: log.productId,
-          fullname: employee ? employee.name : "Unknown Employee",
-          position: employee ? employee.position : "Unknown Position",
-          productName: product ? product.name : "Unknown Product",
-          quantity: log.quantity,
-          totalPrice: log.totalPrice,
-          updatedAt: log.updatedAt,
-        } as WorklogDto;
-    });
-
-    if(worklogs.length > 10) {
-      setTotalPages(worklogs.length / ITEMS_PER_PAGE);
+    if (!trimmedQuery) {
+      // If no search query, reload all data
+      await fetchAllWorklogs(1);
+      return;
     }
-    else {
-      setTotalPages(1);
+ 
+    // Filter current worklogs by employee name
+    const filtered = workLogs.filter(log =>
+      log.fullname?.toLowerCase().includes(trimmedQuery)
+    );
+    
+    // If we have results from current data, use them
+    if (filtered.length > 0) {
+      // Calculate pagination for filtered results
+      const filteredTotalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+      setTotalPages(filteredTotalPages);
+      setCurrentPage(1);
+      return;
     }
-
-    setWorkLogs(filteredWorklogs);
-    setCurrentPage(1);
+ 
+    // Otherwise, fetch by employee ID
+    try {
+      const employees = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, 1, trimmedQuery);
+      const employeeData = employees.data || [];
+      
+      if (employeeData.length > 0) {
+        const employeeId = employeeData[0]._id;
+        const worklogs = await getWorklogByEmployeeIdUseCase.execute(employeeId);
+        const worklogsData = worklogs || [];
+        
+        const filteredWorklogs = worklogsData.map(log => {
+          const employee = employeeData.find(e => e._id === log.employeeId);
+          const product = products.find(p => p._id === log.productId);
+          return {
+            _id: log._id,
+            employeeId: log.employeeId,
+            productId: log.productId,
+            fullname: employee ? employee.name : "Unknown Employee",
+            position: employee ? employee.position : "Unknown Position",
+            productName: product ? product.name : "Unknown Product",
+            quantity: log.quantity,
+            totalPrice: log.totalPrice,
+            updatedAt: log.updatedAt,
+          } as WorklogDto;
+        });
+ 
+        setWorkLogs(filteredWorklogs);
+        setTotalPages(Math.ceil(worklogsData.length / ITEMS_PER_PAGE));
+        setCurrentPage(1);
+      }
+    } catch (error) {
+      console.error('Error searching worklogs:', error);
+    }
   };
-
+ 
   useEffect(() => {
-    handleSearch(searchQuery);
+    if (searchQuery.trim()) {
+      handleSearch(searchQuery);
+    }
   }, [searchQuery]);
-
+ 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
         setIsSortDropdownOpen(false);
       }
+      if (dateFilterRef.current && !dateFilterRef.current.contains(event.target as Node)) {
+        setIsDateFilterOpen(false);
+      }
     };
-
+ 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [sortDropdownRef]);
-
-  const filteredWorkLogs = useMemo(() => {
-    let list = workLogs;
-    if (!searchQuery) return list;
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      list = list.filter((w) => {
+  }, []);
+ 
+  // Apply search, date filter, and sorting
+  const filteredAndSortedWorkLogs = useMemo(() => {
+    let filtered = [...workLogs];
+ 
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter((w) => {
         const date = w.updatedAt ? new Date(w.updatedAt) : null;
-        const iso = date ? date.toISOString().slice(0, 10) : "";
-        const dmy = date
-          ? `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`
-          : "";
+        const iso = date ? format(date, 'yyyy-MM-dd') : "";
+        const dmy = date ? format(date, 'dd/MM/yyyy') : "";
+        
         return (
           w.fullname?.toLowerCase().includes(q) ||
           w.position?.toLowerCase().includes(q) ||
@@ -239,12 +279,33 @@ const WorkLog = () => {
         );
       });
     }
-    return list;
-  }, [workLogs, searchQuery]);
-
-  const sortedWorkLogs = useMemo(() => {
-    const arr = [...filteredWorkLogs];
-    arr.sort((a, b) => {
+ 
+    // Apply date filter
+    if (dateFilter.startDate || dateFilter.endDate) {
+      filtered = filtered.filter((w) => {
+        if (!w.updatedAt) return false;
+        
+        const logDate = typeof w.updatedAt === 'string' ? parseISO(w.updatedAt) : w.updatedAt;
+        let isInRange = true;
+ 
+        if (dateFilter.startDate && dateFilter.endDate) {
+          const start = startOfDay(parseISO(dateFilter.startDate));
+          const end = endOfDay(parseISO(dateFilter.endDate));
+          isInRange = isWithinInterval(logDate, { start, end });
+        } else if (dateFilter.startDate) {
+          const start = startOfDay(parseISO(dateFilter.startDate));
+          isInRange = logDate >= start;
+        } else if (dateFilter.endDate) {
+          const end = endOfDay(parseISO(dateFilter.endDate));
+          isInRange = logDate <= end;
+        }
+ 
+        return isInRange;
+      });
+    }
+ 
+    // Apply sorting
+    filtered.sort((a, b) => {
       if (sortField === "date") {
         const at = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const bt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
@@ -257,22 +318,29 @@ const WorkLog = () => {
       const cmp = (a.fullname ?? "").localeCompare(b.fullname ?? "");
       return sortDirection === "asc" ? cmp : -cmp;
     });
-    return arr;
-  }, [filteredWorkLogs, sortField, sortDirection]);
-
-
-  useEffect(() => {
-    setCurrentPage(currentPage);
-  }, [searchQuery, sortField, sortDirection, currentPage]); // Reset page when search or sort changes
-
+ 
+    return filtered;
+  }, [workLogs, searchQuery, dateFilter, sortField, sortDirection]);
+ 
+  // Calculate pagination for filtered results
+  const paginatedWorkLogs = useMemo(() => {
+    const totalFiltered = filteredAndSortedWorkLogs.length;
+    const calculatedTotalPages = Math.ceil(totalFiltered / ITEMS_PER_PAGE);
+    setTotalPages(calculatedTotalPages);
+ 
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAndSortedWorkLogs.slice(startIndex, endIndex);
+  }, [filteredAndSortedWorkLogs, currentPage]);
+ 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
-
+ 
   const handleOpenAddModal = () => {
     setIsAddModalOpen(true);
   };
-
+ 
   const handleOpenEditModal = (workLog: WorklogDto) => {
     const workLogToEdit: UpdateWorklogDto = {
       employeeId: workLog.employeeId,
@@ -283,12 +351,12 @@ const WorkLog = () => {
     setSelectedWorkLogForEdit(workLogToEdit);
     setIsEditModalOpen(true);
   };
-
+ 
   const handleConfirmDeleteClick = (workLog: WorklogDto) => {
     setDeleteWorklogId({ id: workLog._id });
     setIsDeleteConfirmModalOpen(true);
   };
-
+ 
   const handleSortChange = (field: 'date' | 'quantity' | 'fullname') => {
     if (field === sortField) {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
@@ -298,9 +366,24 @@ const WorkLog = () => {
     }
     setIsSortDropdownOpen(false);
   };
-
+ 
+  const handleDateFilterChange = (field: 'startDate' | 'endDate', value: string) => {
+    setDateFilter(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+ 
+  const clearDateFilter = () => {
+    setDateFilter({ startDate: '', endDate: '' });
+    setCurrentPage(1);
+  };
+ 
+  const hasDateFilter = dateFilter.startDate || dateFilter.endDate;
+ 
   if (loading) return <div className="text-center py-8">{translations.common.loading}...</div>;
-
+ 
   return (
     <div className="font-sans antialiased text-gray-800">
       {showCreatedAlert && (
@@ -322,17 +405,73 @@ const WorkLog = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
               {/* Search box */}
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={workLogPageTranslations.searchPlaceholder || "Search employees..."}
-                    className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-                  />
-                </div>
-              {/* Sort By Dropdown - Consistent with Employee page */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={workLogPageTranslations.searchPlaceholder || "Search employees..."}
+                  className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                />
+              </div>
+ 
+              {/* Date Filter Dropdown */}
+              <div className="relative" ref={dateFilterRef}>
+                <button
+                  onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
+                  className={`flex items-center justify-between px-4 py-2 border rounded-lg text-sm cursor-pointer w-full sm:w-auto ${
+                    hasDateFilter ? 'bg-red-50 border-red-300 text-red-700' : 'bg-white border-gray-300 text-gray-700'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span className="font-medium">
+                    {hasDateFilter ? 'Date Filtered' : 'Date Filter'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </button>
+                {isDateFilterOpen && (
+                  <div className="absolute mt-1 w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20 p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={dateFilter.startDate}
+                          onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={dateFilter.endDate}
+                          onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                        />
+                      </div>
+                      {hasDateFilter && (
+                        <div className="flex justify-between items-center pt-2">
+                          <button
+                            onClick={clearDateFilter}
+                            className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                            Clear Filter
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+ 
+              {/* Sort By Dropdown */}
               <div className="relative" ref={sortDropdownRef}>
                 <button
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
@@ -379,7 +518,7 @@ const WorkLog = () => {
               </button>
             </div>
           </div>
-
+ 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
@@ -389,51 +528,66 @@ const WorkLog = () => {
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.productNameColumn}</th>
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.quantityColumn}</th>
                   <th className="py-3 px-4 font-semibold">{workLogPageTranslations.totalPriceColumn}</th>
+                  <th className="py-3 px-4 font-semibold">{workLogPageTranslations.date}</th>
                   <th className="py-3 px-4 font-semibold text-center">{workLogPageTranslations.actionColumn}</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedWorkLogs.length === 0 ? (
+                {paginatedWorkLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-gray-500">
+                    <td colSpan={7} className="py-6 text-center text-gray-500">
                       {workLogPageTranslations.noData || 'No work logs found'}
                     </td>
                   </tr>
                 ) : (
-                sortedWorkLogs.map(log => (
-                      <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
-                        <td className="py-3 px-4 text-gray-700">{log.position}</td>
-                        <td className="py-3 px-4 text-gray-700">{log.productName}</td>
-                        <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
-                        <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleOpenEditModal(log)}
-                              className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
-                              title={workLogPageTranslations.editButton}
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleConfirmDeleteClick(log)}
-                              className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
-                              title={workLogPageTranslations.deleteButton}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                  paginatedWorkLogs.map(log => (
+                    <tr key={log._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium text-gray-900">{log.fullname}</td>
+                      <td className="py-3 px-4 text-gray-700">{log.position}</td>
+                      <td className="py-3 px-4 text-gray-700">{log.productName}</td>
+                      <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
+                      <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {log.updatedAt
+                          ? format(
+                              typeof log.updatedAt === 'string'
+                                ? parseISO(log.updatedAt)
+                                : log.updatedAt,
+                              'dd/MM/yyyy'
+                            )
+                          : 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditModal(log)}
+                            className="text-[#007BFF] hover:text-[#0056b3] font-medium p-1 rounded-full hover:bg-gray-100"
+                            title={workLogPageTranslations.editButton}
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleConfirmDeleteClick(log)}
+                            className="text-red-500 hover:text-red-700 font-medium p-1 rounded-full hover:bg-gray-100"
+                            title={workLogPageTranslations.deleteButton}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
-
+ 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-600">
+              Showing {paginatedWorkLogs.length} of {filteredAndSortedWorkLogs.length} entries
+              {(searchQuery || hasDateFilter) && ` (filtered from ${workLogs.length} total)`}
+            </div>
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -463,9 +617,8 @@ const WorkLog = () => {
             </div>
           </div>
         </div>
-        
       </div>
-
+ 
       {/* Add Work Log Modal */}
       <AddWorkLogModal
         isOpen={isAddModalOpen}
@@ -476,7 +629,7 @@ const WorkLog = () => {
         setShowCreatedAlert={setShowCreatedAlert}
         onUpdate={() => { void fetchAllWorklogs(currentPage); }}
       />
-
+ 
       <EditWorkLogModal
         worklogid={worklogId}
         workLogToEdit={selectedWorkLogForEdit}
@@ -488,7 +641,7 @@ const WorkLog = () => {
         setShowEditAlert={setShowEditAlert}
         onUpdate={() => { void fetchAllWorklogs(currentPage); }}
       />
-
+ 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteConfirmModalOpen}
@@ -500,5 +653,5 @@ const WorkLog = () => {
     </div>
   );
 };
-
+ 
 export default WorkLog;
