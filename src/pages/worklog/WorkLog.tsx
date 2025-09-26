@@ -477,7 +477,7 @@ const WorkLog = () => {
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                   className="flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm cursor-pointer w-full sm:w-auto"
                 >
-                  <span className="font-medium text-gray-700">{workLogPageTranslations.sortBy}</span>
+                  <span className="text-sm text-gray-700">{workLogPageTranslations.sortBy}</span>
                   <span className="font-semibold text-gray-900 ml-2">
                     {sortField === 'date' && workLogPageTranslations.date}
                     {sortField === 'quantity' && workLogPageTranslations.quantityColumn}

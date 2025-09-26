@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   FileText,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Search // Import the Search icon
+  Search, // Import the Search icon
+  Calendar
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { PayrollDto } from "@/dtos/payrolls/payrolls.dto";
@@ -20,6 +21,7 @@ import {
 } from "@/constants/page-utils";
 import { exportToCsv, yearMonthToQueryParam } from "@/lib/utils";
 import type { Payroll } from "@/domain/models/payroll/get-payroll.dto";
+import { endOfDay, isWithinInterval, parseISO, startOfDay } from "date-fns";
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
 const payrollInterface: PayrollInterface = new PayrollInterfaceImpl();
@@ -37,6 +39,10 @@ const Payroll = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
   const [payrollEntries, setPayrollEntries] = useState<PayrollDto[]>([]);
+  // Date filter state (like WorkLog page)
+  const [dateFilter, setDateFilter] = useState<{ startDate: string; endDate: string }>({ startDate: "", endDate: "" });
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement | null>(null);
 
   const { translations } = useLanguage();
   const payrollPageTranslations = translations.payrollPage;
@@ -46,6 +52,7 @@ const Payroll = () => {
   const [totalPayrolls, setTotalPayrolls] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const isSearching = searchQuery.trim().length > 0;
+  const hasDateFilter = !!(dateFilter.startDate || dateFilter.endDate);
 
   const fetchPayrollData = useCallback(async (page: number, month: number, year: number) => {
     setPageLoading(true);
@@ -108,6 +115,7 @@ const Payroll = () => {
 
   const handlePageChange = async (page: number) => {
     setCurrentPage(page);
+    if (isSearching || hasDateFilter) return; // client-side pagination when searching or date filtering
     const month = selectedMonth || currentMonth;
     await fetchPayrollData(page, month, currentYear);
   };
@@ -173,6 +181,59 @@ const Payroll = () => {
       fetchPayrollData(1, selectedMonth, currentYear);
     }
   }, [selectedMonth, searchQuery, currentYear, fetchPayrollData, handleSearch]);
+
+  // Close date filter dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dateFilterRef.current && !dateFilterRef.current.contains(event.target as Node)) {
+        setIsDateFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Apply date filter to payroll entries (client-side)
+  const filteredPayrollEntries = useMemo(() => {
+    let entries = [...payrollEntries];
+    if (hasDateFilter) {
+      entries = entries.filter((p) => {
+        const periodDate = p.period instanceof Date ? p.period : new Date(p.period);
+        if (Number.isNaN(periodDate.getTime())) return false;
+        let inRange = true;
+        if (dateFilter.startDate && dateFilter.endDate) {
+          const start = startOfDay(parseISO(dateFilter.startDate));
+          const end = endOfDay(parseISO(dateFilter.endDate));
+          inRange = isWithinInterval(periodDate, { start, end });
+        } else if (dateFilter.startDate) {
+          const start = startOfDay(parseISO(dateFilter.startDate));
+          inRange = periodDate >= start;
+        } else if (dateFilter.endDate) {
+          const end = endOfDay(parseISO(dateFilter.endDate));
+          inRange = periodDate <= end;
+        }
+        return inRange;
+      });
+    }
+    return entries;
+  }, [payrollEntries, dateFilter, hasDateFilter]);
+
+  // Determine entries to display and effective total pages
+  const effectiveTotalPages = useMemo(() => {
+    if (isSearching || hasDateFilter) {
+      const total = filteredPayrollEntries.length;
+      return Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+    }
+    return totalPages;
+  }, [filteredPayrollEntries.length, hasDateFilter, isSearching, totalPages]);
+
+  const displayedEntries = useMemo(() => {
+    if (isSearching || hasDateFilter) {
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      return filteredPayrollEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }
+    return payrollEntries;
+  }, [filteredPayrollEntries, payrollEntries, currentPage, hasDateFilter, isSearching]);
   
   const handleExport = () => {
     exportToCsv(payrollEntries, payrollPageTranslations);
@@ -204,6 +265,55 @@ const Payroll = () => {
                     className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                   />
                 </div>
+              {/* Date Filter Dropdown */}
+              <div className="relative" ref={dateFilterRef}>
+                <button
+                  onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
+                  className="flex items-center justify-between h-10 w-full sm:w-auto px-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span className="text-sm">
+                    {hasDateFilter ? 'Filtered by date' : 'Filter by date'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </button>
+                {isDateFilterOpen && (
+                  <div className="absolute mt-1 w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20 p-4">
+                    <div className="mb-3">
+                      <label className="block text-xs text-gray-600 mb-1">Start date</label>
+                      <input
+                        type="date"
+                        value={dateFilter.startDate}
+                        onChange={(e) => { setDateFilter((prev) => ({ ...prev, startDate: e.target.value })); setCurrentPage(1); }}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-xs text-gray-600 mb-1">End date</label>
+                      <input
+                        type="date"
+                        value={dateFilter.endDate}
+                        onChange={(e) => { setDateFilter((prev) => ({ ...prev, endDate: e.target.value })); setCurrentPage(1); }}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => { setDateFilter({ startDate: '', endDate: '' }); setCurrentPage(1); }}
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={() => setIsDateFilterOpen(false)}
+                        className="text-xs bg-[#EB5757] text-white px-3 py-1 rounded-md"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               {/* Period Type Dropdown */}
               <div className="relative w-full sm:w-40">
                 <select
@@ -280,8 +390,8 @@ const Payroll = () => {
                 </tr>
               </thead>
               <tbody>
-                {payrollEntries.length > 0 && payrollEntries[0] ? (
-                  payrollEntries.map((entry) => (
+                {displayedEntries.length > 0 && displayedEntries[0] ? (
+                  displayedEntries.map((entry) => (
                     <tr
                       key={entry._id}
                       className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
@@ -309,7 +419,11 @@ const Payroll = () => {
                       colSpan={5}
                       className="py-6 px-4 text-center text-gray-500"
                     >
-                      {"No payroll records found."}
+                      {hasDateFilter
+                        ? "No payroll records found for the selected date range."
+                        : (isSearching
+                            ? "No payroll records found for the current search."
+                            : "No payroll records found.")}
                     </td>
                   </tr>
                 )}
@@ -328,8 +442,8 @@ const Payroll = () => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {totalPages > 0 &&
-                Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              {effectiveTotalPages > 0 &&
+                Array.from({ length: effectiveTotalPages }, (_, i) => i + 1).map(
                   (page) => (
                     <button
                       key={page}
@@ -346,7 +460,7 @@ const Payroll = () => {
                 )}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === effectiveTotalPages}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
