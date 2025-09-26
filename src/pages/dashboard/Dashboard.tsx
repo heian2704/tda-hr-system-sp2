@@ -328,6 +328,7 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     isLoading,
     dashboardTranslations,
     employees,
+    allEmployees,
     filteredEmployees,
     monthIncome,
     monthExpenses,
@@ -351,6 +352,7 @@ const Dashboard = () => {
     isLoading,
     dashboardTranslations,
     employees,
+    allEmployees,
     filteredEmployees,
     monthIncome,
     monthExpenses,
@@ -524,7 +526,7 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{dashboardTranslations.allEmployees || "All Employees"}</SelectItem>
-                    {filteredEmployees.map(employee => (
+                    {allEmployees.map(employee => (
                       <SelectItem key={employee._id} value={employee._id}>
                         {employee.name}
                       </SelectItem>
