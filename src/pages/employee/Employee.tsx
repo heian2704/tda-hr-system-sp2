@@ -287,9 +287,6 @@ const Employee = () => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-600">
-              {employeePageTranslations.showing} {totalEmployees} {employeePageTranslations.employees}
-            </p>
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}

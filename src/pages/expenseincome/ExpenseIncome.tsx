@@ -304,9 +304,6 @@ const ExpenseIncome = () => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-600">
-              {pageTranslations.showing} {totalFilteredEntries > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} {pageTranslations.of} {Math.min(currentPage * ITEMS_PER_PAGE, totalFilteredEntries)} {pageTranslations.of} {totalFilteredEntries} {activeTab === 'income' ? pageTranslations.incomeEntries : pageTranslations.expenseEntries}
-            </p>
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
