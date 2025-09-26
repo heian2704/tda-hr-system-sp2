@@ -59,7 +59,7 @@ const Payroll = () => {
       type Paginated<T> = { data: T[]; total?: number; totalPages?: number; page?: number; limit?: number } | null;
       const pr = payrollResponse as Paginated<Payroll>;
       const serverTotal = pr?.total ?? pr?.data?.length ?? 0;
-      const serverTotalPages = pr?.totalPages ?? Math.max(1, Math.ceil(serverTotal / ITEMS_PER_PAGE));
+      const serverTotalPages = pr?.data?.length > ITEMS_PER_PAGE ? Math.ceil(serverTotal / ITEMS_PER_PAGE) : 1;
 
       if (!pr || !pr.data || pr.data.length === 0) {
         setPayrolls([]);
