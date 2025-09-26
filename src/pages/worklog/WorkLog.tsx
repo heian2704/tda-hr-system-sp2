@@ -584,10 +584,6 @@ const WorkLog = () => {
  
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">
-              Showing {paginatedWorkLogs.length} of {filteredAndSortedWorkLogs.length} entries
-              {(searchQuery || hasDateFilter) && ` (filtered from ${workLogs.length} total)`}
-            </div>
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
