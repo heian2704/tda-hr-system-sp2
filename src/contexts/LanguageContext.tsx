@@ -329,7 +329,7 @@ const allAppTranslations: AllTranslationsCollection = {
     sidebar: [
       { path: "/dashboard", label: "Dashboard", icon: "📊" },
       { path: "/employee", label: "Employee", icon: "🧑‍💼" },
-      //{ path: "/attendance", label: "Attendance", icon: "📅" },
+      { path: "/attendance", label: "Attendance", icon: "📅" },
       { path: "/worklog", label: "Work Log", icon: "🕒" },
       { path: "/payroll", label: "Payroll", icon: "💵" },
       { path: "/expense-income", label: "Expense & Income", icon: "💳" }
@@ -624,7 +624,7 @@ const allAppTranslations: AllTranslationsCollection = {
     sidebar: [
       { path: "/dashboard", label: "ဒက်ရှ်ဘုတ်", icon: "📊" },
       { path: "/employee", label: "ဝန်ထမ်း", icon: "🧑‍💼" },
-      //{ path: "/attendance", label: "တက်ရောက်မှု", icon: "📅" },
+      { path: "/attendance", label: "တက်ရောက်မှု", icon: "📅" },
       { path: "/worklog", label: "အလုပ်မှတ်တမ်း", icon: "🕒" },
       { path: "/payroll", label: "လစာ", icon: "💵" },
       { path: "/expense-income", label: "အသုံးစရိတ်နှင့်ဝင်ငွေ", icon: "💳" }

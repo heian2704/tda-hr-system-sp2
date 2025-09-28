@@ -1,33 +1,179 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Check, X, Clock, ChevronLeft, ChevronRight, AlertCircle, Users, Loader2 } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
-import Employee from "../employee/Employee";
-import { GetAllEmployeeUseCase } from "@/data/usecases/employee.usecase";
-import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
-import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
-import { useGetAllEmployees } from "@/hooks/employee/get-all-employee.hook";
-import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 
-const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
-const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
+// The `useLanguage` hook and translations are mocked here for UI purposes
+const useLanguage = () => {
+  const translations = {
+    English: {
+      attendanceTitle: "Employee Attendance",
+      totalEmployees: "Total Employees",
+      present: "Present",
+      absent: "Absent",
+      clockInPlaceholder: "Clock In",
+      clockOutPlaceholder: "Clock Out",
+      durationPlaceholder: "Duration",
+      actions: "Actions",
+      clockIn: "Clock In",
+      clockOut: "Clock Out",
+      markAsPresent: "Mark as Present",
+      markAsAbsent: "Mark as Absent",
+      bulkActions: "Bulk Actions",
+      selectAll: "Select All",
+      showing: "Showing",
+      of: "of",
+      employees: "employees",
+      noData: "No attendance data found for this date. Click Clock In to get started.",
+      selectTime: "Select Time",
+      confirm: "Confirm",
+      cancel: "Cancel",
+      bulkClockIn: "Bulk Clock In",
+      bulkClockOut: "Bulk Clock Out",
+      loading: "Loading employees...",
+    },
+    Burmese: {
+      attendanceTitle: "ဝန်ထမ်း တက်ရောက်မှု",
+      totalEmployees: "စုစုပေါင်း ဝန်ထမ်း",
+      present: "ပစ္စုပ္ပန်",
+      absent: "မရှိ",
+      clockInPlaceholder: "နာရီ စတင်ဝင်ရောက်",
+      clockOutPlaceholder: "နာရီ ထွက်ခွာ",
+      durationPlaceholder: "ကြာချိန်",
+      actions: "လုပ်ဆောင်မှုများ",
+      clockIn: "နာရီ စတင်ဝင်ရောက်",
+      clockOut: "နာရီ ထွက်ခွာ",
+      markAsPresent: "ပစ္စုပ္ပန်အဖြစ် မှတ်သားပါ",
+      markAsAbsent: "မရှိအဖြစ် မှတ်သားပါ",
+      bulkActions: "အစုလိုက် လုပ်ဆောင်ချက်များ",
+      selectAll: "အားလုံးရွေးပါ",
+      showing: "ပြသနေသည်",
+      of: "၏",
+      employees: "ဝန်ထမ်းများ",
+      noData: "ဤရက်စွဲအတွက် တက်ရောက်မှုဒေတာမတွေ့ပါ။ နာရီစတင်ဝင်ရောက်ရန် ကလစ်နှိပ်ပါ။",
+      selectTime: "အချိန်ရွေးပါ",
+      confirm: "အတည်ပြုပါ",
+      cancel: "ပယ်ဖျက်ပါ",
+      bulkClockIn: "အစုလိုက် နာရီစတင်ဝင်ရောက်",
+      bulkClockOut: "အစုလိုက် နာရီထွက်ခွာ",
+      loading: "ဝန်ထမ်းများကို တင်နေသည်...",
+    },
+  };
+  const [language, setLanguage] = useState("English");
+  const t = translations[language];
+  return { language, setLanguage, translations: t };
+};
+
+// This hook is now self-contained within this file.
+const useEmployeeData = () => {
+  const [employees, setEmployees] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAllEmployees = async () => {
+      setIsLoading(true);
+      // Simulating a data fetch from an API or shared context
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const mockEmployees = [
+        { _id: "1", name: "Zaw Myo", isActive: true },
+        { _id: "2", name: "Aung Aung", isActive: true },
+        { _id: "3", name: "Su Su", isActive: true },
+        { _id: "4", name: "Myo Min", isActive: true },
+        { _id: "5", name: "Hla Hla", isActive: true },
+        { _id: "6", name: "Ko Ko", isActive: false },
+        { _id: "7", name: "Thin Thin", isActive: true },
+        { _id: "8", name: "Moe Moe", isActive: true },
+        { _id: "9", name: "Kyaw Kyaw", isActive: false },
+        { _id: "10", name: "Nyein Nyein", isActive: true },
+        { _id: "11", name: "Lwin Lwin", isActive: true },
+        { _id: "12", name: "Soe Soe", isActive: true },
+        { _id: "13", name: "Win Win", isActive: true },
+        { _id: "14", name: "Chit Chit", isActive: true },
+        { _id: "15", name: "Pyae Pyae", isActive: false },
+        { _id: "16", name: "San San", isActive: true },
+        { _id: "17", name: "Hnin Hnin", isActive: true },
+        { _id: "18", name: "Zin Zin", isActive: true },
+        { _id: "19", name: "Lay Lay", isActive: true },
+        { _id: "20", name: "Tin Tin", isActive: true },
+      ];
+      setEmployees(mockEmployees);
+      setIsLoading(false);
+    };
+    fetchAllEmployees();
+  }, []);
+
+  return { employees, isLoading };
+};
+
+// --- LocalStorage helpers for attendance ---
+const ATTENDANCE_STORAGE_KEY = 'attendanceRecords';
+
+const readAttendanceStorage = () => {
+  try {
+    const raw = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeAttendanceStorage = (data) => {
+  try {
+    localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // noop
+  }
+};
+
+const ensureDayRecords = (storage, date, activeEmployees) => {
+  const day = storage[date] || {};
+  let changed = false;
+  // Add missing active employees with defaults
+  activeEmployees.forEach((emp) => {
+    if (!day[emp._id]) {
+      day[emp._id] = { status: 'absent', clockIn: null, clockOut: null, duration: null };
+      changed = true;
+    }
+  });
+  // Remove records for employees no longer active
+  Object.keys(day).forEach((id) => {
+    if (!activeEmployees.find((e) => e._id === id)) {
+      delete day[id];
+      changed = true;
+    }
+  });
+  if (changed) storage[date] = day;
+  return { storage, day, changed };
+};
+
+const computeDuration = (clockIn, clockOut) => {
+  if (!clockIn || !clockOut) return null;
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return (isNaN(h) || isNaN(m)) ? null : h * 60 + m;
+  };
+  const start = toMinutes(clockIn);
+  const end = toMinutes(clockOut);
+  if (start == null || end == null) return null;
+  const diff = Math.max(0, end - start);
+  const hours = (diff / 60);
+  return `${hours.toFixed(1)} hrs`;
+};
 
 const Attendance = () => {
   const { translations } = useLanguage();
-  const { employees, loading, error } = useGetAllEmployees(getAllEmployeeUseCase);
-  const [employeeList, setEmployeeList] = useState<Employee[]>([]);
+  const { employees, isLoading: isDataLoading } = useEmployeeData();
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [employeesData, setEmployeesData] = useState([]);
-  const [totalEmployees, setTotalEmployees] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedEmployees, setSelectedEmployees] = useState(new Set());
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set<string>());
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null);
   const [modalAction, setModalAction] = useState(null);
   const [employeeToActOn, setEmployeeToActOn] = useState(null);
   const [message, setMessage] = useState(null);
+
+  const itemsPerPage = 10;
   
-  const attendancePage = translations.attendancePage;
   // Filter for only active employees from the prop
   const activeEmployees = useMemo(() => {
     // We check if employees is an array before filtering
@@ -36,43 +182,31 @@ const Attendance = () => {
   }, [employees]);
 
   useEffect(() => {
-    setTotalEmployees(employees.total || 0);
-    // This simulates fetching attendance data for the selected date
-    const getAttendanceForDate = (dateString, allEmployees) => {
-      const today = new Date().toISOString().slice(0, 10);
-      if (dateString === today) {
-        return allEmployees.map(emp => {
-          const isPresent = Math.random() > 0.3;
-          return {
-            ...emp,
-            status: isPresent ? "present" : "absent",
-            clockIn: isPresent ? "08:30 AM" : null,
-            clockOut: isPresent ? "05:00 PM" : null,
-            duration: isPresent ? "8.5 hrs" : null,
-          };
-        });
-      } else {
-        return allEmployees.map(emp => ({
-          ...emp,
-          status: "absent",
-          clockIn: null,
-          clockOut: null,
-          duration: null
-        }));
-      }
-    };
-    
-    // Update attendance data whenever active employees or the date changes
-    if (activeEmployees.length > 0) {
-      setEmployeesData(getAttendanceForDate(date, activeEmployees));
-    } else {
+    // Load attendance from localStorage; seed defaults if missing; sync with active employees
+    if (!Array.isArray(activeEmployees) || activeEmployees.length === 0) {
       setEmployeesData([]);
+      return;
     }
+    const storage = readAttendanceStorage();
+    const { storage: updatedStorage, day, changed } = ensureDayRecords(storage, date, activeEmployees);
+    if (changed) writeAttendanceStorage(updatedStorage);
+
+    // Build employeesData by merging activeEmployees with stored day records
+    const merged = activeEmployees.map(emp => {
+      const rec = day[emp._id] || { status: 'absent', clockIn: null, clockOut: null, duration: null };
+      return { ...emp, ...rec };
+    });
+    setEmployeesData(merged);
   }, [date, activeEmployees]);
   
-  // const totalPresent = employeesData.filter(emp => emp.status === "present").length;
-  // const totalAbsent = totalEmployees - totalPresent;
-  const totalPages = employees.totalPages || 1;
+  const totalEmployees = employeesData.length;
+  const totalPresent = employeesData.filter(emp => emp.status === "present").length;
+  const totalAbsent = totalEmployees - totalPresent;
+  const totalPages = Math.max(1, Math.ceil(totalEmployees / itemsPerPage));
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalEmployees);
+  const currentEmployees = employeesData.slice(startIndex, endIndex);
 
   // --- Handlers ---
   const showMessage = (msg) => {
@@ -133,17 +267,44 @@ const Attendance = () => {
 
     if (modalType === 'single') {
       const employee = employeeToActOn;
-      const newEmployeesData = employeesData.map(emp =>
-        emp._id === employee._id ? { ...emp, [modalAction]: formattedTime, status: 'present' } : emp
-      );
+      const newEmployeesData = employeesData.map(emp => {
+        if (emp._id !== employee._id) return emp;
+        const updated = { ...emp, [modalAction]: formattedTime, status: 'present' };
+        const dur = computeDuration(updated.clockIn, updated.clockOut);
+        return { ...updated, duration: dur };
+      });
       setEmployeesData(newEmployeesData);
       showMessage(`${modalAction === 'clockIn' ? 'Clocked in' : 'Clocked out'} ${employee.name} at ${formattedTime}.`);
+      // Persist to localStorage
+      const storage = readAttendanceStorage();
+      const { storage: updatedStorage } = ensureDayRecords(storage, date, employeesData);
+      const day = updatedStorage[date] || {};
+      const rec = day[employee._id] || { status: 'absent', clockIn: null, clockOut: null, duration: null };
+      const nextRec = { ...rec, [modalAction]: formattedTime, status: 'present' };
+      nextRec.duration = computeDuration(nextRec.clockIn, nextRec.clockOut);
+      updatedStorage[date] = { ...day, [employee._id]: nextRec };
+      writeAttendanceStorage(updatedStorage);
     } else {
-      const newEmployeesData = employeesData.map(emp =>
-        selectedEmployees.has(emp._id) ? { ...emp, [modalAction]: formattedTime, status: 'present' } : emp
-      );
+      const newEmployeesData = employeesData.map(emp => {
+        if (!selectedEmployees.has(emp._id)) return emp;
+        const updated = { ...emp, [modalAction]: formattedTime, status: 'present' };
+        const dur = computeDuration(updated.clockIn, updated.clockOut);
+        return { ...updated, duration: dur };
+      });
       setEmployeesData(newEmployeesData);
       showMessage(`${modalAction === 'clockIn' ? 'Bulk Clocked In' : 'Bulk Clocked Out'} ${selectedEmployees.size} employees at ${formattedTime}.`);
+      // Persist to localStorage for each selected employee
+      const storage = readAttendanceStorage();
+      const { storage: updatedStorage } = ensureDayRecords(storage, date, employeesData);
+      const day = updatedStorage[date] || {};
+      selectedEmployees.forEach((id) => {
+        const rec = day[id] || { status: 'absent', clockIn: null, clockOut: null, duration: null };
+        const nextRec = { ...rec, [modalAction]: formattedTime, status: 'present' };
+        nextRec.duration = computeDuration(nextRec.clockIn, nextRec.clockOut);
+        day[id] = nextRec;
+      });
+      updatedStorage[date] = day;
+      writeAttendanceStorage(updatedStorage);
       setSelectedEmployees(new Set());
     }
 
@@ -161,42 +322,11 @@ const Attendance = () => {
         </div>
       )}
 
-      {/* Attendance Stats Section */}
-      <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row items-center md:justify-evenly gap-4 md:gap-6 shadow-sm">
-        <div className="flex items-center gap-4 flex-grow md:flex-grow-0 w-full">
-          <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <Users className="text-red-500 w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">{attendancePage.totalEmployees}</p>
-            <p className="text-3xl font-bold mt-1">{totalEmployees}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 flex-grow md:flex-grow-0 w-full">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <Check className="text-green-500 w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">{attendancePage.present}</p>
-            <p className="text-3xl font-bold mt-1">{totalPresent}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 flex-grow md:flex-grow-0 w-full">
-          <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <X className="text-gray-500 w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">{attendancePage.absent}</p>
-            <p className="text-3xl font-bold mt-1">{totalAbsent}</p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Attendance Table Section */}
       <div className="bg-white rounded-2xl p-4 shadow-sm mt-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{attendancePage.attendanceTitle}</h2>
+            <h2 className="text-xl font-bold">{translations.attendanceTitle}</h2>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="flex items-center space-x-2">
@@ -234,7 +364,7 @@ const Attendance = () => {
               }`}
             >
               <Clock className="w-4 h-4" />
-              {attendancePage.bulkClockIn} ({selectedEmployees.size})
+              {translations.bulkClockIn} ({selectedEmployees.size})
             </button>
             <button
               onClick={() => handleTimeModalOpen('clockOut', null, true)}
@@ -244,15 +374,15 @@ const Attendance = () => {
               }`}
             >
               <Clock className="w-4 h-4" />
-              {attendancePage.bulkClockOut} ({selectedEmployees.size})
+              {translations.bulkClockOut} ({selectedEmployees.size})
             </button>
           </div>
         </div>
         
-        {loading ? (
+        {isDataLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                 <Loader2 className="animate-spin mr-2" />
-                <span>{attendancePage.loading}</span>
+                <span>{translations.loading}</span>
             </div>
         ) : (
         <div className="overflow-x-auto">
@@ -268,15 +398,15 @@ const Attendance = () => {
                   />
                 </th>
                 <th className="py-3 px-4 font-semibold">Employee Name</th>
-                <th className="py-3 px-4 font-semibold text-center">{attendancePage.clockInPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{attendancePage.clockOutPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{attendancePage.durationPlaceholder}</th>
-                <th className="py-3 px-4 font-semibold text-center">{attendancePage.actions}</th>
+                <th className="py-3 px-4 font-semibold text-center">{translations.clockInPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{translations.clockOutPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{translations.durationPlaceholder}</th>
+                <th className="py-3 px-4 font-semibold text-center">{translations.actions}</th>
               </tr>
             </thead>
             <tbody>
-              {employeeList.length > 0 ? (
-                employeeList.map((emp) => (
+              {currentEmployees.length > 0 ? (
+                currentEmployees.map((emp) => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <input
@@ -295,14 +425,14 @@ const Attendance = () => {
                         <button
                           onClick={() => handleTimeModalOpen('clockIn', emp)}
                           className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                          title={attendancePage.clockIn}
+                          title={translations.clockIn}
                         >
                           <Clock size={16} />
                         </button>
                         <button
                           onClick={() => handleTimeModalOpen('clockOut', emp)}
                           className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
-                          title={attendancePage.clockOut}
+                          title={translations.clockOut}
                         >
                           <Clock size={16} />
                         </button>
@@ -315,7 +445,7 @@ const Attendance = () => {
                   <td colSpan={6} className="text-center py-8 text-gray-500">
                     <div className="flex flex-col items-center">
                       <AlertCircle size={24} className="mb-2" />
-                      {attendancePage.noData}
+                      {translations.noData}
                     </div>
                   </td>
                 </tr>
@@ -328,7 +458,7 @@ const Attendance = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-gray-600">
-            {attendancePage.showing} {totalEmployees > 0 ? startIndex + 1 : 0} - {Math.min(endIndex, totalEmployees)} {attendancePage.of} {totalEmployees} {attendancePage.employees}
+            {translations.showing} {totalEmployees > 0 ? startIndex + 1 : 0} - {Math.min(endIndex, totalEmployees)} {translations.of} {totalEmployees} {translations.employees}
           </p>
           <div className="flex justify-center items-center gap-2">
             <button
@@ -364,7 +494,7 @@ const Attendance = () => {
       {isTimeModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-11/12 md:w-1/3">
-            <div className="text-lg font-bold mb-4">{attendancePage.selectTime}</div>
+            <div className="text-lg font-bold mb-4">{translations.selectTime}</div>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
                 {modalType === 'single' ? `Selecting time for ${employeeToActOn.name}` : `Selecting time for ${selectedEmployees.size} employees`}
