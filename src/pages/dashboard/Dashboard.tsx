@@ -47,7 +47,7 @@ const parseToDate = (v) => {
 // -----------------------------------------------------------------
 
 // Simple localStorage cache with TTL
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const getCache = (key) => {
   try {
     const raw = localStorage.getItem(key);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Plus,
   ChevronDown,
@@ -38,6 +38,37 @@ import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 import EditWorkLogModal from '@/components/worklog/editworklogmodal/EditWorklogModal';
 import { Worklog } from '@/domain/models/worklog/get-worklog.dto';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+
+// Simple localStorage cache with TTL
+const WL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const wlGetCache = <T = unknown>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const { ts, data } = parsed as { ts: number; data: T };
+    if (typeof ts !== 'number') return null;
+    if (Date.now() - ts > WL_CACHE_TTL_MS) return null;
+    return data ?? null;
+  } catch {
+    return null;
+  }
+};
+const wlSetCache = <T,>(key: string, data: T) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // ignore quota
+  }
+};
+const wlDelCache = (key: string) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    // ignore
+  }
+};
  
 // Use case instances
 const worklogInterface: WorklogInterface = new WorklogInterfaceImpl();
@@ -89,33 +120,46 @@ const WorkLog = () => {
   const workLogPageTranslations = translations.workLogPage;
  
   // Hybrid data fetch - loads all data initially for filtering, but uses pagination for display
-  const fetchAllWorklogs = async (page: number = 1) => {
+  const fetchAllWorklogs = async (page: number = 1, bypassCache: boolean = false) => {
     setLoading(true);
     try {
       // First, get all worklogs to enable proper filtering
       let allPages: Worklog[] = [];
-      let currentPageNum = 1;
-      let hasMore = true;
- 
-      while (hasMore) {
-        const worklogsPage = await getAllWorklogUseCase.execute(
-          ITEMS_PER_PAGE,
-          currentPageNum
-        );
-        const pageData = worklogsPage?.data ?? [];
-        allPages = [...allPages, ...pageData];
-        
-        if (pageData.length < ITEMS_PER_PAGE || currentPageNum >= (worklogsPage?.totalPages ?? 0)) {
-          hasMore = false;
+      if (!bypassCache) {
+        const cached = wlGetCache<Worklog[]>('worklog:all');
+        if (cached) allPages = cached;
+      }
+      if (allPages.length === 0) {
+        let currentPageNum = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const worklogsPage = await getAllWorklogUseCase.execute(
+            ITEMS_PER_PAGE,
+            currentPageNum
+          );
+          const pageData = worklogsPage?.data ?? [];
+          allPages = [...allPages, ...pageData];
+          if (pageData.length < ITEMS_PER_PAGE || currentPageNum >= (worklogsPage?.totalPages ?? 0)) {
+            hasMore = false;
+          }
+          currentPageNum++;
         }
-        currentPageNum++;
+        wlSetCache('worklog:all', allPages);
       }
  
       setAllWorklogs(allPages);
  
       // Fetch employees and products
-      const employeesResult = await getAllEmployeeUseCase.execute(1000, 1); // Get enough employees
-      const employeesData = employeesResult.data || [];
+      let employeesData: Employee[] = [];
+      if (!bypassCache) {
+        const cachedEmps = wlGetCache<Employee[]>('worklog:employees');
+        if (cachedEmps) employeesData = cachedEmps;
+      }
+      if (employeesData.length === 0) {
+        const employeesResult = await getAllEmployeeUseCase.execute(1000, 1); // adjust page size as needed
+        employeesData = employeesResult.data || [];
+        wlSetCache('worklog:employees', employeesData);
+      }
       const employeesMap = new Map(employeesData.map(e => [e._id, e] as const));
  
       // Fetch missing employees by ID
@@ -138,13 +182,24 @@ const WorkLog = () => {
             }
           })
         );
+        // Update cache with newly fetched employees
+        const merged = [...employeesData, ...fetchedMissing];
+        wlSetCache('worklog:employees', merged);
       }
  
-      const products = await getAllProductsUseCase.execute();
-      const productsMap = new Map(products.map(p => [p._id, p] as const));
+      let productsList: Product[] = [];
+      if (!bypassCache) {
+        const cachedProducts = wlGetCache<Product[]>('worklog:products');
+        if (cachedProducts) productsList = cachedProducts;
+      }
+      if (productsList.length === 0) {
+        productsList = await getAllProductsUseCase.execute();
+        wlSetCache('worklog:products', productsList);
+      }
+      const productsMap = new Map(productsList.map(p => [p._id, p] as const));
  
       setEmployees([...employeesData, ...fetchedMissing]);
-      setProducts(products);
+      setProducts(productsList);
  
       // Convert all worklogs to DTOs for processing
       const fullWorklogInfoList = allPages.map((log) => {
@@ -173,11 +228,11 @@ const WorkLog = () => {
   };
  
   useEffect(() => {
-    fetchAllWorklogs(currentPage);
+    void fetchAllWorklogs(1);
   }, []);
  
   // Handle search by employee name
-  const handleSearch = async (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     const trimmedQuery = query.toLowerCase();
     if (!trimmedQuery) {
       // If no search query, reload all data
@@ -232,13 +287,13 @@ const WorkLog = () => {
     } catch (error) {
       console.error('Error searching worklogs:', error);
     }
-  };
+  }, [workLogs, products]);
  
   useEffect(() => {
     if (searchQuery.trim()) {
       handleSearch(searchQuery);
     }
-  }, [searchQuery]);
+  }, [searchQuery, handleSearch]);
  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -623,7 +678,7 @@ const WorkLog = () => {
         products={products}
         createWorklogUseCase={createWorklogUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
-        onUpdate={() => { void fetchAllWorklogs(currentPage); }}
+        onUpdate={() => { wlDelCache('worklog:all'); wlDelCache('worklog:employees'); wlDelCache('worklog:products'); void fetchAllWorklogs(currentPage, true); }}
       />
  
       <EditWorkLogModal
@@ -635,7 +690,7 @@ const WorkLog = () => {
         products={products}
         updateWorklogUseCase={updateWorklogUseCase}
         setShowEditAlert={setShowEditAlert}
-        onUpdate={() => { void fetchAllWorklogs(currentPage); }}
+        onUpdate={() => { wlDelCache('worklog:all'); void fetchAllWorklogs(currentPage, true); }}
       />
  
       {/* Delete Confirmation Modal */}
@@ -644,7 +699,7 @@ const WorkLog = () => {
         onClose={() => setIsDeleteConfirmModalOpen(false)}
         workLogId={deleteWorklogId?.id || null}
         deleteWorklogUseCase={deleteWorklogUseCase}
-        onUpdate={() => { void fetchAllWorklogs(currentPage); }}
+        onUpdate={() => { wlDelCache('worklog:all'); void fetchAllWorklogs(currentPage, true); }}
       />
     </div>
   );
