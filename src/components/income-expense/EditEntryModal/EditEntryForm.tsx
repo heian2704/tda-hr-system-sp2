@@ -4,7 +4,7 @@ import { UpdateIncomeUseCase } from "@/data/usecases/income.usecase";
 import { TokenedRequest } from "@/domain/models/common/header-param";
 import { UpdateExpenseDto } from "@/domain/models/income-expense/expense/update-expense.dto";
 import { UpdateIncomeDto } from "@/domain/models/income-expense/income/update-income.dto";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface EditEntryFormProps {
   onClose: () => void;
@@ -34,6 +34,56 @@ export function EditEntryForm({
   );
   const [description, setDescription] = useState(entry.description ?? "");
   const [submitting, setSubmitting] = useState(false);
+  // Category editing state
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [customCategoryName, setCustomCategoryName] = useState<string>("");
+  const OTHER_VALUE = "__other";
+
+  // Default category seeds per type
+  // Default category seeds per type (used inside effect)
+
+  // LocalStorage helpers
+  const catKey = (type: "income" | "expense") => `ei:categories:${type}`;
+  const mapKey = (type: "income" | "expense") => `ei:categoryMap:${type}`;
+  const readJson = <T,>(key: string, fallback: T): T => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const writeJson = (key: string, value: unknown) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // ignore
+    }
+  };
+
+  const isReservedOther = (s: string) => s.trim().toLowerCase() === "other";
+  const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
+
+  // Load categories and current mapping
+  useEffect(() => {
+    const stored = readJson<string[]>(catKey(entryType), []);
+    const defaults = entryType === "income"
+      ? ["Salary", "Bonus", "Investment", "Other"]
+      : ["Food", "Transport", "Utilities", "Entertainment", "Other"];
+    const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
+    const merged = dedupe([...stored, ...defaults]).filter((x) => !isReservedOther(x));
+    setCategories(merged);
+    // write back defaults if needed
+    const storedNorm = dedupe(stored).filter((x) => !isReservedOther(x));
+    if (merged.length !== storedNorm.length || merged.some((c) => !includesCI(storedNorm, c))) {
+      writeJson(catKey(entryType), merged);
+    }
+    // Preselect current category mapping
+    const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
+    const current = cmap[entryId] || "";
+    setSelectedCategory(current);
+  }, [entryId, entryType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +102,23 @@ export function EditEntryForm({
     try {
       setSubmitting(true);
       await updateUseCase.execute(makeTokenedRequest(entryId), updateEntryDto);
+      // Persist category mapping if provided
+      const chosen = selectedCategory === OTHER_VALUE ? customCategoryName.trim() : selectedCategory;
+      if (chosen) {
+        if (!isReservedOther(chosen)) {
+          // ensure category list contains chosen
+          if (!includesCI(categories, chosen)) {
+            const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
+            const nextCats = dedupe([...categories, chosen]).filter((x) => !isReservedOther(x));
+            setCategories(nextCats);
+            writeJson(catKey(entryType), nextCats);
+          }
+        }
+        // update id -> category map (empty string means Uncategorized)
+        const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
+        cmap[entryId] = isReservedOther(chosen) ? "" : chosen;
+        writeJson(mapKey(entryType), cmap);
+      }
       setShowEditAlert(true);
       setTimeout(() => setShowEditAlert(false), 1500);
       onClose();
@@ -67,6 +134,33 @@ export function EditEntryForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Category selection with 'Other' option */}
+      <div>
+        <label className="block text-sm font-medium text-gray-600 mb-1">Category (optional)</label>
+        <div className="flex flex-col gap-2">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            title="Select category"
+          >
+            <option value="">Uncategorized</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+            <option value={OTHER_VALUE}>Other (type custom)</option>
+          </select>
+          {selectedCategory === OTHER_VALUE && (
+            <input
+              type="text"
+              value={customCategoryName}
+              onChange={(e) => setCustomCategoryName(e.target.value)}
+              placeholder="Type custom category"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          )}
+        </div>
+      </div>
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-600 mb-1">
           {entryType === "income" ? t.incomeTitleColumn || "Income Title" : t.expenseTitleColumn || "Expense Title"}

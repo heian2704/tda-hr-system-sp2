@@ -39,6 +39,11 @@ const parseDateStringToDate = (dateString: string): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
+const categorList = {
+  income: ['Salary', 'Bonus', 'Investment', 'test', 'Other'],
+  expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'test', 'Other']
+};
+
 // --- Main ExpenseIncome Component ---
 const ExpenseIncome = () => {
   
@@ -56,12 +61,55 @@ const ExpenseIncome = () => {
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditedAlert, setShowEditedAlert] = useState(false);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
+  // Categories (localStorage-backed)
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({}); // entryId -> category
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // Removed header add-category input; creation happens in modal
 
   const { translations } = useLanguage();
   const pageTranslations = translations.expenseIncomePage;
 
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+
+  // LocalStorage helpers
+  const catKey = (type: 'income' | 'expense') => `ei:categories:${type}`;
+  const mapKey = (type: 'income' | 'expense') => `ei:categoryMap:${type}`;
+  const readJson = <T,>(key: string, fallback: T): T => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const writeJson = (key: string, value: unknown) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Load categories + mapping when tab changes
+  useEffect(() => {
+    const stored = readJson<string[]>(catKey(activeTab), []);
+    const defaults = categorList[activeTab] || [];
+    const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
+    const isReservedOther = (s: string) => s.trim().toLowerCase() === 'other';
+    const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
+    const merged = dedupe([...stored, ...defaults]).filter((x) => !isReservedOther(x));
+    setCategories(merged);
+    // write back augmented list if adding defaults changed the set
+    const storedNorm = dedupe(stored).filter((x) => !isReservedOther(x));
+    if (merged.length !== storedNorm.length || merged.some((c) => !includesCI(storedNorm, c))) {
+      writeJson(catKey(activeTab), merged);
+    }
+    const cmap = readJson<Record<string, string>>(mapKey(activeTab), {});
+    setCategoryMap(cmap);
+    setSelectedCategory('');
+  }, [activeTab]);
 
   // Fetch initial data on component mount
   useEffect(() => {
@@ -118,8 +166,12 @@ const ExpenseIncome = () => {
         });
       }
     }
+    // Filter by category from localStorage mapping
+    if (selectedCategory) {
+      currentTabEntries = currentTabEntries.filter(entry => categoryMap[entry._id] === selectedCategory);
+    }
     return currentTabEntries;
-  }, [activeTab, incomes, expenses, searchQuery, selectedMonth]);
+  }, [activeTab, incomes, expenses, searchQuery, selectedMonth, selectedCategory, categoryMap]);
 
   // Paginated entries for display
   const displayedEntries = useMemo(() => {
@@ -165,6 +217,8 @@ const ExpenseIncome = () => {
     setEntryToDeleteDetails({ id: entry._id, name: entry.title, type: activeTab });
     setIsDeleteConfirmModalOpen(true);
   };
+
+  // Category mapping is assigned at creation time via modal; here we only display
 
   // Handler for month input change
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +280,18 @@ const ExpenseIncome = () => {
 
             {/* Sort by and Add New Button */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Category Filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-48"
+                title="Filter by category"
+              >
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
               <input
                 type="month"
                 value={selectedMonth}
@@ -251,6 +317,7 @@ const ExpenseIncome = () => {
                   <th className="py-3 px-4 font-semibold">{activeTab === 'income' ? pageTranslations.incomeTitleColumn : pageTranslations.expenseTitleColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.amountColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.dateColumn}</th>
+                  <th className="py-3 px-4 font-semibold">Category</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.noteColumn}</th>
                   <th className="py-3 px-4 font-semibold text-center">{pageTranslations.actionColumn}</th>
                 </tr>
@@ -258,7 +325,7 @@ const ExpenseIncome = () => {
               <tbody>
                 {totalFilteredEntries === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 px-4 text-center text-gray-500">
+                    <td colSpan={6} className="py-6 px-4 text-center text-gray-500">
                       {selectedMonth
                         ? (activeTab === 'income'
                             ? 'No income entries found for the selected month.'
@@ -274,6 +341,7 @@ const ExpenseIncome = () => {
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.title}</td>
                       <td className="py-3 px-4 text-gray-700">Ks. {entry.amount.toLocaleString()}</td>
                       <td className="py-3 px-4 text-gray-700">{new Date(entry.date).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 text-gray-700">{categoryMap[entry._id] || 'Uncategorized'}</td>
                       <td className="py-3 px-4 text-gray-700">{entry.description}</td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
