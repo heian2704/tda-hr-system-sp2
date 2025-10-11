@@ -14,6 +14,7 @@ import WorkLog from "@/pages/worklog/WorkLog";
 import Payroll from "@/pages/payroll/Payroll";
 import ExpenseIncome from "@/pages/expenseincome/ExpenseIncome";
 import Attendance from "@/pages/attendance/Attendance";
+import ApplicationForm from "@/pages/application/ApplicationForm";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,9 @@ const App = () => {
             */}
             <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} />} />
 
+            {/* Public application form route (no auth) */}
+            <Route path="/apply" element={<ApplicationForm />} />
+
             {/*
               Protected Routes:
               - All routes defined from here onwards are wrapped by `ProtectedElement`.
@@ -77,7 +81,14 @@ const App = () => {
               - `setIsLoggedIn` is also passed to `Layout` so that the "Logout" button in the sidebar
                 can change the `isLoggedIn` state (and thus `localStorage`), logging the user out.
             */}
-
+            <Route
+              path="/application"
+              element={
+                <ProtectedElement>
+                  <ApplicationForm />
+                </ProtectedElement>
+              }
+            />
             <Route
               path="/dashboard"
               element={
