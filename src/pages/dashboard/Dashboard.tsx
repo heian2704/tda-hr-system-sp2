@@ -46,6 +46,30 @@ const parseToDate = (v) => {
 };
 // -----------------------------------------------------------------
 
+// Simple localStorage cache with TTL
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const getCache = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const { ts, data } = parsed;
+    if (typeof ts !== 'number') return null;
+    if (Date.now() - ts > CACHE_TTL_MS) return null; // expired
+    return data ?? null;
+  } catch {
+    return null;
+  }
+};
+const setCache = (key, data) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // ignore quota errors
+  }
+};
+
 const worklogInterface = new WorklogInterfaceImpl();
 const employeeInterface = new EmployeeInterfaceImpl();
 const payrollInterface = new PayrollInterfaceImpl();
@@ -79,29 +103,51 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
   useEffect(() => {
     const fetchAllEmployees = async () => {
       try {
-        setAllEmployees([]);
-        const pages = employees?.totalPages ?? 0;
-        for (let page = 1; page <= pages; page++) {
-          const response = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, page);
-          if (response && response.data) {
-            setAllEmployees(prev => [...prev, ...response.data]);
-          }
+        const cached = getCache('dashboard:employees');
+        if (cached) {
+          setAllEmployees(cached);
+          return;
         }
+        // Fallback to fetching all pages
+        let acc = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const response = await getAllEmployeeUseCase.execute(ITEMS_PER_PAGE, page);
+          const rows = response?.data ?? [];
+          acc = acc.concat(rows);
+          totalPages = response?.totalPages ?? 1;
+          page++;
+        } while (page <= totalPages);
+        setAllEmployees(acc);
+        setCache('dashboard:employees', acc);
       } catch (error) {
         console.error("Error fetching all employees:", error);
       }
     };
     const fetchPayrolls = async () => {
       try {
-        // Build period param only when both month and year are selected
-        const periodParam =
-          selectedMonth === null || selectedYear === null
-            ? ""
-            : yearMonthToQueryParam(selectedYear, (selectedMonth as number) + 1); // API expects 1-based month
+        // Prefer using cached ALL payrolls to avoid per-period refetches
+        const allCached = getCache('dashboard:payrolls:all');
+        if (allCached) {
+          setPayrolls(allCached);
+          return;
+        }
+
+        const periodKey = (selectedMonth === null || selectedYear === null)
+          ? 'all'
+          : `${selectedYear}-${(selectedMonth as number) + 1}`;
+        const cacheKey = `dashboard:payrolls:${periodKey}`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+          setPayrolls(cached);
+          return;
+        }
 
         let all: Payroll[] = [];
         let page = 1;
         let totalPages = 1;
+        const periodParam = periodKey === 'all' ? '' : yearMonthToQueryParam(selectedYear, (selectedMonth as number) + 1);
         do {
           const resp = await getAllPayrollUseCase.execute(ITEMS_PER_PAGE, page, periodParam);
           const rows = resp?.data ?? [];
@@ -111,6 +157,8 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
         } while (page <= totalPages);
 
         setPayrolls(all);
+        setCache(cacheKey, all);
+        if (periodKey === 'all') setCache('dashboard:payrolls:all', all);
       } catch (error) {
         console.error("Error fetching payrolls:", error);
       }
@@ -118,10 +166,14 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
 
     const fetchWorklogs = async () => {
       try {
+        const cached = getCache('dashboard:worklogs:all');
+        if (cached) {
+          setAllWorklogs(cached);
+          return;
+        }
         let allPages: Worklog[] = [];
         let currentPageNum = 1;
         let hasMore = true;
-  
         while (hasMore) {
           const worklogsPage = await getAllWorklogUseCase.execute(
             ITEMS_PER_PAGE,
@@ -129,14 +181,13 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
           );
           const pageData = worklogsPage?.data ?? [];
           allPages = [...allPages, ...pageData];
-          
           if (pageData.length < ITEMS_PER_PAGE || currentPageNum >= (worklogsPage?.totalPages ?? 0)) {
             hasMore = false;
           }
           currentPageNum++;
         }
-        // Do not filter here; filter later where dates are parsed to Date objects
         setAllWorklogs(allPages);
+        setCache('dashboard:worklogs:all', allPages);
       } catch (error) {
         console.error("Error fetching worklogs:", error);
       }
