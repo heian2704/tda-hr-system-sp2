@@ -1,7 +1,7 @@
 import { BaseResponse } from "../common/base-response";
-import { Application } from "./get-application.model";
+import { Application } from "./get-application-by-id.model";
 
-export interface GetAllApplications extends BaseResponse<Application[]>{
+export interface AllApplications extends BaseResponse<Application[]>{
     data: Application[];
     total: number;
     page: number;
