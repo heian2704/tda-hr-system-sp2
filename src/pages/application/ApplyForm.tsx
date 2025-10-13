@@ -15,7 +15,7 @@ const STATUS_OPTIONS = Object.values(AppStatus);
 const applicationInterface: ApplicationInterface = new ApplicationInterfaceImpl();
 const createApplicationUseCase = new CreateApplicationUseCase(applicationInterface);
 
-const ApplicationForm: React.FC = () => {
+const ApplyForm: React.FC = () => {
     const { create, loading, error, createdApplication } = useCreateApplication(createApplicationUseCase);
 	const [form, setForm] = useState<Application | null>(null);
 	const [submitting, setSubmitting] = useState(false);
@@ -210,5 +210,5 @@ const ApplicationForm: React.FC = () => {
 	);
 };
 
-export default ApplicationForm;
+export default ApplyForm;
 

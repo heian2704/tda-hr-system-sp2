@@ -332,7 +332,8 @@ const allAppTranslations: AllTranslationsCollection = {
       { path: "/attendance", label: "Attendance", icon: "📅" },
       { path: "/worklog", label: "Work Log", icon: "🕒" },
       { path: "/payroll", label: "Payroll", icon: "💵" },
-      { path: "/expense-income", label: "Expense & Income", icon: "💳" }
+      { path: "/expense-income", label: "Expense & Income", icon: "💳" },
+      { path: "/application", label: "Application", icon: "📝" }
     ],
     searchPlaceholder: "Search",
     logout: "Log out",
@@ -627,7 +628,8 @@ const allAppTranslations: AllTranslationsCollection = {
       { path: "/attendance", label: "တက်ရောက်မှု", icon: "📅" },
       { path: "/worklog", label: "အလုပ်မှတ်တမ်း", icon: "🕒" },
       { path: "/payroll", label: "လစာ", icon: "💵" },
-      { path: "/expense-income", label: "အသုံးစရိတ်နှင့်ဝင်ငွေ", icon: "💳" }
+      { path: "/expense-income", label: "အသုံးစရိတ်နှင့်ဝင်ငွေ", icon: "💳" },
+      { path: "/application", label: "အလုပ်လျှောက်လွှာ", icon: "📝" }
     ],
     searchPlaceholder: "ရှာဖွေပါ",
     logout: "ထွက်ရန်",

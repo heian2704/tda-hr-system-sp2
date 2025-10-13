@@ -1,12 +1,13 @@
-import { BaseResponse } from "../common/base-response";
-import { Application } from "./get-application-by-id.model";
-
-export interface AllApplications extends BaseResponse<Application[]>{
-    data: Application[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+export interface AllApplications {
+    _id: string;
+    status: string; 
+    name: string;
+    phoneNumber: string;
+    address: string;
+    information: string;
+    position: string;
+    attendanceStatus: string;
+    date: string;
 }
 
 

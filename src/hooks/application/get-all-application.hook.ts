@@ -1,10 +1,11 @@
 import { ITEMS_PER_PAGE } from "@/constants/page-utils";
 import { GetAllApplicationUseCase } from "@/data/usecases/application.usecase";
 import { AllApplications } from "@/domain/models/application/get-all-applications.model";
+import { Application } from "@/domain/models/application/get-application-by-id.model";
 import { useEffect, useState, useCallback } from "react";
 
 export const useGetAllApplications = (useCase: GetAllApplicationUseCase) => {
-    const [applications, setApplications] = useState<AllApplications | null>(null);
+    const [applications, setApplications] = useState<Application[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

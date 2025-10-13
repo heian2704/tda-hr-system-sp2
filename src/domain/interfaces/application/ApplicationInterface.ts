@@ -5,7 +5,7 @@ import { UpdateApplicationDto, UpdateApplicationStatus } from "@/domain/models/a
 import { BearerTokenedRequest } from "@/domain/models/common/header-param";
 
 export interface ApplicationInterface {
-    getAllApplication(): Promise<AllApplications>;
+    getAllApplication(): Promise<Application[]>;
     getApplicationById(id: string): Promise<Application>;
     createApplication(token: BearerTokenedRequest, createApplicationDto: CreateApplicationDto): Promise<Application>;
     updateApplication(idToken: BearerTokenedRequest, updateApplicationDto: UpdateApplicationDto): Promise<Application>;

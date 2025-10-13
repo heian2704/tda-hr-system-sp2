@@ -8,7 +8,7 @@ import { UpdateApplicationDto, UpdateApplicationStatus } from "@/domain/models/a
 export class GetAllApplicationUseCase {
     constructor(private applicationInterface: ApplicationInterface) {}
 
-    execute(): Promise<AllApplications> {
+    execute(): Promise<Application[]> {
         return this.applicationInterface.getAllApplication();
     }
 }

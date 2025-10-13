@@ -2,13 +2,12 @@ import { ApplicationInterface } from "@/domain/interfaces/application/Applicatio
 import { BearerTokenedRequest, TokenedRequest } from "@/domain/models/common/header-param";
 import { CreateApplicationDto } from "@/domain/models/application/create-application.dto";
 import { Application } from "@/domain/models/application/get-application-by-id.model";
-import { AllApplications } from "@/domain/models/application/get-all-applications.model";
 import { UpdateApplicationDto, UpdateApplicationStatus } from "@/domain/models/application/update-application.dto";
 import { apiDeleteRequestsHandler, apiGetRequestsHandler, apiPatchRequestsHandler, apiPostRequestsHandler } from "@/network/api";
 
 export class ApplicationInterfaceImpl implements ApplicationInterface {
-    getAllApplication(): Promise<AllApplications> {
-        return apiGetRequestsHandler<AllApplications>({
+    getAllApplication(): Promise<Application[]> {
+        return apiGetRequestsHandler<Application[]>({
             endpoint: '/application'
         });
     }

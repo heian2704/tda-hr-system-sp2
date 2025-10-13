@@ -14,7 +14,8 @@ import WorkLog from "@/pages/worklog/WorkLog";
 import Payroll from "@/pages/payroll/Payroll";
 import ExpenseIncome from "@/pages/expenseincome/ExpenseIncome";
 import Attendance from "@/pages/attendance/Attendance";
-import ApplicationForm from "@/pages/application/ApplicationForm";
+import ApplyForm from "@/pages/application/ApplyForm";
+import ApplicationPage from "@/pages/application/Application";
 
 const queryClient = new QueryClient();
 
@@ -71,7 +72,7 @@ const App = () => {
             <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} />} />
 
             {/* Public application form route (no auth) */}
-            <Route path="/apply" element={<ApplicationForm />} />
+            <Route path="/apply" element={<ApplyForm />} />
 
             {/*
               Protected Routes:
@@ -85,7 +86,9 @@ const App = () => {
               path="/application"
               element={
                 <ProtectedElement>
-                  <ApplicationForm />
+                  <Layout setIsLoggedIn={setIsLoggedIn}>
+                    <ApplicationPage />
+                  </Layout>
                 </ProtectedElement>
               }
             />
