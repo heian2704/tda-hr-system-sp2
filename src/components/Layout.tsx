@@ -31,7 +31,6 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
   const { language, setLanguage, translations } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -56,8 +55,6 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
     displayDay = burmeseWeekdays[dayOfWeek];
     displayDate = `${convertToBurmeseNumerals(dateNum)} ${burmeseMonths[month]} ${convertToBurmeseNumerals(yearNum)}`;
   }
-
-  const currentSearchQuery = searchParams.get('q') || '';
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -99,15 +96,6 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
     setDropdownOpen(false);
   };
 
-  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newQuery = e.target.value;
-    if (newQuery) {
-      setSearchParams({ q: newQuery });
-    } else {
-      setSearchParams({});
-    }
-  }, [setSearchParams]);
-
   return (
     <div className="flex flex-col min-h-screen font-poppins bg-white overflow-hidden">
       {/* Header */}
@@ -133,17 +121,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
 
         {/* Search + Language */}
         <div className={`flex items-center gap-2 sm:gap-3 ${isMobile ? "w-full mt-2" : "flex-shrink-0"}`}>
-          <div className="flex items-center w-full max-w-[280px] flex-grow px-4 py-2 rounded-[10px] outline outline-1 outline-[#E5E7EB]">
-            <Search size={20} className="text-[#9CA3AF] mr-2" />
-            <input
-              type="text"
-              placeholder={translations.searchPlaceholder}
-              className="bg-transparent placeholder-[#9CA3AF] text-[16px] font-light leading-[24px] focus:outline-none w-full"
-              value={currentSearchQuery}
-              onChange={handleSearchInputChange}
-            />
-          </div>
-
+          
           <div
             ref={dropdownRef}
             className="flex items-center justify-center h-[38px] px-2 rounded-[10px] outline outline-1 outline-[#E5E7EB] gap-1 sm:gap-2 relative cursor-pointer select-none flex-shrink-0"
@@ -208,11 +186,7 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
                 to={item.path}
                 onClick={() => {
                   if (isMobile) setSidebarOpen(false);
-                  if (currentSearchQuery) {
-                    navigate({ pathname: item.path, search: `?q=${currentSearchQuery}` });
-                  } else {
-                    navigate(item.path);
-                  }
+                  navigate(item.path);
                 }}
                 className={`relative flex items-center w-full h-[44px] pl-4 rounded-r-[10px] transition-all duration-150 ${
                   location.pathname === item.path
@@ -255,7 +229,6 @@ const LayoutContent = ({ children, setIsLoggedIn }: LayoutProps) => {
             React.isValidElement(child)
               ? React.cloneElement(child as React.ReactElement<any>, {
                   currentPath: location.pathname,
-                  searchQuery: currentSearchQuery,
                 })
               : child
           )}
