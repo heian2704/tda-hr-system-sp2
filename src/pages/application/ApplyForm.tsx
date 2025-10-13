@@ -1,23 +1,34 @@
 import { AppStatus } from "@/constants/application-status.enum";
 import { ApplicationInterfaceImpl } from "@/data/interface-implementation/application";
-import { CreateApplicationUseCase, GetAllApplicationUseCase } from "@/data/usecases/application.usecase";
+import { CreateApplicationUseCase } from "@/data/usecases/application.usecase";
 import { ApplicationInterface } from "@/domain/interfaces/application/ApplicationInterface";
 import { CreateApplicationDto } from "@/domain/models/application/create-application.dto";
-import { Application } from "@/domain/models/application/get-application-by-id.model";
 import { BearerTokenedRequest } from "@/domain/models/common/header-param";
 import { useCreateApplication } from "@/hooks/application/create-application.hook";
 import React, { useState } from "react";
 
 const STORAGE_KEY = "jobApplications";
 
-const STATUS_OPTIONS = Object.values(AppStatus);
+// const STATUS_OPTIONS = Object.values(AppStatus);
 
 const applicationInterface: ApplicationInterface = new ApplicationInterfaceImpl();
 const createApplicationUseCase = new CreateApplicationUseCase(applicationInterface);
 
 const ApplyForm: React.FC = () => {
-    const { create, loading, error, createdApplication } = useCreateApplication(createApplicationUseCase);
-	const [form, setForm] = useState<Application | null>(null);
+	const { create, loading, error, createdApplication } = useCreateApplication(createApplicationUseCase);
+
+	type FormState = CreateApplicationDto;
+	const initialForm: FormState = {
+		name: "",
+		phoneNumber: "",
+		address: "",
+		information: "",
+		position: "",
+		status: AppStatus.APPLIED,
+		date: "",
+	};
+
+	const [form, setForm] = useState<FormState>(initialForm);
 	const [submitting, setSubmitting] = useState(false);
 	const [showSuccess, setShowSuccess] = useState(false);
 
@@ -25,23 +36,23 @@ const ApplyForm: React.FC = () => {
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
 	) => {
 		const { name, value } = e.target;
-		setForm((prev) => ({ ...prev, [name]: value }));
+		setForm((prev) => ({ ...prev, [name]: value } as FormState));
 	};
 
 	const resetForm = () => {
-		setForm(null);
+		setForm(initialForm);
 	};
 
-	const readApps = (): Application[] => {
+	const readApps = (): CreateApplicationDto[] => {
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
-			return raw ? (JSON.parse(raw) as Application[]) : [];
+			return raw ? (JSON.parse(raw) as CreateApplicationDto[]) : [];
 		} catch {
 			return [];
 		}
 	};
 
-	const writeApps = (apps: Application[]) => {
+	const writeApps = (apps: CreateApplicationDto[]) => {
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
 		} catch {
@@ -53,8 +64,8 @@ const ApplyForm: React.FC = () => {
 		e.preventDefault();
 		if (submitting) return;
 
-		// Basic validation
-		if (!form.name.trim() || !form.phoneNumber.trim() || !form.position.trim() || !form.date) {
+		// Basic validation (date is generated automatically)
+		if (!form.name.trim() || !form.phoneNumber.trim() || !form.position.trim()) {
 			return; // You can show an inline error if desired
 		}
 
@@ -62,23 +73,23 @@ const ApplyForm: React.FC = () => {
 		try {
             const token = localStorage.getItem("token");
             const useTokenRequest = { token } as BearerTokenedRequest;
-            const createAppDto = {
-                name: form.name,
-                phoneNumber: form.phoneNumber,
-                address: form.address,
-                information: form.information,
-                position: form.position,
-                status: AppStatus.APPLIED,
-                date: form.date,
-            } as CreateApplicationDto;
+			const createAppDto: CreateApplicationDto = {
+				name: form.name,
+				phoneNumber: form.phoneNumber,
+				address: form.address,
+				information: form.information,
+				position: form.position,
+				status: form.status || AppStatus.APPLIED,
+				date: new Date().toISOString(),
+			};
+			console.log("Submitting application:", createAppDto);
             await create(useTokenRequest, createAppDto);
-            if (createdApplication) {
-                const apps = readApps();
-                apps.push({ ...form });
-                writeApps(apps);
-                setShowSuccess(true);
-                setTimeout(() => setShowSuccess(false), 2500);
-            }
+			// Persist submitted form locally regardless of createdApplication timing
+			const apps = readApps();
+			apps.push({ ...createAppDto });
+			writeApps(apps);
+			setShowSuccess(true);
+			setTimeout(() => setShowSuccess(false), 2500);
 			resetForm();
 		} finally {
 			setSubmitting(false);
@@ -146,31 +157,6 @@ const ApplyForm: React.FC = () => {
 									onChange={handleChange}
 									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
 									placeholder="e.g. Operator"
-									required
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-								<select
-									name="status"
-									value={form.status}
-									onChange={handleChange}
-									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 bg-white"
-									required
-								>
-									{STATUS_OPTIONS.map((s) => (
-										<option key={s} value={s}>{s}</option>
-									))}
-								</select>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-600 mb-1">Date</label>
-								<input
-									name="date"
-									type="date"
-									value={form.date}
-									onChange={handleChange}
-									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
 									required
 								/>
 							</div>
