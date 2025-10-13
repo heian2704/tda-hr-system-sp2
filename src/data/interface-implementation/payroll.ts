@@ -4,6 +4,12 @@ import { Payrolls } from "@/domain/models/payroll/get-payrolls.dto";
 import { apiGetRequestsHandler } from "@/network/api";
 
 export class PayrollInterfaceImpl implements PayrollInterface {
+    getTotalPayrollByMonthYear(month: number, year: number): Promise<number> {
+        return apiGetRequestsHandler<number>({
+            endpoint: `/payroll/total-amount?month=${month}&year=${year}`,
+        });
+    }
+
     async getAllPayrolls(limit?: number, page?: number, query?: string): Promise<Payrolls> {
         return apiGetRequestsHandler<Payrolls>({
             endpoint: `/payroll?${query ? `${query}` : ''}

@@ -15,3 +15,11 @@ export class GetPayrollsByEmployeeIdUseCase {
         return this.payrollInterface.getPayrollByEmployeeId(employeeId);
     }
 }
+
+export class GetTotalPayrollByMonthYearUseCase {
+    constructor(private payrollInterface: PayrollInterface) {}
+
+    async execute(month: number, year: number) {
+        return this.payrollInterface.getTotalPayrollByMonthYear(month, year);
+    }
+}
