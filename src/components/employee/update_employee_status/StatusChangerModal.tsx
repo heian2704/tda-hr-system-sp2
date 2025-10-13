@@ -40,7 +40,7 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
   });
 
   const getStatusDisplay = (status: string) => {
-    return status === EmpStatus.ACTIVE ? translations.active : translations.onLeave;
+    return status === EmpStatus.ACTIVE ? translations.active : translations.resigned;
   };
 
   const getBadgeStyle = (status: string) => {
@@ -70,7 +70,7 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
     if (isUpdating || newStatus.status === currentStatus) return;
     try {
       setIsUpdating(true);
-      var result = await updateEmployeeStatusUseCase.execute(makeTokenedRequest(employeeId), newStatus);
+      const result = await updateEmployeeStatusUseCase.execute(makeTokenedRequest(employeeId), newStatus);
       setIsOpen(false);
       if(result)
       {
@@ -114,11 +114,11 @@ const StatusChanger: React.FC<StatusChangerProps> = ({
               {translations.activeStatus}
             </button>
             <button
-              onClick={() => handleStatusChange(employeeId, { status: EmpStatus.ON_LEAVE })}
+              onClick={() => handleStatusChange(employeeId, { status: EmpStatus.RESIGNED })}
               disabled={isUpdating}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
-              {translations.onLeaveStatus}
+              {translations.resignedStatus}
             </button>
           </div>
         </div>

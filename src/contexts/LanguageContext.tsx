@@ -10,6 +10,7 @@ interface SidebarItem {
 export interface EmployeePageTranslations {
   totalEmployee: string;
   active: string;
+  resigned: string;
   onLeave: string;
   allEmployees: string;
   sortBy: string;
@@ -39,6 +40,7 @@ export interface EmployeePageTranslations {
   joinDatePlaceholder: string;
   selectTypeLabel: string;
   activeStatus: string;
+  resignedStatus: string;
   onLeaveStatus: string;
   cancelButton: string;
   addButton: string;
@@ -351,6 +353,7 @@ const allAppTranslations: AllTranslationsCollection = {
     employeePage: {
       totalEmployee: "Total Employee",
       active: "Active",
+      resigned: "Resigned",
       onLeave: "On Leave",
       allEmployees: "All Employees",
       sortBy: "Sort by:",
@@ -359,7 +362,7 @@ const allAppTranslations: AllTranslationsCollection = {
       addNewEmployee: "Add New Employee",
       showing: "Showing",
       of: "of",
-      employees: "employees",
+      employees: "Onboard Employees",
       fullNameColumn: "Full Name",
       employeeIdColumn: "Employee ID",
       phoneNumberColumn: "Phone Number",
@@ -380,6 +383,7 @@ const allAppTranslations: AllTranslationsCollection = {
       joinDatePlaceholder: "Join date (DD/MM/YYYY)",
       selectTypeLabel: "Select Type",
       activeStatus: "Active",
+      resignedStatus: "Resigned",
       onLeaveStatus: "On Leave",
       cancelButton: "Cancel",
       addButton: "Add",
@@ -647,6 +651,7 @@ const allAppTranslations: AllTranslationsCollection = {
     employeePage: {
       totalEmployee: "စုစုပေါင်းဝန်ထမ်း",
       active: "လုပ်ငန်းခွင်ဝင်",
+      resigned: "ရာထူးမှနုတ်ထွက်",
       onLeave: "ခွင့်ယူ",
       allEmployees: "ဝန်ထမ်းအားလုံး",
       sortBy: "‌စီစစ်ရွေးချယ်ရန်",
@@ -676,6 +681,7 @@ const allAppTranslations: AllTranslationsCollection = {
       joinDatePlaceholder: "စတင်ဝင်ရောက်သည့်ရက်စွဲ (DD/MM/YYYY)",
       selectTypeLabel: "အမျိုးအစားရွေးပါ",
       activeStatus: "လုပ်ငန်းခွင်ဝင်",
+      resignedStatus: "ရာထူးမှနုတ်ထွက်",
       onLeaveStatus: "ခွင့်ယူ",
       cancelButton: "ပယ်ဖျက်ရန်",
       addButton: "ထည့်ရန်",

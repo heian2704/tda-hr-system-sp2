@@ -104,6 +104,13 @@ const Employee = () => {
     setCurrentPage(1);
   };
 
+  function statusClasses(s?: string) {
+		const v = (s || "").toLowerCase();
+		if (v === EmpStatus.ACTIVE) return "bg-green-100 text-green-700";
+		if (v === EmpStatus.ON_LEAVE) return "bg-red-100 text-red-700";
+		return "bg-gray-100 text-gray-700";
+	}
+
   const handleSortChange = (field: 'joinedDate' | 'name' | 'status') => {
     if (field === sortField) {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
@@ -235,13 +242,14 @@ const Employee = () => {
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.address}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.roleColumn}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.joinDateColumn}</th>
+                  <th className="py-3 px-4 font-semibold text-center">{employeePageTranslations.status}</th>
                   <th className="py-3 px-4 font-semibold text-center">{employeePageTranslations.actionColumn}</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedEmployees.map(emp => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">{emp.name}</td>
+                    <td className="py-3 px-4 font-medium text-gray-900">🧑‍🦰{emp.name}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.phoneNumber}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.address}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.position}</td>
@@ -260,7 +268,12 @@ const Employee = () => {
                         }}
                         onUpdate={refetchEmployees}
                       />
-                    </td> */}
+                    </td>  */}
+                    <td className="py-3 px-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusClasses(emp.status)}`}>
+                        {emp.status || "-"}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
