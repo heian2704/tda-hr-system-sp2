@@ -73,7 +73,6 @@ const BulkStatusUpdateBar: React.FC<Props> = ({ selectedIds, currentStatusById, 
             aria-label="Bulk update application status"
             title={disabled ? "Select at least 2 rows" : "Set status for selected"}
           >
-            <Clock className="w-4 h-4 mr-2" />
             <span>{`Bulk Set Status (${selectedIds.length})`}</span>
             <ChevronDown className="w-4 h-4 ml-2 opacity-90" />
           </button>

@@ -10,6 +10,8 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import ApplicationStatusSelect from "@/components/application/update_application_status/ApplicationStatusSelect";
 import BulkStatusUpdateBar from "@/components/application/update_application_status/BulkStatusUpdateBar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import AddApplicationModal from "@/components/application/create_application/AddApplicationModal";
+import { Plus } from "lucide-react";
 
 const applicationInterface: ApplicationInterface = new ApplicationInterfaceImpl();
 const getAllApplicationUseCase = new GetAllApplicationUseCase(applicationInterface);
@@ -26,12 +28,20 @@ const ApplicationList: React.FC = () => {
 	const [mapAddress, setMapAddress] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [showStatusEditAlert, setShowStatusEditAlert] = useState(false);
+	const [showCreateAlert, setShowCreateAlert] = useState(false);
 	const hideFlagTimer = useRef<number | null>(null);
+	const [isAddOpen, setIsAddOpen] = useState(false);
 
 	const showUpdatedFlag = () => {
 		setShowStatusEditAlert(true);
 		if (hideFlagTimer.current) window.clearTimeout(hideFlagTimer.current);
 		hideFlagTimer.current = window.setTimeout(() => setShowStatusEditAlert(false), 3000);
+	};
+
+	const showCreatedFlag = () => {
+		setShowCreateAlert(true);
+		if (hideFlagTimer.current) window.clearTimeout(hideFlagTimer.current);
+		hideFlagTimer.current = window.setTimeout(() => setShowCreateAlert(false), 3000);
 	};
 
 	// Always work with an array to avoid null access during initial render
@@ -99,6 +109,11 @@ const ApplicationList: React.FC = () => {
 						{translations?.employeePage?.statusUpdate || "Status updated successfully."}
 					</div>
 				)}
+				{showCreateAlert && (
+					<div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
+						Application created successfully.
+					</div>
+				)}
 				<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
 					<h2 className="text-xl font-semibold text-gray-900">Job Applications</h2>
 					<div className="flex items-center gap-3 w-full md:w-auto">
@@ -119,7 +134,7 @@ const ApplicationList: React.FC = () => {
 								className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
 							/>
 						</div>
-						<BulkStatusUpdateBar
+												<BulkStatusUpdateBar
 							selectedIds={[...selected]}
 							currentStatusById={Object.fromEntries(pageSlice.map(a => [a._id, a.status || ""]))}
 							onApplied={(ns: string) => {
@@ -128,6 +143,13 @@ const ApplicationList: React.FC = () => {
 								showUpdatedFlag();
 							}}
 						/>
+																		<button
+													onClick={() => setIsAddOpen(true)}
+													className="flex items-center justify-center gap-2 px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors w-full sm:w-auto"
+												>
+																			<Plus className="w-4 h-4" />
+																			Create Application
+												</button>
 					</div>
 				</div>
 
@@ -272,6 +294,13 @@ const ApplicationList: React.FC = () => {
 						<div className="mt-2 text-sm text-gray-600 truncate">{mapAddress}</div>
 					</DialogContent>
 				</Dialog>
+
+								{/* Create Application Modal */}
+								<AddApplicationModal
+									isOpen={isAddOpen}
+									onClose={() => setIsAddOpen(false)}
+									onCreated={() => { refetch(); showCreatedFlag(); }}
+								/>
 			</div>
 		</div>
 	);
