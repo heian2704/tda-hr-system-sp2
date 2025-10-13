@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ApplicationsMap, { type AppItem } from "./components/ApplicationsMap";
+import ApplicationStatusSelect from "@/components/application/update_application_status/ApplicationStatusSelect";
 
 const applicationInterface: ApplicationInterface = new ApplicationInterfaceImpl();
 const getAllApplicationUseCase = new GetAllApplicationUseCase(applicationInterface);
@@ -108,17 +109,15 @@ const ApplicationList: React.FC = () => {
 												<td className="py-3 px-4 text-gray-700">{a.phoneNumber}</td>
 												<td className="py-3 px-4 text-gray-700">{a.position}</td>
 												<td className="py-3 px-4">
-													<span
-														className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-															a.status === "accepted"
-																? "bg-green-100 text-green-700"
-																: a.status === "rejected"
-																? "bg-red-100 text-red-700"
-																: "bg-yellow-100 text-yellow-700"
-														}`}
-													>
-														{a.status}
-													</span>
+													<ApplicationStatusSelect
+														applicationId={a._id}
+														value={a.status}
+														compact
+														onUpdated={(ns) => {
+															// Optimistically update the UI without refetch
+															a.status = ns || a.status;
+														}}
+													/>
 												</td>
 												<td className="py-3 px-4 text-gray-700">{new Date(a.date).toLocaleDateString()}</td>
 												<td className="py-3 px-4 text-gray-700 max-w-md">

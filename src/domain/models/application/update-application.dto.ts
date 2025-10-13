@@ -1,4 +1,4 @@
-import { EmpStatus } from "@/constants/employee-status.enum";
+import { AppStatus } from "@/constants/application-status.enum";
 
 export interface UpdateApplicationDto {
   name?: string;
@@ -6,10 +6,10 @@ export interface UpdateApplicationDto {
   address?: string;
   information?: string;
   position?: string;
-  status?: EmpStatus;
+  status?: AppStatus;
   date?: Date;
 }
 
-export interface UpdateApplicationStatus {
-    status: EmpStatus
+export interface UpdateApplicationStatusDto {
+    status: string
 }
