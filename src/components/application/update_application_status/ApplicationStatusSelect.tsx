@@ -6,7 +6,6 @@ import { useUpdateApplicationStatus } from "@/hooks/application/update-applicati
 import type { TokenedRequest } from "@/domain/models/common/header-param";
 import { AppStatus } from "@/constants/application-status.enum";
 import { UpdateApplicationStatusDto } from "@/domain/models/application/update-application.dto";
-import { EmpStatus } from "@/constants/employee-status.enum";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -42,11 +41,12 @@ export const ApplicationStatusSelect: React.FC<Props> = ({ applicationId, value,
   }, [applicationId]);
 
   const applyUpdate = async (newStatus: string) => {
+    // Ignore placeholder and unchanged values
+    if (newStatus === "") return;
+    if (newStatus === AppStatus.APPLIED) return;
+    const current = status || value || AppStatus.APPLIED;
+    if (current.toLowerCase() === newStatus.toLowerCase()) return;
     setStatus(newStatus);
-    if (newStatus === "") return; // ignore placeholder
-    if(newStatus === AppStatus.APPLIED) return; // cannot set back to 'applied'
-    if(newStatus === AppStatus.ACCEPTED) newStatus = AppStatus.ACCEPTED; // map to employee status
-    if(newStatus === AppStatus.REJECTED) newStatus = AppStatus.REJECTED; // map to employee status
     if (!tokenReq) return;
     const statusDto: UpdateApplicationStatusDto = {
       status: newStatus,

@@ -28,5 +28,5 @@ export const useGetAllApplications = (useCase: GetAllApplicationUseCase) => {
         getApplications();
     }, [getApplications]);
 
-    return { applications, loading, error };
+    return { applications, loading, error, refetch: getApplications };
 };
