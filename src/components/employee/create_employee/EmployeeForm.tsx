@@ -189,8 +189,8 @@ const EmployeeForm: React.FC<Props> = ({
               type="radio"
               name="status"
               value="on_leave"
-              checked={status === "on_leave"}
-              onChange={() => setStatus("on_leave")}
+              checked={status === EmpStatus.ON_LEAVE}
+              onChange={() => setStatus(EmpStatus.ON_LEAVE)}
               className="form-radio h-5 w-5 text-red-500 border-gray-300 focus:ring-red-400"
             />
             <span className="ml-2 text-sm text-gray-700">

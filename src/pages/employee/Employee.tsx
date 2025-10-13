@@ -249,7 +249,10 @@ const Employee = () => {
               <tbody>
                 {sortedEmployees.map(emp => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">🧑‍🦰{emp.name}</td>
+                    <td className="py-3 px-4 font-medium text-gray-900">
+                      {['🧑‍🦰', '🧔🏻', '🧔🏼', '🧔🏽', '🧔🏾', '🧔🏿'][Math.floor(Math.random() * 6)]}
+                      {emp.name}
+                    </td>
                     <td className="py-3 px-4 text-gray-700">{emp.phoneNumber}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.address}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.position}</td>
@@ -270,7 +273,9 @@ const Employee = () => {
                       />
                     </td>  */}
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusClasses(emp.status)}`}>
+                      <span
+                        className={`inline-flex items-center justify-center h-7 min-w-[110px] px-3 rounded-full text-xs font-medium whitespace-nowrap ${statusClasses(emp.status)}`}
+                      >
                         {emp.status || "-"}
                       </span>
                     </td>
