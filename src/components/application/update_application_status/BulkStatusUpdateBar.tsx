@@ -13,6 +13,7 @@ import { useUpdateApplicationStatus } from "@/hooks/application/update-applicati
 import type { TokenedRequest } from "@/domain/models/common/header-param";
 import { AppStatus } from "@/constants/application-status.enum";
 import type { UpdateApplicationStatusDto } from "@/domain/models/application/update-application.dto";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Props = {
   selectedIds: string[];
@@ -28,7 +29,7 @@ const OPTIONS: string[] = [AppStatus.ACCEPTED, AppStatus.REJECTED];
 const BulkStatusUpdateBar: React.FC<Props> = ({ selectedIds, currentStatusById, onApplied }) => {
   const { updateStatus } = useUpdateApplicationStatus(updateApplicationStatusUseCase);
   const [working, setWorking] = useState(false);
-
+  const { translations } = useLanguage();
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('token') : null), []);
   const disabled = working || !token || selectedIds.length < 2;
 
@@ -73,7 +74,7 @@ const BulkStatusUpdateBar: React.FC<Props> = ({ selectedIds, currentStatusById, 
             aria-label="Bulk update application status"
             title={disabled ? "Select at least 2 rows" : "Set status for selected"}
           >
-            <span>{`Bulk Set Status (${selectedIds.length})`}</span>
+            <span>{translations?.applicationPage?.bulkActionButton || 'Bulk Set Status'} ({selectedIds.length})</span>
             <ChevronDown className="w-4 h-4 ml-2 opacity-90" />
           </button>
         </DropdownMenuTrigger>

@@ -45,6 +45,7 @@ const Payroll = () => {
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement | null>(null);
   const [monthlyTotal, setMonthlyTotal] = useState<number | null>(null);
+  const [monthlyTotalDisplay, setMonthlyTotalDisplay] = useState<string | null>(null);
 
   const { translations } = useLanguage();
   const payrollPageTranslations = translations.payrollPage;
@@ -122,7 +123,14 @@ const Payroll = () => {
     (async () => {
       try {
         const total = await getTotalPayrollByMonthYearUseCase.execute(month, currentYear);
-        if (!cancelled) setMonthlyTotal(total ?? 0);
+        if (!cancelled) {
+          setMonthlyTotal(total ?? 0);
+            setMonthlyTotalDisplay(
+            total !== undefined && total !== null
+              ? total.toLocaleString('en-US', { style: 'currency', currency: 'MMK', maximumFractionDigits: 0 })
+              : null
+            );
+        }
       } catch {
         if (!cancelled) setMonthlyTotal(null);
       }
@@ -290,14 +298,14 @@ const Payroll = () => {
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   <span className="text-sm">
-                    {hasDateFilter ? 'Filtered by date' : 'Filter by date'}
+                    {hasDateFilter ? (payrollPageTranslations.applyFilterButton || 'Filtered by date') : (payrollPageTranslations.applyFilterButton || 'Filter by date')}
                   </span>
                   <ChevronDown className="w-4 h-4 ml-2" />
                 </button>
                 {isDateFilterOpen && (
                   <div className="absolute mt-1 w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20 p-4">
                     <div className="mb-3">
-                      <label className="block text-xs text-gray-600 mb-1">Start date</label>
+                      <label className="block text-xs text-gray-600 mb-1">{payrollPageTranslations.startDateLabel || 'Start date'}</label>
                       <input
                         type="date"
                         value={dateFilter.startDate}
@@ -306,7 +314,7 @@ const Payroll = () => {
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="block text-xs text-gray-600 mb-1">End date</label>
+                      <label className="block text-xs text-gray-600 mb-1">{payrollPageTranslations.endDateLabel || 'End date'}</label>
                       <input
                         type="date"
                         value={dateFilter.endDate}
@@ -319,13 +327,13 @@ const Payroll = () => {
                         onClick={() => { setDateFilter({ startDate: '', endDate: '' }); setCurrentPage(1); }}
                         className="text-xs text-gray-600 hover:text-gray-800"
                       >
-                        Clear
+                        {translations?.employeePage?.cancelButton || 'Clear'}
                       </button>
                       <button
                         onClick={() => setIsDateFilterOpen(false)}
                         className="text-xs bg-[#EB5757] text-white px-3 py-1 rounded-md"
                       >
-                        Done
+                        {payrollPageTranslations.applyFilterButton || 'Done'}
                       </button>
                     </div>
                   </div>
@@ -342,7 +350,7 @@ const Payroll = () => {
                   }}
                   className="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm appearance-none focus:outline-none"
                 >
-                  <option value="0">--set month--</option>
+                  <option value="0">-- {translations?.dashboard?.month || 'Month'} --</option>
                   <option value="1">January</option>
                   <option value="2">February</option>
                   <option value="3">March</option>
@@ -437,10 +445,10 @@ const Payroll = () => {
                       className="py-6 px-4 text-center text-gray-500"
                     >
                       {hasDateFilter
-                        ? "No payroll records found for the selected date range."
+                        ? (translations?.expenseIncomePage?.noEntriesFound || 'No payroll records found for the selected date range.')
                         : (isSearching
-                            ? "No payroll records found for the current search."
-                            : "No payroll records found.")}
+                            ? (translations?.expenseIncomePage?.noEntriesFound || 'No payroll records found for the current search.')
+                            : (translations?.expenseIncomePage?.noEntriesFound || 'No payroll records found.'))}
                     </td>
                   </tr>
                 )}
@@ -484,7 +492,7 @@ const Payroll = () => {
               </button>
             </div>
             <div className="text-sm font-medium text-gray-700">
-              This Month Total Salary: <span className="text-gray-700">Ks. {monthlyTotal}</span>
+              {payrollPageTranslations.totalNetPayroll || 'Total Net Payroll'}: <span className="text-gray-700"> {monthlyTotalDisplay}</span>
             </div>
           </div>
         </div>

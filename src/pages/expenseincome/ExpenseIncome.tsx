@@ -317,7 +317,7 @@ const ExpenseIncome = () => {
                   <th className="py-3 px-4 font-semibold">{activeTab === 'income' ? pageTranslations.incomeTitleColumn : pageTranslations.expenseTitleColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.amountColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.dateColumn}</th>
-                  <th className="py-3 px-4 font-semibold">Category</th>
+                  <th className="py-3 px-4 font-semibold">{pageTranslations.categoryColumn}</th>
                   <th className="py-3 px-4 font-semibold">{pageTranslations.noteColumn}</th>
                   <th className="py-3 px-4 font-semibold text-center">{pageTranslations.actionColumn}</th>
                 </tr>

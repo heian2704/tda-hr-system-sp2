@@ -88,50 +88,50 @@ const AddApplicationModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) =>
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold text-center mb-6">Add New Application</h2>
+  <h2 className="text-2xl font-bold text-center mb-6">{translations?.applicationPage?.createButton || 'Create Application'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.applicationPage?.nameColumn || 'Name'}</label>
             <input
               name="name"
               value={form.name}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              placeholder="Applicant name"
+              placeholder={translations?.applicationApplyPage?.fullNamePlaceholder || 'e.g. John Doe'}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.applicationApplyPage?.phoneNumberLabel || 'Phone Number'}</label>
             <input
               name="phoneNumber"
               value={form.phoneNumber}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              placeholder="Phone number"
+              placeholder={translations?.applicationApplyPage?.phoneNumberPlaceholder || 'e.g. 09-xxxxxxx'}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.applicationApplyPage?.addressLabel || 'Address'}</label>
             <input
               name="address"
               value={form.address}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              placeholder="Address"
+              placeholder={translations?.applicationApplyPage?.addressPlaceholder || 'Street, City, State'}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Information</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.applicationApplyPage?.infoLabel || 'Additional Information'}</label>
             <textarea
               name="information"
               value={form.information}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              placeholder="Additional information"
+              placeholder={translations?.applicationApplyPage?.infoPlaceholder || 'Tell us about your experience, availability, etc.'}
               rows={3}
             />
           </div>
@@ -151,18 +151,18 @@ const AddApplicationModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) =>
               </select>
             </div> */}
             <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.applicationApplyPage?.positionLabel || 'Position'}</label>
             <input
               name="position"
               value={form.position}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-              placeholder="Position"
+              placeholder={translations?.applicationApplyPage?.positionPlaceholder || 'e.g. Operator'}
             />
           </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{translations?.payrollPage?.date || 'Date'}</label>
               <input
                 name="date"
                 type="date"
@@ -179,14 +179,14 @@ const AddApplicationModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) =>
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              {translations?.employeePage?.cancelButton || 'Cancel'}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
             >
-              {loading ? "Saving..." : "Create"}
+              {loading ? (translations?.employeePage?.saving || 'Saving...') : (translations?.applicationPage?.createButton || 'Create Application')}
             </button>
           </div>
         </form>

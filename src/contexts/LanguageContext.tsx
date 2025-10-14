@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect, useMemo } from 'react';
 
 // Define specific types for translation structure for better type safety
 interface SidebarItem {
@@ -169,6 +169,7 @@ export interface ExpenseIncomePageTranslations {
   expenseTitleColumn: string;
   amountColumn: string;
   dateColumn: string;
+  categoryColumn: string;
   noteColumn: string;
   actionColumn: string;
   editButton: string;
@@ -276,6 +277,44 @@ export interface AttendancePageTranslations {
   loading: string;
 }
 
+// New interfaces for Application pages
+interface ApplicationPageTranslations {
+  title: string;
+  searchPlaceholder: string;
+  createButton: string;
+  createdSuccessfully: string;
+  nameColumn: string;
+  phoneNumberColumn: string;
+  positionColumn: string;
+  applicationStatusColumn: string;
+  dateColumn: string;
+  addressColumn: string;
+  noData: string;
+  noSearchResults: string;
+  bulkActionButton: string;
+  mapTitle: string;
+  viewOnMap: string; // prefix text for tooltip
+}
+
+interface ApplicationApplyPageTranslations {
+  title: string;
+  subtitle: string;
+  fullNameLabel: string;
+  phoneNumberLabel: string;
+  addressLabel: string;
+  positionLabel: string;
+  infoLabel: string;
+  fullNamePlaceholder: string;
+  phoneNumberPlaceholder: string;
+  addressPlaceholder: string;
+  positionPlaceholder: string;
+  infoPlaceholder: string;
+  resetButton: string;
+  submitButton: string;
+  submitting: string;
+  createdSuccessfully: string;
+}
+
 // Extend the main AppTranslations to include the new Attendance page
 interface AppTranslations {
   totalEmployees: ReactNode;
@@ -301,6 +340,8 @@ interface AppTranslations {
   workLogPage: WorkLogPageTranslations;
   payrollPage: PayrollPageTranslations;
   expenseIncomePage: ExpenseIncomePageTranslations;
+  applicationPage: ApplicationPageTranslations;
+  applicationApplyPage: ApplicationApplyPageTranslations;
   common: {
     loading: string;
     error: string;
@@ -399,6 +440,23 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage2: "? This action cannot be undone.",
       deleteButton: "Delete",
     },
+    applicationPage: {
+      title: "Job Applications",
+      searchPlaceholder: "Search name, phone, position...",
+      createButton: "Create Application",
+      createdSuccessfully: "Application created successfully.",
+      nameColumn: "Name",
+      phoneNumberColumn: "Phone",
+      positionColumn: "Position",
+      applicationStatusColumn: "Application Status",
+      dateColumn: "Date",
+      addressColumn: "Address",
+      noData: "No applications found.",
+      bulkActionButton: "Bulk Set Status",
+      noSearchResults: "No applications match your search.",
+      mapTitle: "Location",
+      viewOnMap: "View on map:",
+    },
     attendancePage: {
       attendanceTitle: "Employee Attendance",
       totalEmployees: "Total Employees",
@@ -476,10 +534,10 @@ const allAppTranslations: AllTranslationsCollection = {
       all: "All",
     },
     payrollPage: {
-      totalNetPayroll: "Total Net Payroll",
+      totalNetPayroll: "This Month's Total Net Payroll",
       totalBonus: "Total Bonus",
       totalDeduction: "Total Deduction",
-      allPayrollTitle: "All Payroll",
+      allPayrollTitle: "Payrolls",
       payrollPeriodDisplay: "Payroll Period",
       exportButton: "Export",
       searchPlaceholder: "Type employee name to search...",
@@ -533,6 +591,7 @@ const allAppTranslations: AllTranslationsCollection = {
       incomeTitleColumn: "Title",
       expenseTitleColumn: "Title",
       amountColumn: "Amount",
+      categoryColumn: "Category",
       dateColumn: "Date",
       noteColumn: "Note",
       actionColumn: "Action",
@@ -578,6 +637,24 @@ const allAppTranslations: AllTranslationsCollection = {
       applyFilterButton: "Apply Filter",
       currentPeriod: "Current Period",
       selectPeriod: "Select Period",
+    },
+    applicationApplyPage: {
+      title: "Job Application",
+      subtitle: "Fill in your information to apply for the position.",
+      fullNameLabel: "Full Name",
+      phoneNumberLabel: "Phone Number",
+      addressLabel: "Address",
+      positionLabel: "Position",
+      infoLabel: "Additional Information",
+      fullNamePlaceholder: "e.g. John Doe",
+      phoneNumberPlaceholder: "e.g. 09-xxxxxxx",
+      addressPlaceholder: "Street, City, State",
+      positionPlaceholder: "e.g. Operator",
+      infoPlaceholder: "Tell us about your experience, availability, etc.",
+      resetButton: "Reset",
+      submitButton: "Submit Application",
+      submitting: "Submitting...",
+      createdSuccessfully: "Application submitted successfully.",
     },
     dashboard: {
       allEmployees: "All Employees",
@@ -697,6 +774,23 @@ const allAppTranslations: AllTranslationsCollection = {
       confirmDeleteMessage2: "ဤလုပ်ဆောင်ချက်ကို ပြန်လည်ပြင်ဆင်၍မရပါ။",
       deleteButton: "ဖျက်မည်",
     },
+    applicationPage: {
+      title: "အလုပ်လျှောက်လွှာများ",
+      searchPlaceholder: "အမည်၊ ဖုန်း၊ ရာထူးဖြင့် ရှာဖွေပါ...",
+      createButton: "လျှောက်လွှာ ဖန်တီးရန်",
+      createdSuccessfully: "အလုပ်လျှောက်လွှာကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။",
+      nameColumn: "အမည်",
+      phoneNumberColumn: "ဖုန်း",
+      positionColumn: "ရာထူး",
+      applicationStatusColumn: "လျှောက်လွှာ အခြေအနေ",
+      dateColumn: "ရက်စွဲ",
+      addressColumn: "လိပ်စာ",
+      noData: "အလုပ်လျှောက်လွှာများ မတွေ့ပါ။",
+      bulkActionButton: "အစုလိုက် ပြောင်းလဲရန်",
+      noSearchResults: "ရှာဖွေမှုနှင့် ကိုက်ညီသော လျှောက်လွှာ မရှိပါ။",
+      mapTitle: "တည်နေရာ",
+      viewOnMap: "မြေပုံတွင် ကြည့်ရန်:",
+    },
     attendancePage: {
       attendanceTitle: "ဝန်ထမ်း တက်ရောက်မှု",
       totalEmployees: "စုစုပေါင်း ဝန်ထမ်း",
@@ -774,10 +868,10 @@ const allAppTranslations: AllTranslationsCollection = {
       all: "အားလုံး",
     },
     payrollPage: {
-      totalNetPayroll: "စုစုပေါင်းလစာ",
+      totalNetPayroll: "ဒီလအတွက် စုစုပေါင်းလစာ",
       totalBonus: "စုစုပေါင်းဆုကြေး",
       totalDeduction: "စုစုပေါင်းဖြတ်တောက်မှု",
-      allPayrollTitle: "လစာအားလုံး",
+      allPayrollTitle: "လစာ စာရင်း",
       payrollPeriodDisplay: "လစာကာလ",
       searchPlaceholder: "ဝန်ထမ်းအမည်ရိုက်ထည့်၍ ရှာဖွေပါ...",
       exportButton: "ပို့ရန်",
@@ -832,6 +926,7 @@ const allAppTranslations: AllTranslationsCollection = {
       expenseTitleColumn: "ခေါင်းစဉ်",
       amountColumn: "ပမာဏ",
       dateColumn: "ရက်စွဲ",
+      categoryColumn: "အမျိုးအစား",
       noteColumn: "မှတ်ချက်",
       actionColumn: "လုပ်ဆောင်ချက်",
       editButton: "ပြင်ဆင်ရန်",
@@ -876,6 +971,24 @@ const allAppTranslations: AllTranslationsCollection = {
       applyFilterButton: "စစ်ထုတ်မည်",
       currentPeriod: "လက်ရှိကာလ",
       selectPeriod: "ကာလရွေးပါ",
+    },
+    applicationApplyPage: {
+      title: "အလုပ်လျှောက်လွှာ",
+      subtitle: "ရာထူးအတွက် လျှောက်ထားရန် သင်၏ အချက်အလက်များ ပြည့်စုံရေးပေးပါ။",
+      fullNameLabel: "အမည်အပြည့်အစုံ",
+      phoneNumberLabel: "ဖုန်းနံပါတ်",
+      addressLabel: "နေရပ်လိပ်စာ",
+      positionLabel: "ရာထူး",
+      infoLabel: "အပိုဆောင်း အချက်အလက်",
+      fullNamePlaceholder: "ဥပမာ- John Doe",
+      phoneNumberPlaceholder: "ဥပမာ- 09-xxxxxxx",
+      addressPlaceholder: "လမ်း၊ မြို့၊ ပြည်နယ်",
+      positionPlaceholder: "ဥပမာ- Operator",
+      infoPlaceholder: "အတွေ့အကြုံ၊ လာနိုင်ချိန် စသည်တို့ကို ရေးပြပါ...",
+      resetButton: "ပြန်စမည်",
+      submitButton: "လျှောက်လွှာ တင်သွင်းရန်",
+      submitting: "တင်သွင်းနေသည်...",
+      createdSuccessfully: "အလုပ်လျှောက်လွှာကို အောင်မြင်စွာ တင်သွင်းပြီးပါပြီ။",
     },
     dashboard: {
       allEmployees: "ဝန်ထမ်းအားလုံး",
@@ -953,6 +1066,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (context === undefined) {
@@ -960,11 +1074,3 @@ export const useLanguage = () => {
   }
   return context;
 };
-// React's useMemo is imported from 'react', so you don't need to implement it yourself.
-// Remove this function. If you want a custom implementation for learning purposes, here is a simple (non-reactive) version:
-
-function useMemo<T>(factory: () => T, deps: unknown[]): T {
-  // This is a naive implementation for demonstration only.
-  // It does not provide memoization across renders.
-  return factory();
-}

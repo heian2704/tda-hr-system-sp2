@@ -104,24 +104,24 @@ const ApplicationList: React.FC = () => {
 	return (
 		<div className="font-sans antialiased text-gray-800">
 			<div className="bg-white rounded-2xl p-4 shadow-sm">
-				{showStatusEditAlert && (
+					{showStatusEditAlert && (
 					<div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
 						{translations?.employeePage?.statusUpdate || "Status updated successfully."}
 					</div>
 				)}
-				{showCreateAlert && (
+					{showCreateAlert && (
 					<div className="fixed top-6 left-1/2 -translate-x-1/2 z-[2000] bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
-						Application created successfully.
+							{translations?.applicationPage?.createdSuccessfully || "Application created successfully."}
 					</div>
 				)}
 				<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
-					<h2 className="text-xl font-semibold text-gray-900">Job Applications</h2>
+						<h2 className="text-xl font-semibold text-gray-900">{translations?.applicationPage?.title || "Job Applications"}</h2>
 					<div className="flex items-center gap-3 w-full md:w-auto">
 						<div className="relative w-full md:w-80">
 							<input
 								value={query}
 								onChange={(e) => setQuery(e.target.value)}
-								placeholder="Search name, phone, position..."
+									placeholder={translations?.applicationPage?.searchPlaceholder || "Search name, phone, position..."}
 								className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
 							/>
 							<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -134,7 +134,7 @@ const ApplicationList: React.FC = () => {
 								className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
 							/>
 						</div>
-												<BulkStatusUpdateBar
+															<BulkStatusUpdateBar
 							selectedIds={[...selected]}
 							currentStatusById={Object.fromEntries(pageSlice.map(a => [a._id, a.status || ""]))}
 							onApplied={(ns: string) => {
@@ -143,12 +143,12 @@ const ApplicationList: React.FC = () => {
 								showUpdatedFlag();
 							}}
 						/>
-																		<button
+															<button
 													onClick={() => setIsAddOpen(true)}
 													className="flex items-center justify-center gap-2 px-5 py-2 bg-[#EB5757] text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors w-full sm:w-auto"
 												>
 																			<Plus className="w-4 h-4" />
-																			Create Application
+																{translations?.applicationPage?.createButton || "Create Application"}
 												</button>
 					</div>
 				</div>
@@ -156,7 +156,7 @@ const ApplicationList: React.FC = () => {
 				<div className="overflow-x-auto">
 					<table className="min-w-full text-sm">
 						<thead>
-							<tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
+										<tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
 								<th className="py-3 px-4 w-10">
 									<input
 										type="checkbox"
@@ -170,19 +170,21 @@ const ApplicationList: React.FC = () => {
 										}}
 									/>
 								</th>
-								<th className="py-3 px-4 font-semibold">Name</th>
-								<th className="py-3 px-4 font-semibold">Phone</th>
-								<th className="py-3 px-4 font-semibold">Position</th>
-								<th className="py-3 px-4 font-semibold">Application Status</th>
-								<th className="py-3 px-4 font-semibold">Date</th>
-								<th className="py-3 px-4 font-semibold">Address</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.nameColumn || "Name"}</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.phoneNumberColumn || "Phone"}</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.positionColumn || "Position"}</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.applicationStatusColumn || "Application Status"}</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.dateColumn || "Date"}</th>
+											<th className="py-3 px-4 font-semibold">{translations?.applicationPage?.addressColumn || "Address"}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{pageSlice.length === 0 ? (
 								<tr>
 									<td colSpan={8} className="py-6 px-4 text-center text-gray-500">
-										{query ? "No applications match your search." : "No applications found."}
+													{query
+														? (translations?.applicationPage?.noSearchResults || "No applications match your search.")
+														: (translations?.applicationPage?.noData || "No applications found.")}
 									</td>
 								</tr>
 							) : (
@@ -217,14 +219,14 @@ const ApplicationList: React.FC = () => {
 										<td className="py-3 px-4 text-gray-700">{new Date(a.date).toLocaleDateString()}</td>
 										<td className="py-3 px-4 text-gray-700 max-w-md">
 											{a.address && a.address.trim().length > 0 ? (
-												<button
+																	<button
 													type="button"
 													onClick={() => {
 														setMapAddress(a.address!);
 														setMapOpen(true);
 													}}
 													className="inline-flex items-center gap-1 text-[#007BFF] hover:underline max-w-full"
-													title={`View on map: ${a.address}`}
+																		title={`${translations?.applicationPage?.viewOnMap || 'View on map:'} ${a.address}`}
 												>
 													<MapPin className="w-4 h-4" />
 													<span className="truncate max-w-[18rem] text-left">{a.address}</span>
@@ -277,7 +279,7 @@ const ApplicationList: React.FC = () => {
 				<Dialog open={mapOpen} onOpenChange={setMapOpen}>
 					<DialogContent className="max-w-3xl">
 						<DialogHeader>
-							<DialogTitle>Location</DialogTitle>
+							<DialogTitle>{translations?.applicationPage?.mapTitle || 'Location'}</DialogTitle>
 						</DialogHeader>
 						<div className="rounded-lg overflow-hidden border">
 							<AspectRatio ratio={16 / 9}>
