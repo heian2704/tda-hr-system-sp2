@@ -8,9 +8,19 @@ const AttendancePage: React.FC = () => {
 		<div className="font-sans antialiased text-gray-800">
 			<div className="bg-white rounded-2xl p-4 shadow-sm">
 				<Tabs defaultValue="employees" className="w-full">
-					<TabsList>
-						<TabsTrigger value="employees">Employees</TabsTrigger>
-						<TabsTrigger value="attendance">Attendance</TabsTrigger>
+					<TabsList className="inline-flex gap-1 rounded-lg bg-gray-100 p-1">
+						<TabsTrigger
+							value="employees"
+							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
+						>
+							Employees
+						</TabsTrigger>
+						<TabsTrigger
+							value="attendance"
+							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
+						>
+							Attendance
+						</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value="employees">

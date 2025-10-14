@@ -161,12 +161,6 @@ const AttendanceListTab: React.FC = () => {
                   onChange={(e) => setFilterDate(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                 />
-                <button
-                  onClick={() => setFilterDate("")}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Clear
-                </button>
               </div>
             </div>
           </div>
