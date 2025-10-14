@@ -14,7 +14,7 @@ import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee"
 import { PayrollInterfaceImpl } from "@/data/interface-implementation/payroll";
 import { PayrollInterface } from "@/domain/interfaces/payroll/PayrollInterface";
 import { GetAllEmployeeUseCase, GetEmployeeByIdUseCase } from "@/data/usecases/employee.usecase";
-import { GetAllPayrollUseCase, GetPayrollsByEmployeeIdUseCase } from "@/data/usecases/payroll.usecase";
+import { GetAllPayrollUseCase, GetPayrollsByEmployeeIdUseCase, GetTotalPayrollByMonthYearUseCase } from "@/data/usecases/payroll.usecase";
 import { Employee } from "@/domain/models/employee/get-employee.model";
 import {
   ITEMS_PER_PAGE,
@@ -29,6 +29,7 @@ const payrollInterface: PayrollInterface = new PayrollInterfaceImpl();
 const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
 const getAllEmployeeUseCase = new GetAllEmployeeUseCase(employeeInterface);
 const getAllPayrollUseCase = new GetAllPayrollUseCase(payrollInterface);
+const getTotalPayrollByMonthYearUseCase = new GetTotalPayrollByMonthYearUseCase(payrollInterface);
 const getPayrollsByEmployeeIdUseCase = new GetPayrollsByEmployeeIdUseCase(payrollInterface);
 // --- Main Payroll Component ---
 const Payroll = () => {
@@ -43,6 +44,7 @@ const Payroll = () => {
   const [dateFilter, setDateFilter] = useState<{ startDate: string; endDate: string }>({ startDate: "", endDate: "" });
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
   const dateFilterRef = useRef<HTMLDivElement | null>(null);
+  const [monthlyTotal, setMonthlyTotal] = useState<number | null>(null);
 
   const { translations } = useLanguage();
   const payrollPageTranslations = translations.payrollPage;
@@ -112,6 +114,21 @@ const Payroll = () => {
     if (isSearching) return;
     fetchPayrollData(currentPage, selectedMonth || currentMonth, currentYear);
   }, [currentPage, currentMonth, currentYear, selectedMonth, isSearching, fetchPayrollData]);
+
+  // Fetch monthly total amount (server-calculated) whenever month/year changes and no date range filter is active
+  useEffect(() => {
+    const month = selectedMonth || currentMonth;
+    let cancelled = false;
+    (async () => {
+      try {
+        const total = await getTotalPayrollByMonthYearUseCase.execute(month, currentYear);
+        if (!cancelled) setMonthlyTotal(total ?? 0);
+      } catch {
+        if (!cancelled) setMonthlyTotal(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedMonth, currentMonth, currentYear]);
 
   const handlePageChange = async (page: number) => {
     setCurrentPage(page);
@@ -465,6 +482,9 @@ const Payroll = () => {
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
+            <div className="text-sm font-medium text-gray-700">
+              This Month Total Salary: <span className="text-gray-700">Ks. {monthlyTotal}</span>
             </div>
           </div>
         </div>
