@@ -1,9 +1,12 @@
 import React from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EmployeesTab from "./EmployeesTab";
 import AttendanceListTab from "./AttendanceListTab";
 
 const AttendancePage: React.FC = () => {
+  const { translations } = useLanguage();
+  const t = translations.attendancePage;
 	return (
 		<div className="font-sans antialiased text-gray-800">
 			<div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -13,13 +16,13 @@ const AttendancePage: React.FC = () => {
 							value="employees"
 							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
 						>
-							Check Attendance
+							{t.checkAttendanceTab || "Check Attendance"}
 						</TabsTrigger>
 						<TabsTrigger
 							value="attendance"
 							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
 						>
-							History
+							{t.historyTab || "History"}
 						</TabsTrigger>
 					</TabsList>
 

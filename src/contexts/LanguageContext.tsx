@@ -275,6 +275,26 @@ export interface AttendancePageTranslations {
   bulkClockIn: string;
   bulkClockOut: string;
   loading: string;
+  // Additional keys for Attendance UI
+  checkAttendanceTab?: string;
+  historyTab?: string;
+  attendanceHistoryTitle?: string;
+  searchByNamePlaceholder?: string;
+  employeeColumn?: string;
+  statusColumn?: string;
+  checkInColumn?: string;
+  checkOutColumn?: string;
+  dateColumn?: string;
+  totalLabel?: string;
+  backDateButton?: string;
+  addBackDateTitle?: string;
+  loadingAttendances?: string;
+  noEmployeesFound?: string;
+  createButton?: string;
+  backdateButton?: string;
+  // History tab specific empty states
+  historyNoSearchResults?: string;
+  historyNoData?: string;
 }
 
 // New interfaces for Application pages
@@ -482,6 +502,24 @@ const allAppTranslations: AllTranslationsCollection = {
       bulkClockIn: "Bulk Clock In",
       bulkClockOut: "Bulk Clock Out",
       loading: "Loading employees...",
+      checkAttendanceTab: "Check Attendance",
+      historyTab: "History",
+      attendanceHistoryTitle: "Attendance History",
+      searchByNamePlaceholder: "Search employee by name...",
+      employeeColumn: "Employee",
+      statusColumn: "Status",
+      checkInColumn: "Check-in",
+      checkOutColumn: "Check-out",
+      dateColumn: "Date",
+      totalLabel: "Total",
+      backDateButton: "Back Date",
+      addBackDateTitle: "Add Attendance With Back Date",
+      loadingAttendances: "Loading attendances...",
+      noEmployeesFound: "No employees found.",
+      createButton: "Create",
+      backdateButton: "Back Date",
+      historyNoSearchResults: "No attendances match your search.",
+      historyNoData: "No attendances found.",
     },
     workLogPage: {
       createdSuccessfully: "Worklog Created",
@@ -816,6 +854,24 @@ const allAppTranslations: AllTranslationsCollection = {
       bulkClockIn: "အစုလိုက် နာရီစတင်ဝင်ရောက်",
       bulkClockOut: "အစုလိုက် နာရီထွက်ခွာ",
       loading: "ဝန်ထမ်းများကို တင်နေသည်...",
+      checkAttendanceTab: "တက်ရောက်မှု စစ်ဆေးရန်",
+      historyTab: "မှတ်တမ်း",
+      attendanceHistoryTitle: "တက်ရောက်မှု မှတ်တမ်း",
+      searchByNamePlaceholder: "ဝန်ထမ်းအမည်ရိုက်ထည့်၍ ရှာဖွေပါ...",
+      employeeColumn: "ဝန်ထမ်း",
+      statusColumn: "အခြေအနေ",
+      checkInColumn: "ဝင်ချိန်",
+      checkOutColumn: "ထွက်ချိန်",
+      dateColumn: "ရက်စွဲ",
+      totalLabel: "စုစုပေါင်း",
+      backDateButton: "နောက်ရက်စွဲ",
+      addBackDateTitle: "နောက်ရက်စွဲဖြင့် တက်ရောက်မှု ထည့်ရန်",
+      loadingAttendances: "တက်ရောက်မှုများကို တင်နေသည်...",
+      noEmployeesFound: "ဝန်ထမ်းမတွေ့ပါ။",
+      createButton: "မှတ်တမ်းထည့်မည်",
+      backdateButton: "ယခင်ရက်စွဲနဲ့ထည့်ရန်",
+      historyNoSearchResults: "ရှာဖွေမှုနှင့် ကိုက်ညီသော တက်ရောက်မှု မရှိပါ။",
+      historyNoData: "တက်ရောက်မှုများ မတွေ့ပါ။",
     },
     workLogPage: {
       createdSuccessfully: "အလုပ်မှတ်တမ်းထည့်သွင်းမှု အောင်မြင်သည်။",

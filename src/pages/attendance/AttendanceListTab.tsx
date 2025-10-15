@@ -6,6 +6,7 @@ import { GetAllAttendanceUseCase } from "@/data/usecases/attendance.usecase";
 import { useGetAllAttendances } from "@/hooks/attendance/get-all-attendance.hook";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Attendance } from "@/domain/models/attendance/get-attendance-by-id.model";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
 import { GetEmployeeByIdUseCase } from "@/data/usecases/employee.usecase";
@@ -25,14 +26,17 @@ const getEmployeeByIdUseCase = new GetEmployeeByIdUseCase(employeeInterface);
 const EmployeeNameCell: React.FC<{ id: string }> = ({ id }) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const idToken: TokenedRequest = { id, token: token ?? undefined };
+  const { translations } = useLanguage();
   const { employee, loading } = useGetEmployeeById(getEmployeeByIdUseCase, idToken);
-  if (loading && !employee) return <span className="text-gray-400">Loading…</span>;
+  if (loading && !employee) return <span className="text-gray-400">{translations.common.loading}…</span>;
   return <span>{employee?.name || id}</span>;
 };
 
 type AttendanceRow = Attendance & { checkInTime?: string; createdAt?: string; date?: string };
 
 const AttendanceListTab: React.FC = () => {
+  const { translations } = useLanguage();
+  const t = translations.attendancePage;
   const { attendances, loading, error } = useGetAllAttendances(getAllAttendanceUseCase);
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState("");
@@ -138,18 +142,18 @@ const AttendanceListTab: React.FC = () => {
 
   return (
     <div className="mt-4">
-      {loading && <div className="text-center py-8">Loading attendances...</div>}
+      {loading && <div className="text-center py-8">{t.loadingAttendances || `${translations.common.loading}...`}</div>}
       {error && <div className="text-center py-8 text-red-600">{error}</div>}
       {!loading && !error && (
         <>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Attendance History</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t.attendanceHistoryTitle || 'Attendance History'}</h2>
             <div className="flex w-full md:w-auto gap-3 items-center">
               <div className="relative w-full md:w-80">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search employee by name..."
+                  placeholder={t.searchByNamePlaceholder || "Search employee by name..."}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                 />
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -169,18 +173,18 @@ const AttendanceListTab: React.FC = () => {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
-                  <th className="py-3 px-4 font-semibold">Employee</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold">Check-in</th>
-                  <th className="py-3 px-4 font-semibold">Check-out</th>
-                  <th className="py-3 px-4 font-semibold">Date</th>
+                  <th className="py-3 px-4 font-semibold">{t.employeeColumn || 'Employee'}</th>
+                  <th className="py-3 px-4 font-semibold">{t.statusColumn || 'Status'}</th>
+                  <th className="py-3 px-4 font-semibold">{t.checkInColumn || 'Check-in'}</th>
+                  <th className="py-3 px-4 font-semibold">{t.checkOutColumn || 'Check-out'}</th>
+                  <th className="py-3 px-4 font-semibold">{t.dateColumn || 'Date'}</th>
                 </tr>
               </thead>
               <tbody>
                 {pageSlice.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-6 px-4 text-center text-gray-500">
-                      {query ? "No attendances match your search." : "No attendances found."}
+                      {query ? (t.historyNoSearchResults || "No attendances match your search.") : (t.historyNoData || "No attendances found.")}
                     </td>
                   </tr>
                 ) : (
@@ -237,7 +241,7 @@ const AttendanceListTab: React.FC = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-            <div className="text-xs text-gray-500">Total: {(hasDateFilter ? filteredByDate.length : filtered.length)}</div>
+            <div className="text-xs text-gray-500">{t.totalLabel || 'Total'}: {(hasDateFilter ? filteredByDate.length : filtered.length)}</div>
           </div>
         </>
       )}
