@@ -293,7 +293,7 @@ const Payroll = () => {
                   />
                 </div>
               {/* Date Filter Dropdown */}
-              <div className="relative" ref={dateFilterRef}>
+              {/* <div className="relative" ref={dateFilterRef}>
                 <button
                   onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
                   className="flex items-center justify-between h-10 w-full sm:w-auto px-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
@@ -340,7 +340,7 @@ const Payroll = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
               {/* Period Type Dropdown */}
               <div className="relative w-full sm:w-40">
                 <select
@@ -534,9 +534,9 @@ const Payroll = () => {
               </button>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600 min-w-[90px] text-right">
+              {/* <div className="text-sm text-gray-600 min-w-[90px] text-right">
                 Page {effectiveTotalPages > 0 ? currentPage : 0} of {effectiveTotalPages || 0}
-              </div>
+              </div> */}
               <div className="text-sm font-medium text-gray-700">
                 {payrollPageTranslations.totalNetPayroll || 'Total Net Payroll'}: <span className="text-gray-700"> {monthlyTotalDisplay}</span>
               </div>
