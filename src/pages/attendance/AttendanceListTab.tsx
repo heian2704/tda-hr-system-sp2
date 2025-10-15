@@ -174,7 +174,7 @@ const AttendanceListTab: React.FC = () => {
               <thead>
                 <tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
                   <th className="py-3 px-4 font-semibold">{t.employeeColumn || 'Employee'}</th>
-                  <th className="py-3 px-4 font-semibold">{t.statusColumn || 'Status'}</th>
+                  {/* <th className="py-3 px-4 font-semibold">{t.statusColumn || 'Status'}</th> */}
                   <th className="py-3 px-4 font-semibold">{t.checkInColumn || 'Check-in'}</th>
                   <th className="py-3 px-4 font-semibold">{t.checkOutColumn || 'Check-out'}</th>
                   <th className="py-3 px-4 font-semibold">{t.dateColumn || 'Date'}</th>
@@ -193,13 +193,13 @@ const AttendanceListTab: React.FC = () => {
                       <td className="py-3 px-4 font-medium text-gray-900">
                         <EmployeeNameCell id={a.employeeId} />
                       </td>
-                      <td className="py-3 px-4">
+                      {/* <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center justify-center h-7 min-w-[110px] px-2 rounded-full text-xs font-medium ${pillClassForAttendance(a.attendanceStatus)}`}
                         >
                           {formatStatusLabel(a.attendanceStatus)}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="py-3 px-4 text-gray-700">{formatTime(a.checkInTime)}</td>
                       <td className="py-3 px-4 text-gray-700">{formatTime(a.checkOutTime)}</td>
                       <td className="py-3 px-4 text-gray-700">{formatDate(a.date || a.createdAt || a.checkOutTime)}</td>
