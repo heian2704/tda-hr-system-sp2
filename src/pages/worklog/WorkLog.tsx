@@ -85,6 +85,12 @@ const updateWorklogUseCase = new UpdateWorklogUseCase(worklogInterface);
 const deleteWorklogUseCase = new DeleteWorklogUseCase(worklogInterface);
  
 const WorkLog = () => {
+  // MMK formatter: "Ks. 000,000" without decimals
+  const formatMMK = useCallback((n: number | null | undefined) => {
+    const safe = typeof n === 'number' && isFinite(n) ? n : 0;
+    return `Ks. ${safe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  }, []);
+
   const [allWorklogs, setAllWorklogs] = useState<Worklog[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -601,7 +607,7 @@ const WorkLog = () => {
                       <td className="py-3 px-4 text-gray-700">{log.position}</td>
                       <td className="py-3 px-4 text-gray-700">{log.productName}</td>
                       <td className="py-3 px-4 text-gray-700">{log.quantity}</td>
-                      <td className="py-3 px-4 text-gray-700">{log.totalPrice}</td>
+                      <td className="py-3 px-4 text-gray-700">{formatMMK(log.totalPrice as number)}</td>
                       <td className="py-3 px-4 text-gray-700">
                         {log.updatedAt
                           ? format(
