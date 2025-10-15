@@ -32,7 +32,7 @@ const EmployeeNameCell: React.FC<{ id: string }> = ({ id }) => {
   return <span>{employee?.name || id}</span>;
 };
 
-type AttendanceRow = Attendance & { checkInTime?: string; createdAt?: string; date?: string };
+// type Attendance = Attendance & { checkInTime?: string; createdAt?: string; date?: string };
 
 const AttendanceListTab: React.FC = () => {
   const { translations } = useLanguage();
@@ -42,8 +42,8 @@ const AttendanceListTab: React.FC = () => {
   const [query, setQuery] = useState("");
   const [filterDate, setFilterDate] = useState<string>("");
 
-  const rows = useMemo(() => (attendances as unknown as AttendanceRow[]) ?? [], [attendances]);
-
+  const rows = useMemo(() => (attendances as unknown as Attendance[]) ?? [], [attendances]);
+  console.log("Attendance rows:", rows);
   // Build a local cache of employeeId -> employee name for name-based search
   const [empNameMap, setEmpNameMap] = useState<Map<string, string>>(new Map());
 
@@ -72,23 +72,24 @@ const AttendanceListTab: React.FC = () => {
     };
   }, [rows, empNameMap]);
 
-  const filtered: AttendanceRow[] = useMemo(() => {
+  const filtered: Attendance[] = useMemo(() => {
     if (!query.trim()) return Array.isArray(rows) ? rows : [];
     const q = query.toLowerCase();
-    const arr: AttendanceRow[] = Array.isArray(rows) ? rows : [];
+    const arr: Attendance[] = Array.isArray(rows) ? rows : [];
     return arr.filter((a) => (empNameMap.get(a.employeeId) || '').toLowerCase().includes(q));
   }, [rows, query, empNameMap]);
 
   const hasDateFilter = !!filterDate;
 
-  const filteredByDate: AttendanceRow[] = useMemo(() => {
+  const filteredByDate: Attendance[] = useMemo(() => {
     if (!hasDateFilter) return filtered;
     const target = new Date(filterDate);
     if (isNaN(target.getTime())) return filtered;
     const startOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
     const endOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate(), 23, 59, 59, 999);
     return filtered.filter((a) => {
-      const base = a.date || a.createdAt || a.checkOutTime;
+      // Fall back to check-in time when check-out time is empty so entries still appear
+      const base = a.checkOutTime || a.checkInTime;
       if (!base) return false;
       const d = new Date(base);
       if (isNaN(d.getTime())) return false;
@@ -98,7 +99,7 @@ const AttendanceListTab: React.FC = () => {
 
   const effectiveList = hasDateFilter ? filteredByDate : filtered;
   const totalPages = Math.ceil(effectiveList.length / ITEMS_PER_PAGE) || 1;
-  const pageSlice: AttendanceRow[] = useMemo(() => {
+  const pageSlice: Attendance[] = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return (hasDateFilter ? filteredByDate : filtered).slice(start, start + ITEMS_PER_PAGE);
   }, [filtered, filteredByDate, hasDateFilter, currentPage]);
@@ -188,7 +189,7 @@ const AttendanceListTab: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  pageSlice.map((a: AttendanceRow) => (
+                  pageSlice.map((a: Attendance) => (
                     <tr key={a._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">
                         <EmployeeNameCell id={a.employeeId} />
@@ -202,7 +203,7 @@ const AttendanceListTab: React.FC = () => {
                       </td> */}
                       <td className="py-3 px-4 text-gray-700">{formatTime(a.checkInTime)}</td>
                       <td className="py-3 px-4 text-gray-700">{formatTime(a.checkOutTime)}</td>
-                      <td className="py-3 px-4 text-gray-700">{formatDate(a.date || a.createdAt || a.checkOutTime)}</td>
+                      <td className="py-3 px-4 text-gray-700">{formatDate(a.checkOutTime || a.checkInTime || '-')}</td>
                     </tr>
                   ))
                 )}

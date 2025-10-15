@@ -1,6 +1,7 @@
 export interface Attendance {
     _id: string;
     employeeId: string;
-    checkOutTime: string;
+    checkInTime: string;
+    checkOutTime?: string;
     attendanceStatus: string;
 }
