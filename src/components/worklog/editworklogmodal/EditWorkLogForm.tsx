@@ -1,16 +1,12 @@
 // EmployeeForm.tsx
-import React, { use, useState } from 'react';
-import { useWorklogEditForm } from './useWorklogEditForm';
-import { worklogService } from '@/services/worklogService';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { worklogUpdateDto } from '@/dtos/worklog/worklogUpdateDto';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { UpdateWorklogDto } from '@/domain/models/worklog/update-worklog.dto';
 import { Employee } from '@/domain/models/employee/get-employee.model';
 import { Product } from '@/domain/models/product/get-product.dto';
 import { UpdateWorklogUseCase } from '@/data/usecases/worklog.usecase';
 import { TokenedRequest } from '@/domain/models/common/header-param';
-import { on } from 'events';
 
 interface Props {
     worklogid?: string;
@@ -26,7 +22,7 @@ interface Props {
 const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, employees, products, updateWorklogUseCase, setShowEditAlert, onUpdate }) => {
     const [employeeId, setEmployeeId] = useState<string>(worklogToEdit?.employeeId || '');
     const [productId, setProductId] = useState<string>(worklogToEdit?.productId || '');
-    const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity || 0);
+    const [quantity, setQuantity] = useState<number>(worklogToEdit?.quantity ?? 0);
     const [submitting, setSubmitting] = useState(false);
     const token = localStorage.getItem('token');
     const idToken = (id: string): TokenedRequest => ({
@@ -38,32 +34,40 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!worklogToEdit.employeeId) {
-          console.error("No employee ID provided for update");
-          return;
+      if (!worklogid) {
+        console.error("Missing worklog id");
+        return;
+      }
+      if (!employeeId) {
+        console.error("No employee ID provided for update");
+        return;
+      }
+      if (!productId) {
+        console.error("No product ID provided for update");
+        return;
       }
 
-      if(!worklogToEdit.productId) {
-          console.error("No product ID provided for update");
-      }
-
-      // Async update
       (async () => {
-          try {
-              setSubmitting(true);
-              const result = await updateWorklogUseCase.execute(idToken(worklogid), worklogToEdit);
-              if(result)
-              {
-                setShowEditAlert(true);
-                setTimeout(() => setShowEditAlert(false), 3000);
-              }
-              onUpdate();
-              onClose();
-          } catch (error) {
-              console.error("Error saving worklog:", error);
-          } finally {
-              setSubmitting(false);
+        try {
+          setSubmitting(true);
+          const dto: UpdateWorklogDto = {
+            ...worklogToEdit,
+            employeeId,
+            productId,
+            quantity,
+          } as UpdateWorklogDto;
+          const result = await updateWorklogUseCase.execute(idToken(worklogid), dto);
+          if (result) {
+            setShowEditAlert?.(true);
+            setTimeout(() => setShowEditAlert?.(false), 3000);
           }
+          onUpdate?.();
+          onClose();
+        } catch (error) {
+          console.error("Error saving worklog:", error);
+        } finally {
+          setSubmitting(false);
+        }
       })();
     };
 
@@ -100,17 +104,7 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
           </div>
         </div>
 
-        {/* Role */}
-        {/* <div>
-          <label className="block text-sm font-medium">{t.roleColumn}</label>
-          <input
-            type="text"
-            value={worklogToEdit.position}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full px-4 py-3 border rounded-lg"
-            required
-          />
-        </div> */}
+        {/* Role - intentionally omitted in this form */}
 
         {/* Product Name */}
         <div>
@@ -120,7 +114,7 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
           <div className="relative">
             <select
               id="product"
-              value={worklogToEdit.productId}
+              value={productId}
               onChange={(e) => setProductId(e.target.value)}
               className="w-full px-4 py-3 border rounded-lg appearance-none"
               required
@@ -142,7 +136,7 @@ const EditWorkLogForm: React.FC<Props> = ({ worklogid, worklogToEdit, onClose, e
           </label>
           <input
             type="number"
-            value={worklogToEdit.quantity}
+            value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
             className="w-full px-4 py-3 border rounded-lg"
             required

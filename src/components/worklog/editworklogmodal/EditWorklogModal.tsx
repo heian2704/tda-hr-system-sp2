@@ -18,7 +18,7 @@ export const EditWorkLogModal: React.FC<EditWorkLogModalProps & { worklogid: str
     const modalRef = useRef<HTMLDivElement>(null);
     const { translations } = useLanguage();
     const modalTranslations = translations.employeePage;
-
+    
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
