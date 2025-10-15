@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +19,8 @@ type Props = {
   value?: string;
   onUpdated?: (newStatus: string) => void;
   compact?: boolean;
+  // Optional key to force reset (e.g., when a date filter changes)
+  resetKey?: string | number;
 };
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
@@ -26,7 +28,7 @@ const updateEmployeeStatusUseCase = new UpdateEmployeeStatusUseCase(employeeInte
 
 const OPTIONS: string[] = [EmpStatus.ACTIVE, EmpStatus.INACTIVE];
 
-const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, compact }) => {
+const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, compact, resetKey }) => {
   const { updateStatus, loading } = useUpdateEmployeeStatus(updateEmployeeStatusUseCase);
   const [status, setStatus] = useState<string>(value || "");
 
@@ -35,6 +37,11 @@ const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, c
     if (!token) return null;
     return { id: employeeId, token } as TokenedRequest;
   }, [employeeId]);
+
+  // Keep internal state in sync with incoming value or when resetKey changes
+  useEffect(() => {
+    setStatus(value || "");
+  }, [value, employeeId, resetKey]);
 
   const applyUpdate = async (newStatus: string) => {
     if (!newStatus) return;
@@ -53,7 +60,7 @@ const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, c
     return "bg-gray-100 text-gray-700";
   })();
 
-  const label = (status || value || "-").replace(/_/g, " ");
+  const label = (status || value || "Update employee status").replace(/_/g, " ");
 
   return (
     <div className={compact ? "inline-flex items-center" : "flex items-center gap-2"}>

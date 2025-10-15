@@ -5,6 +5,7 @@ import { GetAllEmployeeUseCase } from "@/data/usecases/employee.usecase";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
 import { EmployeeInterfaceImpl } from "@/data/interface-implementation/employee";
 import EmployeeStatusSelect from "@/components/employee/update_employee_status/EmployeeStatusSelect";
+import AddManualAttendanceModal from "@/components/attendance/add-manual-attendance/AddManualAttendanceModal";
 import BulkEmployeeStatusUpdateBar from "@/components/employee/update_employee_status/BulkEmployeeStatusUpdateBar";
 
 const employeeInterface: EmployeeInterface = new EmployeeInterfaceImpl();
@@ -141,20 +142,32 @@ const EmployeesTab: React.FC = () => {
                     <td className="py-3 px-4 text-gray-700">{emp.address}</td>
                     <td className="py-3 px-4 text-gray-700">{emp.position}</td>
                     <td className="py-3 px-4">
-                      <EmployeeStatusSelect
-                        employeeId={emp._id}
-                        value={emp.status}
-                        compact
-                        onUpdated={(ns) => {
-                          // update local list item
-                          if (employeesResp?.data) {
-                            emp.status = ns;
-                          }
-                          setShowEmpStatusAlert(true);
-                          if (hideFlagTimer.current) window.clearTimeout(hideFlagTimer.current);
-                          hideFlagTimer.current = window.setTimeout(() => setShowEmpStatusAlert(false), 3000);
-                        }}
-                      />
+                      <div className="flex items-center gap-2">
+                        <EmployeeStatusSelect
+                          employeeId={emp._id}
+                          value={emp.status}
+                          compact
+                          onUpdated={(ns) => {
+                            // update local list item
+                            if (employeesResp?.data) {
+                              emp.status = ns;
+                            }
+                            setShowEmpStatusAlert(true);
+                            if (hideFlagTimer.current) window.clearTimeout(hideFlagTimer.current);
+                            hideFlagTimer.current = window.setTimeout(() => setShowEmpStatusAlert(false), 3000);
+                          }}
+                        />
+                        <AddManualAttendanceModal
+                          employeeId={emp._id}
+                          employeeName={emp.name}
+                          onCreated={() => {
+                            // Optionally refetch attendances; here we just show a toast banner for consistency
+                            setShowEmpStatusAlert(true);
+                            if (hideFlagTimer.current) window.clearTimeout(hideFlagTimer.current);
+                            hideFlagTimer.current = window.setTimeout(() => setShowEmpStatusAlert(false), 3000);
+                          }}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))

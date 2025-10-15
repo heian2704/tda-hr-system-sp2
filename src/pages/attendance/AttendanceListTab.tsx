@@ -143,7 +143,7 @@ const AttendanceListTab: React.FC = () => {
       {!loading && !error && (
         <>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Attendance</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Attendance History</h2>
             <div className="flex w-full md:w-auto gap-3 items-center">
               <div className="relative w-full md:w-80">
                 <input

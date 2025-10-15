@@ -13,13 +13,13 @@ const AttendancePage: React.FC = () => {
 							value="employees"
 							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
 						>
-							Employees
+							Check Attendance
 						</TabsTrigger>
 						<TabsTrigger
 							value="attendance"
 							className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors data-[state=active]:bg-[#EB5757] data-[state=active]:text-white data-[state=active]:shadow"
 						>
-							Attendance
+							History
 						</TabsTrigger>
 					</TabsList>
 
