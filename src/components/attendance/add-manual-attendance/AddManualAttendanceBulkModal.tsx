@@ -111,8 +111,8 @@ const AddManualAttendanceBulkModal: React.FC<Props> = ({ selectedIds, onCreated,
           className={
             triggerClassName ||
             `flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
-             ${disabled ? "bg-white text-gray-400 border border-gray-200 cursor-not-allowed"
-                        : "bg-white text-black border border-gray-300 hover:bg-gray-50"}`
+             ${disabled ? "bg-[#EB5757] text-white cursor-not-allowed"
+                        : "bg-red-600 text-white border"}`
           }
           aria-label="Bulk add back-date attendance"
           title={disabled ? "Select at least 1 row" : (t.backDateButton || "Back Date")}

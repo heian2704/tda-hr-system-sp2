@@ -59,13 +59,14 @@ const BulkEmployeeStatusUpdateBar: React.FC<Props> = ({ selectedIds, currentStat
   return (
     <div className="flex items-center gap-3">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild disabled={disabled}>
+        <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className={`flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
+            disabled={disabled}
+            className={`flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
               disabled
-                ? "bg-emerald-400/60 text-black cursor-not-allowed"
-                : "bg-emerald-500 text-black hover:bg-emerald-600"
+                ? "bg-white text-gray-400 border border-gray-200 cursor-not-allowed"
+                : "bg-white text-black border border-gray-300 hover:bg-gray-50"
             }`}
             aria-label="Bulk update employee status"
             title={disabled ? "Select at least 2 rows" : "Set status for selected"}
