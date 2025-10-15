@@ -54,13 +54,17 @@ const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, c
     onUpdated?.(newStatus);
   };
 
+  const isActive = (status || value) === EmpStatus.ACTIVE;
+  const isInactive = (status || value) === EmpStatus.INACTIVE;
+
   const badgeClasses = (() => {
-    if ((status || value) === EmpStatus.ACTIVE) return "bg-green-100 text-green-700";
-    if ((status || value) === EmpStatus.INACTIVE) return "bg-red-100 text-red-700";
+    if (isActive) return "bg-green-400 text-green-700";
+    if (isInactive) return "bg-gray-100 text-gray-700";
     return "bg-gray-100 text-gray-700";
   })();
 
-  const label = (status || value || "Update employee status").replace(/_/g, " ");
+  const DEFAULT_LABEL = "Set status";
+  const label = isActive ? "Active" : DEFAULT_LABEL;
 
   return (
     <div className={compact ? "inline-flex items-center" : "flex items-center gap-2"}>
@@ -79,6 +83,14 @@ const EmployeeStatusSelect: React.FC<Props> = ({ employeeId, value, onUpdated, c
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[8rem]">
+          {/* Default option: does not update backend, only resets display */}
+          <DropdownMenuItem
+            className="text-sm"
+            disabled={loading}
+            onClick={() => setStatus("")}
+          >
+            {DEFAULT_LABEL}
+          </DropdownMenuItem>
           {OPTIONS.map((opt) => (
             <DropdownMenuItem
               key={opt}
