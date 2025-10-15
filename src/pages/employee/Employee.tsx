@@ -106,8 +106,8 @@ const Employee = () => {
 
   function statusClasses(s?: string) {
 		const v = (s || "").toLowerCase();
-		if (v === EmpStatus.ACTIVE) return "bg-green-100 text-green-700";
-		if (v === EmpStatus.ON_LEAVE) return "bg-red-100 text-red-700";
+		if (v === EmpStatus.ACTIVE) return "bg-green-400 text-green-700";
+		if (v === EmpStatus.ON_LEAVE) return "bg-red-400 text-red-700";
 		return "bg-gray-100 text-gray-700";
 	}
 
@@ -237,6 +237,7 @@ const Employee = () => {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-600 border-b border-gray-200 bg-gray-50">
+                  <th className="py-3 px-4 font-semibold"></th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.fullNameColumn}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.phoneNumberColumn}</th>
                   <th className="py-3 px-4 font-semibold">{employeePageTranslations.address}</th>
@@ -250,7 +251,10 @@ const Employee = () => {
                 {sortedEmployees.map(emp => (
                   <tr key={emp._id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">
-                      {['🧑‍🦰', '🧔🏻', '🧔🏼', '🧔🏽', '🧔🏾', '🧔🏿'][Math.floor(Math.random() * 6)]}
+                      {/* show color circle instead of emoji */}
+                      <span className={`inline-block w-3 h-3 rounded-full ${statusClasses(emp.status)}`}></span>
+                    </td>
+                    <td className="py-3 px-4 font-medium text-gray-900">
                       {emp.name}
                     </td>
                     <td className="py-3 px-4 text-gray-700">{emp.phoneNumber}</td>
