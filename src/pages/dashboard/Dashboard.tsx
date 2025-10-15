@@ -37,6 +37,11 @@ import { Worklog } from "@/domain/models/worklog/get-worklog.dto";
 
 // --- Utility Functions (moved here from a separate utils file) ---
 const formatMMK = (n) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n) + " Ks";
+const formatNumber = (n, fractionDigits = 0) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(n ?? 0);
 
 const parseToDate = (v) => {
   if (!v && v !== 0) return null;
@@ -462,7 +467,7 @@ const Dashboard = () => {
         const d = w.updatedAt;
         const time = d ? d.toLocaleString([], { hour: '2-digit', minute: '2-digit' }) : '';
         const date = d ? d.toLocaleDateString() : '';
-        const text = `${employeeName}: ${dashboardTranslations.total}: ${w.quantity} • ${formatMMK(w.totalPrice)}`;
+        const text = `${employeeName}: ${dashboardTranslations.total}: ${formatNumber(w.quantity)} • ${formatMMK(w.totalPrice)}`;
         return { id: w._id, time, date, text, employeeName };
       });
   }, [filteredWorklogs, employeeMap, dashboardTranslations]);
@@ -593,7 +598,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.worklogQuantity || "Worklog Quantity"}</h3>
-                  <p className="text-xl font-semibold text-foreground">{employeeWorklogSummary.quantity}</p>
+                  <p className="text-xl font-semibold text-foreground">{formatNumber(employeeWorklogSummary.quantity)}</p>
                 </div>
                 <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.totalValue || "Total Value"}</h3>
@@ -605,7 +610,7 @@ const Dashboard = () => {
                 </div>
                 <div className="p-4 border border-border rounded-xl bg-muted flex flex-col items-start">
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">{dashboardTranslations.avgWorklogQuantity || "Avg. Worklog Quantity"}</h3>
-                  <p className="text-xl font-semibold text-foreground">{employeeWorklogSummary.avgQuantityPerWorklog.toFixed(2)}</p>
+                  <p className="text-xl font-semibold text-foreground">{formatNumber(employeeWorklogSummary.avgQuantityPerWorklog, 2)}</p>
                 </div>
               </div>
               <Card className="rounded-2xl border-border shadow-sm flex-1">
