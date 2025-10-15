@@ -4,7 +4,7 @@ import { AttendanceInterface } from "@/domain/interfaces/attendance/AttendanceIn
 import { AttendanceInterfaceImpl } from "@/data/interface-implementation/attendance";
 import { GetAllAttendanceUseCase } from "@/data/usecases/attendance.usecase";
 import { useGetAllAttendances } from "@/hooks/attendance/get-all-attendance.hook";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Attendance } from "@/domain/models/attendance/get-attendance-by-id.model";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { EmployeeInterface } from "@/domain/interfaces/employee/EmployeeInterface";
@@ -214,32 +214,76 @@ const AttendanceListTab: React.FC = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex justify-center items-center gap-2">
+              {/* Jump to first */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="First page"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              {/* Previous */}
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
-                    page === currentPage
-                      ? "bg-[#EB5757] text-white"
-                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+
+              {(() => {
+                const pages: (number | 'ellipsis')[] = [];
+                const last = totalPages;
+                const firstPages = [1, 2, 3].filter((n) => n <= last);
+                pages.push(...firstPages);
+                if (last > 3) {
+                  // show ellipsis if there's a gap
+                  if (last > 4) pages.push('ellipsis');
+                  pages.push(last);
+                }
+                return pages.map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="w-8 h-8 flex items-center justify-center text-gray-500"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
+                        item === currentPage
+                          ? "bg-[#EB5757] text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                );
+              })()}
+
+              {/* Next */}
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages || filtered.length === 0}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Next page"
               >
                 <ChevronRight className="w-4 h-4" />
+              </button>
+              {/* Jump to last */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || filtered.length === 0}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Last page"
+              >
+                <ChevronsRight className="w-4 h-4" />
               </button>
             </div>
             <div className="text-xs text-gray-500">{t.totalLabel || 'Total'}: {(hasDateFilter ? filteredByDate.length : filtered.length)}</div>
