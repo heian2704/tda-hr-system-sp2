@@ -5,7 +5,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Search, // Import the Search icon
-  Calendar
+  Calendar,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { PayrollDto } from "@/dtos/payrolls/payrolls.dto";
@@ -460,39 +462,84 @@ const Payroll = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex justify-center items-center gap-2">
+              {/* Jump to first */}
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="First page"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              {/* Previous */}
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {effectiveTotalPages > 0 &&
-                Array.from({ length: effectiveTotalPages }, (_, i) => i + 1).map(
-                  (page) => (
+
+              {(() => {
+                const last = effectiveTotalPages;
+                const pages: (number | 'ellipsis')[] = [];
+                if (last <= 7) {
+                  for (let i = 1; i <= last; i++) pages.push(i);
+                } else {
+                  const start = Math.max(2, currentPage - 2);
+                  const end = Math.min(last - 1, currentPage + 2);
+                  pages.push(1);
+                  if (start > 2) pages.push('ellipsis');
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (end < last - 1) pages.push('ellipsis');
+                  pages.push(last);
+                }
+                return pages.map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-gray-500">…</span>
+                  ) : (
                     <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
+                      key={`page-${item}`}
+                      onClick={() => handlePageChange(item)}
                       className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
-                        page === currentPage
-                          ? "bg-[#EB5757] text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+                        item === currentPage
+                          ? 'bg-[#EB5757] text-white'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      {page}
+                      {item}
                     </button>
                   )
-                )}
+                );
+              })()}
+
+              {/* Next */}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === effectiveTotalPages}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Next page"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+              {/* Jump to last */}
+              <button
+                onClick={() => handlePageChange(effectiveTotalPages)}
+                disabled={currentPage === effectiveTotalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Last page"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
             </div>
-            <div className="text-sm font-medium text-gray-700">
-              {payrollPageTranslations.totalNetPayroll || 'Total Net Payroll'}: <span className="text-gray-700"> {monthlyTotalDisplay}</span>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 min-w-[90px] text-right">
+                Page {effectiveTotalPages > 0 ? currentPage : 0} of {effectiveTotalPages || 0}
+              </div>
+              <div className="text-sm font-medium text-gray-700">
+                {payrollPageTranslations.totalNetPayroll || 'Total Net Payroll'}: <span className="text-gray-700"> {monthlyTotalDisplay}</span>
+              </div>
             </div>
           </div>
         </div>

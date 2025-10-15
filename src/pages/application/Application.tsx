@@ -4,7 +4,7 @@ import { ApplicationInterface } from "@/domain/interfaces/application/Applicatio
 import { ApplicationInterfaceImpl } from "@/data/interface-implementation/application";
 import { GetAllApplicationUseCase } from "@/data/usecases/application.usecase";
 import { useGetAllApplications } from "@/hooks/application/get-all-application.hook";
-import { ChevronLeft, ChevronRight, Search, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, MapPin, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import ApplicationStatusSelect from "@/components/application/update_application_status/ApplicationStatusSelect";
@@ -289,33 +289,79 @@ const ApplicationList: React.FC = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
           <div className="flex justify-center items-center gap-2">
+            {/* Jump to first */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="First page"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+            {/* Previous */}
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
-                  page === currentPage
-                    ? "bg-[#EB5757] text-white"
-                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+
+            {(() => {
+              const last = totalPages;
+              const pages: (number | 'ellipsis')[] = [];
+              if (last <= 7) {
+                for (let i = 1; i <= last; i++) pages.push(i);
+              } else {
+                const start = Math.max(2, currentPage - 2);
+                const end = Math.min(last - 1, currentPage + 2);
+                pages.push(1);
+                if (start > 2) pages.push('ellipsis');
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (end < last - 1) pages.push('ellipsis');
+                pages.push(last);
+              }
+              return pages.map((item, idx) =>
+                item === 'ellipsis' ? (
+                  <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-gray-500">…</span>
+                ) : (
+                  <button
+                    key={`page-${item}`}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
+                      item === currentPage
+                        ? 'bg-[#EB5757] text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              );
+            })()}
+
+            {/* Next */}
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages || filtered.length === 0}
               className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Next page"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+            {/* Jump to last */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages || filtered.length === 0}
+              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Last page"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="text-sm text-gray-600 min-w-[90px] text-right">
+            Page {totalPages > 0 ? currentPage : 0} of {totalPages || 0}
           </div>
         </div>
 

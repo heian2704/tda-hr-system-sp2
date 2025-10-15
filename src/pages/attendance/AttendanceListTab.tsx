@@ -234,31 +234,30 @@ const AttendanceListTab: React.FC = () => {
               </button>
 
               {(() => {
-                const pages: (number | 'ellipsis')[] = [];
                 const last = totalPages;
-                const firstPages = [1, 2, 3].filter((n) => n <= last);
-                pages.push(...firstPages);
-                if (last > 3) {
-                  // show ellipsis if there's a gap
-                  if (last > 4) pages.push('ellipsis');
+                const pages: (number | 'ellipsis')[] = [];
+                if (last <= 7) {
+                  for (let i = 1; i <= last; i++) pages.push(i);
+                } else {
+                  const start = Math.max(2, currentPage - 2);
+                  const end = Math.min(last - 1, currentPage + 2);
+                  pages.push(1);
+                  if (start > 2) pages.push('ellipsis');
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (end < last - 1) pages.push('ellipsis');
                   pages.push(last);
                 }
                 return pages.map((item, idx) =>
                   item === 'ellipsis' ? (
-                    <span
-                      key={`ellipsis-${idx}`}
-                      className="w-8 h-8 flex items-center justify-center text-gray-500"
-                    >
-                      …
-                    </span>
+                    <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-gray-500">…</span>
                   ) : (
                     <button
-                      key={item}
+                      key={`page-${item}`}
                       onClick={() => setCurrentPage(item)}
                       className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
                         item === currentPage
-                          ? "bg-[#EB5757] text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+                          ? 'bg-[#EB5757] text-white'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                       }`}
                     >
                       {item}
@@ -286,7 +285,12 @@ const AttendanceListTab: React.FC = () => {
                 <ChevronsRight className="w-4 h-4" />
               </button>
             </div>
-            <div className="text-xs text-gray-500">{t.totalLabel || 'Total'}: {(hasDateFilter ? filteredByDate.length : filtered.length)}</div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 min-w-[90px] text-right">
+                Page {totalPages > 0 ? currentPage : 0} of {totalPages || 0}
+              </div>
+              <div className="text-xs text-gray-500">{t.totalLabel || 'Total'}: {(hasDateFilter ? filteredByDate.length : filtered.length)}</div>
+            </div>
           </div>
         </>
       )}
