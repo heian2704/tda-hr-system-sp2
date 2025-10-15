@@ -17,6 +17,12 @@ interface EditEntryFormProps {
   onUpdated: () => void;
 }
 
+// Fixed default categories outside component to avoid useEffect deps churn
+const DEFAULT_CATEGORIES: Record<"income" | "expense", string[]> = {
+  income: ["Product Sold", "Investment"],
+  expense: ["Supply Purchased", "Salary", "Food", "Transport", "Utilities"],
+};
+
 export function EditEntryForm({
   onClose,
   updateUseCase,
@@ -40,11 +46,9 @@ export function EditEntryForm({
   const [customCategoryName, setCustomCategoryName] = useState<string>("");
   const OTHER_VALUE = "__other";
 
-  // Default category seeds per type
-  // Default category seeds per type (used inside effect)
+  // Using DEFAULT_CATEGORIES defined above
 
   // LocalStorage helpers
-  const catKey = (type: "income" | "expense") => `ei:categories:${type}`;
   const mapKey = (type: "income" | "expense") => `ei:categoryMap:${type}`;
   const readJson = <T,>(key: string, fallback: T): T => {
     try {
@@ -65,24 +69,39 @@ export function EditEntryForm({
   const isReservedOther = (s: string) => s.trim().toLowerCase() === "other";
   const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
 
-  // Load categories and current mapping
+  // Load fixed categories and preselect current mapping
   useEffect(() => {
-    const stored = readJson<string[]>(catKey(entryType), []);
-    const defaults = entryType === "income"
-      ? ["Salary", "Bonus", "Investment", "Other"]
-      : ["Food", "Transport", "Utilities", "Entertainment", "Other"];
-    const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
-    const merged = dedupe([...stored, ...defaults]).filter((x) => !isReservedOther(x));
-    setCategories(merged);
-    // write back defaults if needed
-    const storedNorm = dedupe(stored).filter((x) => !isReservedOther(x));
-    if (merged.length !== storedNorm.length || merged.some((c) => !includesCI(storedNorm, c))) {
-      writeJson(catKey(entryType), merged);
-    }
+    const defaults = DEFAULT_CATEGORIES[entryType];
+    setCategories(defaults);
+
     // Preselect current category mapping
     const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
     const current = cmap[entryId] || "";
-    setSelectedCategory(current);
+
+    if (!current) {
+      setSelectedCategory("");
+      setCustomCategoryName("");
+      return;
+    }
+
+    // If current matches one of defaults (case-insensitive), select that default option
+    const match = defaults.find((d) => d.toLowerCase() === current.toLowerCase());
+    if (match) {
+      setSelectedCategory(match);
+      setCustomCategoryName("");
+      return;
+    }
+
+    // If current is literally "Other", keep it as an Other selection with empty custom
+    if (isReservedOther(current)) {
+      setSelectedCategory(OTHER_VALUE);
+      setCustomCategoryName("");
+      return;
+    }
+
+    // Otherwise treat as custom (Other with prefilled custom value)
+    setSelectedCategory(OTHER_VALUE);
+    setCustomCategoryName(current);
   }, [entryId, entryType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,24 +120,20 @@ export function EditEntryForm({
 
     try {
       setSubmitting(true);
+      console.log("Updating entry with:", updateEntryDto);
       await updateUseCase.execute(makeTokenedRequest(entryId), updateEntryDto);
-      // Persist category mapping if provided
+      // Persist category mapping only (do not expand global categories)
       const chosen = selectedCategory === OTHER_VALUE ? customCategoryName.trim() : selectedCategory;
-      if (chosen) {
-        if (!isReservedOther(chosen)) {
-          // ensure category list contains chosen
-          if (!includesCI(categories, chosen)) {
-            const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
-            const nextCats = dedupe([...categories, chosen]).filter((x) => !isReservedOther(x));
-            setCategories(nextCats);
-            writeJson(catKey(entryType), nextCats);
-          }
-        }
-        // update id -> category map (empty string means Uncategorized)
-        const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
-        cmap[entryId] = isReservedOther(chosen) ? "" : chosen;
-        writeJson(mapKey(entryType), cmap);
+      const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
+      if (!chosen) {
+        cmap[entryId] = ""; // Uncategorized
+      } else if (isReservedOther(chosen) || (selectedCategory === OTHER_VALUE && !customCategoryName.trim())) {
+        // If user selects Other but leaves custom blank, treat as Uncategorized
+        cmap[entryId] = "";
+      } else {
+        cmap[entryId] = chosen;
       }
+      writeJson(mapKey(entryType), cmap);
       setShowEditAlert(true);
       setTimeout(() => setShowEditAlert(false), 1500);
       onClose();
@@ -148,7 +163,7 @@ export function EditEntryForm({
             {categories.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
-            <option value={OTHER_VALUE}>Other (type custom)</option>
+            <option value={OTHER_VALUE}>Other</option>
           </select>
           {selectedCategory === OTHER_VALUE && (
             <input

@@ -1,5 +1,5 @@
 // src/pages/ExpenseIncome.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BarChart, Plus, ChevronDown, Edit, Trash2, X, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
@@ -39,9 +39,9 @@ const parseDateStringToDate = (dateString: string): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
-const categorList = {
-  income: ['Salary', 'Bonus', 'Investment', 'test', 'Other'],
-  expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'test', 'Other']
+const DEFAULT_CATEGORIES: Record<'income' | 'expense', string[]> = {
+  income: ['Product Sold', 'Investment'],
+  expense: ['Supply Purchased', 'Salary', 'Food', 'Transport', 'Utilities']
 };
 
 // --- Main ExpenseIncome Component ---
@@ -61,8 +61,7 @@ const ExpenseIncome = () => {
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditedAlert, setShowEditedAlert] = useState(false);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
-  // Categories (localStorage-backed)
-  const [categories, setCategories] = useState<string[]>([]);
+  // Categories derived from defaults + per-entry mapping
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({}); // entryId -> category
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   // Removed header add-category input; creation happens in modal
@@ -74,7 +73,6 @@ const ExpenseIncome = () => {
   const searchQuery = searchParams.get('q') || '';
 
   // LocalStorage helpers
-  const catKey = (type: 'income' | 'expense') => `ei:categories:${type}`;
   const mapKey = (type: 'income' | 'expense') => `ei:categoryMap:${type}`;
   const readJson = <T,>(key: string, fallback: T): T => {
     try {
@@ -92,23 +90,26 @@ const ExpenseIncome = () => {
     }
   };
 
-  // Load categories + mapping when tab changes
+  // Load mapping when tab changes
   useEffect(() => {
-    const stored = readJson<string[]>(catKey(activeTab), []);
-    const defaults = categorList[activeTab] || [];
-    const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
-    const isReservedOther = (s: string) => s.trim().toLowerCase() === 'other';
-    const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
-    const merged = dedupe([...stored, ...defaults]).filter((x) => !isReservedOther(x));
-    setCategories(merged);
-    // write back augmented list if adding defaults changed the set
-    const storedNorm = dedupe(stored).filter((x) => !isReservedOther(x));
-    if (merged.length !== storedNorm.length || merged.some((c) => !includesCI(storedNorm, c))) {
-      writeJson(catKey(activeTab), merged);
-    }
     const cmap = readJson<Record<string, string>>(mapKey(activeTab), {});
     setCategoryMap(cmap);
     setSelectedCategory('');
+  }, [activeTab]);
+
+  // Derived categories for filter: defaults + unique values from mapping (excluding empty/Other)
+  const categories = useMemo(() => {
+    const defaults = DEFAULT_CATEGORIES[activeTab] || [];
+    const values = Object.values(categoryMap)
+      .map((v) => (v || '').trim())
+      .filter((v) => v.length > 0 && v.toLowerCase() !== 'other');
+    const set = new Set<string>([...defaults, ...values]);
+    return Array.from(set);
+  }, [activeTab, categoryMap]);
+
+  const reloadCategoryMap = useCallback(() => {
+    const cmap = readJson<Record<string, string>>(mapKey(activeTab), {});
+    setCategoryMap(cmap);
   }, [activeTab]);
 
   // Fetch initial data on component mount
@@ -419,7 +420,10 @@ const ExpenseIncome = () => {
         entryType={activeTab}
         useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
-        onUpdate={activeTab === 'income' ? refetchIncomes : refetchExpenses}
+        onUpdate={async () => {
+          if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses();
+          reloadCategoryMap();
+        }}
       />
 
       <EditEntryModal
@@ -431,7 +435,10 @@ const ExpenseIncome = () => {
         useCase={activeTab === 'income' ? updateIncomeUseCase : updateExpenseUseCase}
         showEditAlert={setShowEditedAlert}
         translations={pageTranslations}
-        onUpdated={activeTab === 'income' ? refetchIncomes : refetchExpenses}
+        onUpdated={async () => {
+          if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses();
+          reloadCategoryMap();
+        }}
       />
     </div>
   );

@@ -4,9 +4,10 @@ import { BearerTokenedRequest } from "@/domain/models/common/header-param";
 import type { ExpenseIncomePageTranslations } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
-const categorList = {
-  income: ['Salary', 'Bonus', 'Investment', 'Other'],
-  expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'Other']
+// Fixed default categories per type (no persistence to avoid duplication)
+const DEFAULT_CATEGORIES: Record<'income' | 'expense', string[]> = {
+  income: ['Product Sold', 'Investment'],
+  expense: ['Supply Purchased', 'Salary', 'Food', 'Transport', 'Utilities'],
 };
 
 interface EntryFormProps {
@@ -24,7 +25,7 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
   const [date, setDate] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  // Category state (localStorage-backed per type)
+  // Category state (fixed list + per-entry custom via Other)
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [customCategoryName, setCustomCategoryName] = useState<string>('');
@@ -34,7 +35,6 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
   const isReservedOther = (s: string) => s.trim().toLowerCase() === 'other';
   const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
 
-  const catKey = (type: 'income' | 'expense') => `ei:categories:${type}`;
   const mapKey = (type: 'income' | 'expense') => `ei:categoryMap:${type}`;
   const readJson = <T,>(key: string, fallback: T): T => {
     try {
@@ -53,18 +53,8 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
   };
 
   useEffect(() => {
-    // load and merge defaults with stored per entry type when modal opens or type changes
-    const stored = readJson<string[]>(catKey(entryType), []);
-    const defaults = categorList[entryType] || [];
-    // dedupe + remove reserved 'Other'
-    const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
-    const merged = dedupe([...stored, ...defaults]).filter((x) => !isReservedOther(x));
-    setCategories(merged);
-    // seed/augment storage if needed
-    const storedNorm = dedupe(stored).filter((x) => !isReservedOther(x));
-    if (merged.length !== storedNorm.length || merged.some((c) => !includesCI(storedNorm, c))) {
-      writeJson(catKey(entryType), merged);
-    }
+    // Load fixed categories for the selected type
+    setCategories(DEFAULT_CATEGORIES[entryType] || []);
     setSelectedCategory('');
     setCustomCategoryName('');
   }, [entryType]);
@@ -88,27 +78,21 @@ export function EntryForm({ onClose, createUseCase, translations, entryType, set
       setSubmitting(true);
   const result = await createUseCase.execute(useTokenRequest, createEntryDto);
       if (result) {
-        // Persist category mapping and ensure category exists if provided
+        // Persist per-entry category mapping only (do not expand global categories)
         const chosen = selectedCategory === OTHER_VALUE
           ? customCategoryName.trim()
           : selectedCategory;
         if (chosen) {
-          if (isReservedOther(chosen)) {
-            // don't persist reserved label as a real category
-          } else {
-          // ensure category list contains chosen
-          if (!includesCI(categories, chosen)) {
-            const dedupe = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter((x) => x.length > 0)));
-            const nextCats = dedupe([...categories, chosen]).filter((x) => !isReservedOther(x));
-            setCategories(nextCats);
-            writeJson(catKey(entryType), nextCats);
-          }
-          }
           // write mapping for the created entry id
           const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
           const createdId = (result as { _id?: string })._id;
           if (createdId) {
-            cmap[createdId] = isReservedOther(chosen) ? '' : chosen;
+            // if chosen is 'Other' but custom is empty, save as Uncategorized
+            if (isReservedOther(chosen) || (selectedCategory === OTHER_VALUE && !customCategoryName.trim())) {
+              cmap[createdId] = '';
+            } else {
+              cmap[createdId] = chosen;
+            }
             writeJson(mapKey(entryType), cmap);
           }
         }
