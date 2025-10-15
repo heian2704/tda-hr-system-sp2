@@ -265,10 +265,10 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
 
   const employeeMap = useMemo(() => {
     const map = new Map();
-    const list = filteredEmployees;
+    const list = Array.isArray(allEmployees) ? allEmployees : [];
     list.forEach(emp => map.set(emp._id, emp));
     return map;
-  }, [filteredEmployees]);
+  }, [allEmployees]);
 
   const filteredWorklogs = useMemo(() => {
     return worklogsWithDates.filter(w => {
@@ -308,17 +308,20 @@ const useDashboardData = (selectedMonth, selectedYear, selectedEmployeeId) => {
     summary.avgValuePerWorklog = worklogCount > 0 ? summary.totalPrice / worklogCount : 0;
     summary.avgQuantityPerWorklog = worklogCount > 0 ? summary.quantity / worklogCount : 0;
 
-    const employeePayroll = payrollsWithDates.find(p => {
+    const employeePayrollTotal = payrollsWithDates.reduce((sum, p) => {
       const d = p.period;
-      if (!d) return false;
+      if (!d) return sum;
       const monthMatch = selectedMonth === null || d.getMonth() === selectedMonth;
       const yearMatch = selectedYear === null || d.getFullYear() === selectedYear;
-      return monthMatch && yearMatch && p.employeeId === selectedEmployeeId;
-    });
+      if (monthMatch && yearMatch && selectedEmployeeId && p.employeeId === selectedEmployeeId) {
+        return sum + p.totalSalary;
+      }
+      return sum;
+    }, 0);
 
-    if (employeePayroll) {
-      summary.payroll = employeePayroll.totalSalary;
-    } else if (!selectedEmployeeId) {
+    if (selectedEmployeeId) {
+      summary.payroll = employeePayrollTotal;
+    } else {
       summary.payroll = monthPayroll;
     }
 
@@ -517,7 +520,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="rounded-2xl border-border shadow-sm transition-transform duration-200 hover:scale-[1.02] bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.onBoardEmployeesByMonth || "On Board Employees"}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{dashboardTranslations.onBoardEmployeesByMonth || "New Employees"}</CardTitle>
               <Users className="w-5 h-5 text-indigo-500" />
             </CardHeader>
               <CardContent>
@@ -639,7 +642,7 @@ const Dashboard = () => {
           <div className="flex flex-col gap-4">
             <Card className="rounded-2xl border-border shadow-sm flex-1 flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.activityLog || "Activity Log"}</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">{dashboardTranslations.activityLog || "Latest Activity Log"}</CardTitle>
                 <Button variant="ghost" className="p-0 h-auto text-muted-foreground" aria-label="Refresh activity log">
                   <RefreshCcw size={18} />
                 </Button>
