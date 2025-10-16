@@ -99,8 +99,7 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           Confirm Delete
         </h2>
         <p className="text-gray-600 mb-6 text-center">
-          Are you sure you want to delete this {entryType} entry "{entryTitle}"?
-          This action cannot be undone.
+          Successfully deleted "{entryTitle}" {entryType}.
         </p>
         <div className="flex justify-end gap-3">
           <button

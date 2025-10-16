@@ -41,6 +41,7 @@ export function EditEntryForm({
   );
   const [description, setDescription] = useState(entry.description ?? "");
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   // Category editing state
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -50,8 +51,12 @@ export function EditEntryForm({
     const opts = CATEGORY_OPTIONS[entryType] as string[];
     setCategories(opts);
     const current = (entry as { category?: string }).category || '';
-    if (current && opts.includes(current)) setSelectedCategory(current);
-    else setSelectedCategory(opts.includes('Other') ? 'Other' : (opts[0] || ''));
+    if (current && opts.includes(current)) {
+      setSelectedCategory(current);
+    } else {
+      // Default to "Uncategorized" (empty) instead of forcing "Other"
+      setSelectedCategory("");
+    }
   }, [entryId, entryType, entry]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,25 +66,35 @@ export function EditEntryForm({
     const token = localStorage.getItem("token");
     const makeTokenedRequest = (id: string): TokenedRequest => ({ id, token });
 
-    const updateEntryDto = {
-      title,
-      amount,
-      date,
-      description
-    };
-
     try {
       setSubmitting(true);
-      console.log("Updating entry with:", updateEntryDto);
-      // Include enum category in update DTO when provided
-      const cat = selectedCategory as (IncomeCategory | ExpenseCategory);
-      await updateUseCase.execute(makeTokenedRequest(entryId), { ...updateEntryDto, category: cat } as UpdateExpenseDto & UpdateIncomeDto);
+      setErrorMsg("");
+      if (entryType === 'income') {
+        const dto: UpdateIncomeDto = {
+          title,
+          amount,
+          date,
+          description,
+          ...(selectedCategory ? { category: selectedCategory as IncomeCategory } : {})
+        };
+        await (updateUseCase as UpdateIncomeUseCase).execute(makeTokenedRequest(entryId), dto);
+      } else {
+        const dto: UpdateExpenseDto = {
+          title,
+          amount,
+          date,
+          description,
+          ...(selectedCategory ? { category: selectedCategory as ExpenseCategory } : {})
+        };
+        await (updateUseCase as UpdateExpenseUseCase).execute(makeTokenedRequest(entryId), dto);
+      }
       setShowEditAlert(true);
       setTimeout(() => setShowEditAlert(false), 1500);
       onClose();
       onUpdated();
     } catch (error) {
       console.error("Error updating entry:", error);
+      setErrorMsg("Failed to update. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -163,6 +178,9 @@ export function EditEntryForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
+        {errorMsg && (
+          <div className="flex-1 text-sm text-red-600 self-center">{errorMsg}</div>
+        )}
         <button
           type="button"
           onClick={onClose}
