@@ -14,10 +14,10 @@ import { IncomeInterface } from '@/domain/interfaces/income-expense/income/Incom
 import { CreateIncomeUseCase, DeleteIncomeUseCase, GetAllIncomesUseCase, GetIncomeByIdUseCase, UpdateIncomeUseCase } from '@/data/usecases/income.usecase';
 import { Income } from '@/domain/models/income-expense/income/get-income.dto';
 import { ITEMS_PER_PAGE } from '@/constants/page-utils';
+import { IncomeCategory, ExpenseCategory } from '@/constants/category.enum';
 import ConfirmDeleteModal from '@/components/income-expense/ConfirmDeleteModal/ConfirmDeleteEntryModal';
 import AddEntryModal from '@/components/income-expense/AddEntryModal/AddEntryModal';
 import { EditEntryModal } from '@/components/income-expense/EditEntryModal/EditEntryModal';
-import { error } from 'console';
 
 const expenseInterface: ExpenseInterface = new ExpenseInterfaceImpl();
 const incomeInterface: IncomeInterface = new IncomeInterfaceImpl();
@@ -39,10 +39,10 @@ const parseDateStringToDate = (dateString: string): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
-const DEFAULT_CATEGORIES: Record<'income' | 'expense', string[]> = {
-  income: ['Product Sold', 'Investment'],
-  expense: ['Supply Purchased', 'Salary', 'Food', 'Transport', 'Utilities']
-};
+const CATEGORY_OPTIONS = {
+  income: Object.values(IncomeCategory),
+  expense: Object.values(ExpenseCategory)
+} as const;
 
 // --- Main ExpenseIncome Component ---
 const ExpenseIncome = () => {
@@ -61,8 +61,6 @@ const ExpenseIncome = () => {
   const [showCreatedAlert, setShowCreatedAlert] = useState(false);
   const [showEditedAlert, setShowEditedAlert] = useState(false);
   const [showDeletedAlert, setShowDeletedAlert] = useState(false);
-  // Categories derived from defaults + per-entry mapping
-  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({}); // entryId -> category
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   // Removed header add-category input; creation happens in modal
 
@@ -72,44 +70,10 @@ const ExpenseIncome = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-  // LocalStorage helpers
-  const mapKey = (type: 'income' | 'expense') => `ei:categoryMap:${type}`;
-  const readJson = <T,>(key: string, fallback: T): T => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : fallback;
-    } catch {
-      return fallback;
-    }
-  };
-  const writeJson = (key: string, value: unknown) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore
-    }
-  };
-
-  // Load mapping when tab changes
-  useEffect(() => {
-    const cmap = readJson<Record<string, string>>(mapKey(activeTab), {});
-    setCategoryMap(cmap);
-    setSelectedCategory('');
-  }, [activeTab]);
-
-  // Derived categories for filter: defaults + unique values from mapping (excluding empty/Other)
+  // Derive categories directly from enums
   const categories = useMemo(() => {
-    const defaults = DEFAULT_CATEGORIES[activeTab] || [];
-    const values = Object.values(categoryMap)
-      .map((v) => (v || '').trim())
-      .filter((v) => v.length > 0 && v.toLowerCase() !== 'other');
-    const set = new Set<string>([...defaults, ...values]);
-    return Array.from(set);
-  }, [activeTab, categoryMap]);
-
-  const reloadCategoryMap = useCallback(() => {
-    const cmap = readJson<Record<string, string>>(mapKey(activeTab), {});
-    setCategoryMap(cmap);
+    const vals = CATEGORY_OPTIONS[activeTab] as unknown as (string | number)[];
+    return vals.filter((v): v is string => typeof v === 'string');
   }, [activeTab]);
 
   // Fetch initial data on component mount
@@ -139,40 +103,62 @@ const ExpenseIncome = () => {
 
   // Filter and paginate data based on active tab, search query, and date range
   const combinedFilteredEntries = useMemo(() => {
-    let currentTabEntries = activeTab === 'income' ? [...incomes] : [...expenses];
-
-    // Filter by search query
-    if (searchQuery) {
-      const lowerCaseQuery = searchQuery.toLowerCase();
-      currentTabEntries = currentTabEntries.filter(entry =>
-        entry.title.toLowerCase().includes(lowerCaseQuery) ||
-        entry.amount.toString().includes(lowerCaseQuery) ||
-        entry.date.includes(lowerCaseQuery) ||
-        entry.description.toLowerCase().includes(lowerCaseQuery)
-      );
-    }
-
-    // Filter by selected month
-    if (selectedMonth) {
-      const [selYearStr, selMonthStr] = selectedMonth.split('-');
-      const selYear = Number(selYearStr);
-      // The month from a month input is 1-indexed (1-12)
-      const selMonth = Number(selMonthStr) - 1; // Convert to 0-indexed (0-11) for Date object
-      
-      if (!Number.isNaN(selYear) && !Number.isNaN(selMonth)) {
-        currentTabEntries = currentTabEntries.filter(entry => {
-          const entryDate = parseDateStringToDate(entry.date);
-          if (!entryDate) return false;
-          return entryDate.getFullYear() === selYear && entryDate.getMonth() === selMonth;
-        });
+    if (activeTab === 'income') {
+      let arr = incomes.slice();
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        arr = arr.filter(entry =>
+          entry.title.toLowerCase().includes(q) ||
+          entry.amount.toString().includes(q) ||
+          entry.date.includes(q) ||
+          entry.description.toLowerCase().includes(q)
+        );
       }
+      if (selectedMonth) {
+        const [selYearStr, selMonthStr] = selectedMonth.split('-');
+        const selYear = Number(selYearStr);
+        const selMonth = Number(selMonthStr) - 1;
+        if (!Number.isNaN(selYear) && !Number.isNaN(selMonth)) {
+          arr = arr.filter(entry => {
+            const entryDate = parseDateStringToDate(entry.date);
+            if (!entryDate) return false;
+            return entryDate.getFullYear() === selYear && entryDate.getMonth() === selMonth;
+          });
+        }
+      }
+      if (selectedCategory) {
+        arr = arr.filter(entry => String((entry as { category?: unknown }).category) === selectedCategory);
+      }
+      return arr;
+    } else {
+      let arr = expenses.slice();
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        arr = arr.filter(entry =>
+          entry.title.toLowerCase().includes(q) ||
+          entry.amount.toString().includes(q) ||
+          entry.date.includes(q) ||
+          entry.description.toLowerCase().includes(q)
+        );
+      }
+      if (selectedMonth) {
+        const [selYearStr, selMonthStr] = selectedMonth.split('-');
+        const selYear = Number(selYearStr);
+        const selMonth = Number(selMonthStr) - 1;
+        if (!Number.isNaN(selYear) && !Number.isNaN(selMonth)) {
+          arr = arr.filter(entry => {
+            const entryDate = parseDateStringToDate(entry.date);
+            if (!entryDate) return false;
+            return entryDate.getFullYear() === selYear && entryDate.getMonth() === selMonth;
+          });
+        }
+      }
+      if (selectedCategory) {
+        arr = arr.filter(entry => String((entry as { category?: unknown }).category) === selectedCategory);
+      }
+      return arr;
     }
-    // Filter by category from localStorage mapping
-    if (selectedCategory) {
-      currentTabEntries = currentTabEntries.filter(entry => categoryMap[entry._id] === selectedCategory);
-    }
-    return currentTabEntries;
-  }, [activeTab, incomes, expenses, searchQuery, selectedMonth, selectedCategory, categoryMap]);
+  }, [activeTab, incomes, expenses, searchQuery, selectedMonth, selectedCategory]);
 
   // Paginated entries for display
   const displayedEntries = useMemo(() => {
@@ -342,7 +328,7 @@ const ExpenseIncome = () => {
                       <td className="py-3 px-4 font-medium text-gray-900">{entry.title}</td>
                       <td className="py-3 px-4 text-gray-700">Ks. {entry.amount.toLocaleString()}</td>
                       <td className="py-3 px-4 text-gray-700">{new Date(entry.date).toLocaleDateString()}</td>
-                      <td className="py-3 px-4 text-gray-700">{categoryMap[entry._id] || 'Uncategorized'}</td>
+                      <td className="py-3 px-4 text-gray-700">{(entry as { category?: string }).category || 'Other'}</td>
                       <td className="py-3 px-4 text-gray-700">{entry.description}</td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -468,10 +454,7 @@ const ExpenseIncome = () => {
         entryType={activeTab}
         useCase={activeTab === 'income' ? createIncomeUseCase : createExpenseUseCase}
         setShowCreatedAlert={setShowCreatedAlert}
-        onUpdate={async () => {
-          if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses();
-          reloadCategoryMap();
-        }}
+        onUpdate={async () => { if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses(); }}
       />
 
       <EditEntryModal
@@ -483,10 +466,7 @@ const ExpenseIncome = () => {
         useCase={activeTab === 'income' ? updateIncomeUseCase : updateExpenseUseCase}
         showEditAlert={setShowEditedAlert}
         translations={pageTranslations}
-        onUpdated={async () => {
-          if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses();
-          reloadCategoryMap();
-        }}
+        onUpdated={async () => { if (activeTab === 'income') await refetchIncomes(); else await refetchExpenses(); }}
       />
     </div>
   );

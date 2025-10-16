@@ -5,6 +5,7 @@ import { TokenedRequest } from "@/domain/models/common/header-param";
 import { UpdateExpenseDto } from "@/domain/models/income-expense/expense/update-expense.dto";
 import { UpdateIncomeDto } from "@/domain/models/income-expense/income/update-income.dto";
 import { useEffect, useState } from "react";
+import { IncomeCategory, ExpenseCategory } from "@/constants/category.enum";
 
 interface EditEntryFormProps {
   onClose: () => void;
@@ -17,11 +18,11 @@ interface EditEntryFormProps {
   onUpdated: () => void;
 }
 
-// Fixed default categories outside component to avoid useEffect deps churn
-const DEFAULT_CATEGORIES: Record<"income" | "expense", string[]> = {
-  income: ["Product Sold", "Investment"],
-  expense: ["Supply Purchased", "Salary", "Food", "Transport", "Utilities"],
-};
+// Enum-based category options
+const CATEGORY_OPTIONS = {
+  income: Object.values(IncomeCategory),
+  expense: Object.values(ExpenseCategory),
+} as const;
 
 export function EditEntryForm({
   onClose,
@@ -43,66 +44,15 @@ export function EditEntryForm({
   // Category editing state
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [customCategoryName, setCustomCategoryName] = useState<string>("");
-  const OTHER_VALUE = "__other";
 
-  // Using DEFAULT_CATEGORIES defined above
-
-  // LocalStorage helpers
-  const mapKey = (type: "income" | "expense") => `ei:categoryMap:${type}`;
-  const readJson = <T,>(key: string, fallback: T): T => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : fallback;
-    } catch {
-      return fallback;
-    }
-  };
-  const writeJson = (key: string, value: unknown) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore
-    }
-  };
-
-  const isReservedOther = (s: string) => s.trim().toLowerCase() === "other";
-  const includesCI = (arr: string[], val: string) => arr.some((x) => x.toLowerCase() === val.toLowerCase());
-
-  // Load fixed categories and preselect current mapping
+  // Load enum categories and preselect from entry
   useEffect(() => {
-    const defaults = DEFAULT_CATEGORIES[entryType];
-    setCategories(defaults);
-
-    // Preselect current category mapping
-    const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
-    const current = cmap[entryId] || "";
-
-    if (!current) {
-      setSelectedCategory("");
-      setCustomCategoryName("");
-      return;
-    }
-
-    // If current matches one of defaults (case-insensitive), select that default option
-    const match = defaults.find((d) => d.toLowerCase() === current.toLowerCase());
-    if (match) {
-      setSelectedCategory(match);
-      setCustomCategoryName("");
-      return;
-    }
-
-    // If current is literally "Other", keep it as an Other selection with empty custom
-    if (isReservedOther(current)) {
-      setSelectedCategory(OTHER_VALUE);
-      setCustomCategoryName("");
-      return;
-    }
-
-    // Otherwise treat as custom (Other with prefilled custom value)
-    setSelectedCategory(OTHER_VALUE);
-    setCustomCategoryName(current);
-  }, [entryId, entryType]);
+    const opts = CATEGORY_OPTIONS[entryType] as string[];
+    setCategories(opts);
+    const current = (entry as { category?: string }).category || '';
+    if (current && opts.includes(current)) setSelectedCategory(current);
+    else setSelectedCategory(opts.includes('Other') ? 'Other' : (opts[0] || ''));
+  }, [entryId, entryType, entry]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,19 +71,9 @@ export function EditEntryForm({
     try {
       setSubmitting(true);
       console.log("Updating entry with:", updateEntryDto);
-      await updateUseCase.execute(makeTokenedRequest(entryId), updateEntryDto);
-      // Persist category mapping only (do not expand global categories)
-      const chosen = selectedCategory === OTHER_VALUE ? customCategoryName.trim() : selectedCategory;
-      const cmap = readJson<Record<string, string>>(mapKey(entryType), {});
-      if (!chosen) {
-        cmap[entryId] = ""; // Uncategorized
-      } else if (isReservedOther(chosen) || (selectedCategory === OTHER_VALUE && !customCategoryName.trim())) {
-        // If user selects Other but leaves custom blank, treat as Uncategorized
-        cmap[entryId] = "";
-      } else {
-        cmap[entryId] = chosen;
-      }
-      writeJson(mapKey(entryType), cmap);
+      // Include enum category in update DTO when provided
+      const cat = selectedCategory as (IncomeCategory | ExpenseCategory);
+      await updateUseCase.execute(makeTokenedRequest(entryId), { ...updateEntryDto, category: cat } as UpdateExpenseDto & UpdateIncomeDto);
       setShowEditAlert(true);
       setTimeout(() => setShowEditAlert(false), 1500);
       onClose();
@@ -163,17 +103,7 @@ export function EditEntryForm({
             {categories.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
-            <option value={OTHER_VALUE}>Other</option>
           </select>
-          {selectedCategory === OTHER_VALUE && (
-            <input
-              type="text"
-              value={customCategoryName}
-              onChange={(e) => setCustomCategoryName(e.target.value)}
-              placeholder="Type custom category"
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-          )}
         </div>
       </div>
       <div>
