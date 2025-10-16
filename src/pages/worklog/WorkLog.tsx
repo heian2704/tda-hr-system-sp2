@@ -42,7 +42,7 @@ import { Worklog } from '@/domain/models/worklog/get-worklog.dto';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 // Simple localStorage cache with TTL
-const WL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const WL_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const wlGetCache = <T = unknown>(key: string): T | null => {
   try {
     const raw = localStorage.getItem(key);
